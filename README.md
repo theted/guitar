@@ -1,3 +1,25 @@
+# Guitar scale playground
+
+React rewrite of a [2015 codepen](https://codepen.io/theted/pen/zrvaYP), exploring best practices.
+
+### Features
+
+- Arbitrary tunings, number of strings & frets
+- Nifty scales & support for defining scales
+
+### Design goals
+
+- Simplicity - "one thing does one thing".
+- Architecture - logical and easy to undertand.
+- Data flow should make sense.
+- Code quality.
+
+## TODO:s
+
+- Make it playable!
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

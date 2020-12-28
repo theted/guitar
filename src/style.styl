@@ -1,0 +1,59 @@
+body
+  color white
+  font 150% Helvetica, arial, sans-serif
+  display flex
+  align-items: center
+  justify-content: center
+  min-height 100vh
+  background-image: radial-gradient( circle farthest-corner at 50.3% 44.5%,  rgba(116,147,179,1) 0%, rgba(62,83,104,1) 100.2% )
+  background-attachment fixed
+
+#root
+  width: 100%
+
+.guitar
+  width 100%
+  max-width 1300px
+  margin 0px auto
+
+.string
+  display: grid;
+  grid-template-columns: repeat( auto-fit, minmax(25px, 1fr) );
+  text-transform: uppercase
+  background: rgba(0, 0, 0, 0.4)
+
+.string > div,
+.note
+  flex: 1;
+  background: rgba(0, 0, 100, 0.5);
+  border: 1px solid rgba(250, 250, 250, 0.2);
+  padding: 0.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 82%;
+
+.fret, .note
+  transition background 400ms ease-out
+
+for row in 0..11
+	.tone-{row}
+		background darken(spin(#33f, (row * (360/12))deg), 30%) !important;
+
+.selected, .marker
+  background: #333 !important;
+
+.debug
+  display: none;
+
+.stringName
+  background: rgba(0, 20, 220, 0.4) !important;
+
+.controls
+  position absolute
+  top 1em
+  left 4.2em
+  transform: scale(1.5)
+
+.stringmarker
+  border-top: 13px solid rgba(240, 240, 240, 0.1);
