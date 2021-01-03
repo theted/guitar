@@ -11,7 +11,7 @@ export const scales = {
   persian: [1, 3, 1, 1, 2, 2],
   japanese: [1, 4, 2, 1],
   locrian: [1, 2, 2, 1, 2, 2, 2], // !
-  pentat_major: [2, 2, 3, 2, 3],
+  'pentatonic major': [2, 2, 3, 2, 3],
   gypsy: [1, 3, 1, 2, 1, 3],
   lydian: [2, 2, 2, 1, 2],
   phrygian: [1, 3, 1, 2, 1, 3, 4], // !
@@ -36,7 +36,7 @@ export const tones = [
 
 export const tunings = {
   Standard: ['e', 'a', 'd', 'g', 'b', 'e'],
-  'Drop D': ['d', 'a', 'g', 'b', 'e'],
+  'Drop D': ['d', 'a', 'd', 'g', 'b', 'e'],
   'Open A': ['e', 'a', 'c#', 'e', 'a', 'e'],
   DADGAD: ['d', 'a', 'd', 'g', 'a', 'd'],
   DEAD: ['d', 'e', 'a'],

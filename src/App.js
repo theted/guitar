@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Guitar from './Guitar';
 import Controls from './Controls';
+import './style.css';
 import {
   tones, scales, tunings, DEFAULTS,
 } from './constants';
-import './style.css';
 
 const {
   STRINGS, FRETS, TUNING, SCALE, KEY,
@@ -17,6 +17,8 @@ const App = () => {
   const [tuning, setTuning] = useState(TUNING);
   const [tone, setTone] = useState(KEY);
 
+  const doSetTuning = tuning => setTuning(tunings[tuning]);
+
   return (
     <div className="App">
       <Controls
@@ -28,7 +30,7 @@ const App = () => {
         strings={strings}
         setStrings={setStrings}
         tunings={tunings}
-        setTuning={setTuning}
+        setTuning={doSetTuning}
         tone={tone}
         tones={tones}
         setTone={setTone}

@@ -1,3 +1,5 @@
+import { ucFirst } from './helpers';
+
 const Select = ({
   options,
   onChange,
@@ -9,7 +11,11 @@ const Select = ({
 
   return (
     <select onChange={doChange} {...rest}>
-      {options.map(option => (<option value={option}>{option}</option>))}
+      {options.map(option => (
+        <option value={option} key={option}>
+          {ucFirst(option)}
+        </option>
+      ))}
     </select>
   );
 };
