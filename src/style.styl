@@ -44,8 +44,21 @@ for row in 0..11
 .selected, .marker
   background: #333 !important;
 
+.base
+  background: rgba(10, 10, 10, 0.7) !important;
+
 .debug
   display: none;
+
+.spec
+  position absolute
+  left: 10px
+  opacity 0
+  margin-top: 3px
+  max-width 25px
+  transition: opacity 300ms
+  &:hover
+    opacity 1
 
 .controls
   position absolute

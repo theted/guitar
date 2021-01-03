@@ -18,6 +18,8 @@ const App = () => {
   const [tone, setTone] = useState(KEY);
 
   const doSetTuning = tuning => setTuning(tunings[tuning]);
+  const doSetFrets = frets => setFrets(parseInt(frets));
+  const doSetStrings = strings => setStrings(parseInt(strings));
 
   return (
     <div className="App">
@@ -26,9 +28,9 @@ const App = () => {
         scale={scale}
         setScale={setScale}
         frets={frets}
-        setFrets={setFrets}
+        setFrets={doSetFrets}
         strings={strings}
-        setStrings={setStrings}
+        setStrings={doSetStrings}
         tunings={tunings}
         setTuning={doSetTuning}
         tone={tone}
@@ -42,6 +44,7 @@ const App = () => {
         scales={scales}
         tuning={tuning}
         tunings={tunings}
+        keyy={tone}
       />
     </div>
   );

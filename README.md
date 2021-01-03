@@ -1,6 +1,9 @@
-# Guitar scale playground
+# Guitar scale finder
 
 React rewrite of a [2015 codepen](https://codepen.io/theted/pen/zrvaYP), exploring best practices.
+
+![guitar scale finder](http://sundbergmedia.com/files/guitar.png)
+
 
 ### Features
 

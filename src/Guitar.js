@@ -2,7 +2,15 @@ import GuitarString from './GuitarString';
 import { keyToOffset } from './music';
 import Debug from './Debug';
 
-const Guitar = ({ strings, frets, scale, scales, tunings, tuning }) => {
+const Guitar = ({
+  strings,
+  frets,
+  scale,
+  scales,
+  tunings,
+  tuning,
+  keyy,
+}) => {
   const stringsObj = Array.from(Array(strings).keys());
   const fretsObj = Array.from(Array(frets + 1).keys());
 
@@ -13,9 +21,10 @@ const Guitar = ({ strings, frets, scale, scales, tunings, tuning }) => {
           <GuitarString
             key={i}
             frets={frets}
-            note={keyToOffset(tuning[i])}
+            note={keyToOffset(tuning[i % tuning.length])}
             scale={scale}
-            scales={scales}
+            scales={scales} // TODO: string should not know about scale!
+            keyy={keyy}
           />
         ))}
       </div>

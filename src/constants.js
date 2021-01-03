@@ -1,8 +1,8 @@
 // scales are defined in half-tones from the last tone in the scale
 export const scales = {
-  minor: [2, 1, 2, 2, 1, 2],
-  major: [2, 2, 1, 2, 2, 2],
-  pentatonic: [3, 2, 2, 3, 2, 2],
+  minor: [2, 1, 2, 2, 1, 2, 2],
+  major: [2, 2, 1, 2, 2, 2, 1],
+  pentatonic: [3, 2, 2, 3, 2],
   blues: [3, 2, 1, 1, 3, 2],
   diminished: [3],
   test: [2],
