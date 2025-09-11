@@ -1,3 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+}
+
+* { @apply border-border; }
+body { @apply text-foreground; background-color: #08080a; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+/* Hide scrollbars in WebKit for safety */
+body::-webkit-scrollbar { display: none; }
+
+/* Radial dark gradient background for the entire app */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    circle at 20% 20%,
+    rgba(34, 36, 42, 0.95) 0%,
+    rgba(20, 22, 26, 0.95) 35%,
+    rgba(12, 14, 18, 1) 70%,
+    rgba(8, 8, 10, 1) 100%
+  );
+  animation: app-bg-reveal 750ms ease-out both;
+}
+
+/* Played-note fade overlay for trailing highlight */
+.note-fade-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.9;
+  animation: note-fade-out 1.1s ease-out forwards;
+}
+.note-fade-strong { background: rgba(8, 145, 178, 0.7); } /* cyan-600-ish */
+.note-fade-weak { background: rgba(8, 145, 178, 0.35); }
+
+/* WAAPI-driven overlay (default invisible; animated via .animate) */
+.note-overlay-wa {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(8, 145, 178, 0.6);
+  opacity: 0;
+}
+
+@keyframes note-fade-out {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+@keyframes app-bg-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
