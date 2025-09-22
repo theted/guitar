@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import cx from "classnames";
-import { getNoteWithOctave, getScalePitchClasses, keyToOffset } from "./music";
-import { SoundType } from "./audio";
-import { scheduler } from "./scheduler";
-import Field from "./Field";
-import { ScaleName, scales } from "./constants";
+import { getNoteWithOctave, getScalePitchClasses, keyToOffset } from "@/music";
+import { SoundType } from "@/audio";
+import { scheduler } from "@/scheduler";
+import Field from "@/components/common/Field";
+import { ScaleName, scales } from "@/constants";
 
 type Props = {
   idx: number;

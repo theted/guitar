@@ -1,14 +1,14 @@
 import React from "react";
-import { Label } from "./components/ui/label";
-import { Input } from "./components/ui/input";
-import { Slider } from "./components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./components/ui/select";
+} from "@/components/ui/select";
 import {
   PhraseMode,
   ScaleName,
@@ -17,10 +17,10 @@ import {
   scales,
   tunings,
   tones,
-} from "./constants";
-import { ucFirst } from "./helpers";
-import { SoundType } from "./audio";
-import { useFormStore, setFormState } from "./store";
+} from "@/constants";
+import { ucFirst } from "@/helpers";
+import { SoundType } from "@/audio";
+import { useFormStore, setFormState } from "@/store";
 
 interface ControlsProps {
   stopAllPlayback: () => void;

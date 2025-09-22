@@ -1,9 +1,9 @@
 import React from "react";
 import GuitarString from "./GuitarString";
 import ScaleLegend from "./ScaleLegend";
-import { keyToOffset } from "./music";
-import { scales, tunings } from "./constants";
-import { useFormStore } from "./store";
+import { keyToOffset } from "@/music";
+import { scales, tunings } from "@/constants";
+import { useFormStore } from "@/store";
 
 type Props = {
   playingAbs?: number | null;

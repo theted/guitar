@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { keyToOffset, getScalePitchClasses, getNote } from './music';
-import { ScaleName, PhraseMode, scales } from './constants';
+import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
+import { ScaleName, PhraseMode, scales } from '@/constants';
 import { Play } from 'lucide-react';
-import { getCurrentTime, SoundType } from './audio';
-import { scheduler } from './scheduler';
-import { buildRelSequence } from './phrases';
+import { getCurrentTime, SoundType } from '@/audio';
+import { scheduler } from '@/scheduler';
+import { buildRelSequence } from '@/phrases';
 
 type Props = {
   scale: ScaleName;

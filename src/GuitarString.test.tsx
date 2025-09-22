@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import GuitarString from './GuitarString';
-import { scales } from './constants';
+import GuitarString from '@/components/guitar/GuitarString';
+import { scales } from '@/constants';
 
 describe('GuitarString highlighting', () => {
   const baseProps = {

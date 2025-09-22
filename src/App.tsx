@@ -1,7 +1,7 @@
 import React from 'react';
-import Controls from './Controls';
-import Guitar from './Guitar';
-import { useFormStore } from './store';
+import Controls from '@/components/Controls';
+import Guitar from '@/components/guitar/Guitar';
+import { useFormStore } from '@/store';
 
 const App: React.FC = () => {
   // Playback highlight state lives locally

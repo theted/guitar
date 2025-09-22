@@ -19,7 +19,11 @@
     "baseUrl": ".",
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"]
+    }
   },
   "include": [
     "src"
