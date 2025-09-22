@@ -89,7 +89,54 @@ body::-webkit-scrollbar {
   animation: app-bg-reveal 750ms ease-out both;
 }
 
-/* Optimized note highlight overlays for better performance */
+/* Performance-optimized tone-based animation system */
+.tone-group {
+  position: relative;
+  contain: layout style;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+.tone-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(8, 145, 178, 0.6);
+  opacity: 0;
+  contain: layout style paint;
+}
+
+/* Tone-based animation classes - one per pitch class */
+.tone-c .tone-overlay,
+.tone-cs .tone-overlay,
+.tone-d .tone-overlay,
+.tone-ds .tone-overlay,
+.tone-e .tone-overlay,
+.tone-f .tone-overlay,
+.tone-fs .tone-overlay,
+.tone-g .tone-overlay,
+.tone-gs .tone-overlay,
+.tone-a .tone-overlay,
+.tone-as .tone-overlay,
+.tone-b .tone-overlay {
+  opacity: 0;
+}
+
+/* Body-level active state animations for global tone control */
+body.tone-c-active .tone-c .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-cs-active .tone-cs .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-d-active .tone-d .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-ds-active .tone-ds .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-e-active .tone-e .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-f-active .tone-f .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-fs-active .tone-fs .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-g-active .tone-g .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-gs-active .tone-gs .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-a-active .tone-a .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-as-active .tone-as .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+body.tone-b-active .tone-b .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+
+/* Legacy support for existing overlay system */
 .note-fade-overlay {
   position: absolute;
   inset: 0;
@@ -100,7 +147,7 @@ body::-webkit-scrollbar {
 }
 
 .note-fade-strong { 
-  background: rgba(8, 145, 178, 0.7); /* cyan-600-ish */
+  background: rgba(8, 145, 178, 0.7);
   opacity: 0.9;
 }
 
@@ -109,20 +156,23 @@ body::-webkit-scrollbar {
   opacity: 0.7;
 }
 
-/* WAAPI-driven overlay (default invisible; animated via .animate) */
-.note-overlay-wa {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: rgba(8, 145, 178, 0.6);
-  opacity: 0;
-  will-change: opacity;
+/* Performance-optimized animations using GPU acceleration */
+@keyframes tone-flash {
+  0% { 
+    opacity: 0.9; 
+    transform: translateZ(0); 
+  }
+  100% { 
+    opacity: 0; 
+    transform: translateZ(0); 
+  }
 }
 
-/* Simplified fade animation for better performance */
 @keyframes note-fade-out {
-  to { opacity: 0; }
+  to { 
+    opacity: 0; 
+    transform: translateZ(0); 
+  }
 }
 
 /* Simplified background reveal for better performance */
@@ -135,6 +185,22 @@ body::-webkit-scrollbar {
     opacity: 1;
     transform: scale3d(1, 1, 1);
   }
+}
+
+/* Performance optimizations for guitar elements */
+.guitar-container {
+  contain: layout;
+  transform: translateZ(0);
+}
+
+.guitar-string {
+  contain: layout style;
+  will-change: auto; /* Let browser decide */
+}
+
+.fret-button {
+  contain: layout;
+  backface-visibility: hidden;
 }
 
 code {

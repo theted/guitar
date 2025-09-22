@@ -80,7 +80,7 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
   }
 
   return (
-    <div className="w-[92vw] max-w-[1600px]">
+    <div className="w-[92vw] max-w-[1600px] guitar-container">
       <ScaleLegend
         scale={scale}
         scales={scales}

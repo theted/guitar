@@ -2,6 +2,7 @@ import React from 'react';
 import Controls from '@/components/Controls';
 import Guitar from '@/components/guitar/Guitar';
 import { useFormStore } from '@/store';
+import { toneAnimationManager } from '@/lib/tone-animation';
 
 const App: React.FC = () => {
   // Playback highlight state lives locally
@@ -19,6 +20,9 @@ const App: React.FC = () => {
     playingTimersRef.current = {};
     setPlayingSet([]);
     setPlayingAbs(null);
+    
+    // Stop tone-based animations
+    toneAnimationManager.stopAll();
   };
 
   const flashPlaying = (absSemitone: number, durationMs = 200) => {
@@ -27,6 +31,10 @@ const App: React.FC = () => {
     const trailMs = Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
+    
+    // Trigger tone-based animation
+    toneAnimationManager.flashTone(absSemitone, minimalHighlight ? durationMs : trailMs);
+    
     const tid = window.setTimeout(() => {
       setPlayingSet((cur) => cur.filter((n) => n !== absSemitone));
       if (playingTimersRef.current[absSemitone]) delete playingTimersRef.current[absSemitone];

@@ -1,4 +1,5 @@
 import { getCurrentTime, playSemitoneAt, SoundType } from './audio';
+import { toneAnimationManager } from './lib/tone-animation';
 
 type UiCallback = (absSemitone: number, durationMs: number) => void;
 
@@ -52,30 +53,11 @@ class AudioScheduler {
   ): number {
     const id = this.nextId++;
     
-    // Pre-cache DOM element references
-    const elementRefs = new Map<number, HTMLElement[]>();
-    const chipRefs = new Map<number, HTMLElement[]>();
-    
-    events.forEach(event => {
-      // Cache fretboard elements
-      if (!elementRefs.has(event.abs)) {
-        const els = Array.from(document.querySelectorAll(`[data-abs='${event.abs}'] .note-overlay-wa`)) as HTMLElement[];
-        elementRefs.set(event.abs, els);
-      }
-      
-      // Cache scale legend elements  
-      const pc = ((event.abs % 12) + 12) % 12;
-      if (!chipRefs.has(pc)) {
-        const chipEls = Array.from(document.querySelectorAll(`[data-pc='${pc}'] .note-overlay-wa`)) as HTMLElement[];
-        chipRefs.set(pc, chipEls);
-      }
-    });
-    
     const session: OptimizedSession = { 
       id, 
       events, 
-      elementRefs, 
-      chipRefs, 
+      elementRefs: new Map(), // Keep for backwards compatibility
+      chipRefs: new Map(), // Keep for backwards compatibility
       onUiNote, 
       rafId: null, 
       soundType, 
@@ -181,20 +163,9 @@ class AudioScheduler {
           s.onUiNote(event.abs, Math.round(event.durSec * 1000)); 
         } catch {}
         
-        // Trigger optimized animations
+        // Trigger tone-based animation (much more efficient)
         if (!s.reduceAnimations) {
-          const fretElements = s.elementRefs.get(event.abs) || [];
-          const pc = ((event.abs % 12) + 12) % 12;
-          const chipElements = s.chipRefs.get(pc) || [];
-          
-          [...fretElements, ...chipElements].forEach(el => {
-            try {
-              el.animate([{ opacity: 0.9 }, { opacity: 0 }], { 
-                duration: s.trailLength, 
-                easing: 'linear' 
-              });
-            } catch {}
-          });
+          toneAnimationManager.flashTone(event.abs, s.trailLength);
         }
         
         eventIndex++;

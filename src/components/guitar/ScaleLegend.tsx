@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
 import { ScaleName, PhraseMode, scales } from '@/constants';
 import { Play } from 'lucide-react';
 import { getCurrentTime, SoundType } from '@/audio';
 import { scheduler } from '@/scheduler';
 import { buildRelSequence } from '@/phrases';
+import { toneAnimationManager } from '@/lib/tone-animation';
 
 type Props = {
   scale: ScaleName;
@@ -155,6 +156,11 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
           return (
             <div
               key={pc}
+              ref={(el) => {
+                if (el) {
+                  toneAnimationManager.applyToneClass(el, abs);
+                }
+              }}
               data-pc={pc}
               className={
                 'relative overflow-hidden px-2 py-1 rounded-md text-sm uppercase tracking-wide transition-colors border ' +
@@ -167,11 +173,14 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
             >
               <span className="font-semibold mr-1">{i + 1}</span>
               {note}
+              
+              {/* Tone-based animation overlay */}
+              <span className="tone-overlay" />
+              
+              {/* Legacy fallback overlay */}
               {isActive && !reduceAnimations && !minimalHighlight && (
                 <span className="note-fade-overlay note-fade-strong" style={{ animationDuration: `${trailLength}ms` }} />
               )}
-              {/* WAAPI overlay for scheduler-driven animation */}
-              <span className="note-overlay-wa" />
             </div>
           );
         })}

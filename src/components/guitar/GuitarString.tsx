@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import cx from "classnames";
 import { getNoteWithOctave, getScalePitchClasses, keyToOffset } from "@/music";
 import { SoundType } from "@/audio";
 import { scheduler } from "@/scheduler";
 import Field from "@/components/common/Field";
 import { ScaleName, scales } from "@/constants";
+import { toneAnimationManager } from "@/lib/tone-animation";
 
 type Props = {
   idx: number;
@@ -51,9 +52,10 @@ const GuitarString: React.FC<Props> = ({
   const elements = Array.from({ length: frets + 1 }, (_, i) => i);
   const pcs = getScalePitchClasses(scales[scale]);
   const keyOffset = keyToOffset(keyy);
+  const elementRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   return (
-    <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1">
+    <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string">
       <Field
         onChange={(v) => setOffset(parseInt(v, 10) || 0)}
         value={String(offset)}
@@ -89,11 +91,18 @@ const GuitarString: React.FC<Props> = ({
         return (
           <div
             key={val}
+            ref={(el) => {
+              elementRefs.current[val] = el;
+              if (el) {
+                toneAnimationManager.applyToneClass(el, actualNote);
+              }
+            }}
             data-abs={actualNote}
             className={cx(
               baseClasses,
               colorClasses,
               playingClasses,
+              "fret-button",
               reduceAnimations
                 ? ""
                 : "hover:bg-white/20 transition-transform duration-75 hover:scale-[1.03]"
@@ -121,6 +130,10 @@ const GuitarString: React.FC<Props> = ({
                 {degree}
               </span>
             )}
+            {/* Tone-based animation overlay */}
+            <span className="tone-overlay" />
+            
+            {/* Legacy fallback overlays */}
             {isPlayingNote && (
               <span
                 className="note-fade-overlay note-fade-strong"
@@ -133,8 +146,6 @@ const GuitarString: React.FC<Props> = ({
                 style={{ animationDuration: `${trailLength}ms` }}
               />
             )}
-            {/* WAAPI overlay for scheduler-driven animation */}
-            <span className="note-overlay-wa" />
           </div>
         );
       })}
