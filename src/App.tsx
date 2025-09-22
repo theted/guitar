@@ -38,7 +38,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen w-full flex flex-col">
       <div className="app-bg" />
-      <Controls />
+      <Controls stopAllPlayback={stopAllPlayback} />
       <main className="fixed inset-0 flex items-center justify-center px-6 pt-[96px]">
         <Guitar
           playingAbs={playingAbs}
