@@ -3,6 +3,8 @@ import Controls from '@/components/Controls';
 import Guitar from '@/components/guitar/Guitar';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
+import { scheduler } from '@/scheduler';
+import { stopAllAudio } from '@/audio';
 
 const App: React.FC = () => {
   // Playback highlight state lives locally
@@ -14,6 +16,8 @@ const App: React.FC = () => {
   const playingTimersRef = React.useRef<Record<number, number>>({});
 
   const stopAllPlayback = () => {
+    scheduler.stopAll();
+    stopAllAudio();
     Object.values(playingTimersRef.current).forEach((tid) => {
       try { window.clearTimeout(tid); } catch {}
     });

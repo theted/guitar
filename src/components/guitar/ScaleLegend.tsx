@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
 import { ScaleName, PhraseMode, scales } from '@/constants';
 import { Play } from 'lucide-react';
-import { getCurrentTime, SoundType } from '@/audio';
+import { getCurrentTime, SoundType, stopAllAudio } from '@/audio';
 import { scheduler } from '@/scheduler';
 import { buildRelSequence } from '@/phrases';
 import { toneAnimationManager } from '@/lib/tone-animation';
@@ -41,6 +41,7 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
       scheduler.stopSession(schedulerSessionRef.current);
       schedulerSessionRef.current = null;
     }
+    stopAllAudio();
   };
 
   // Pre-compute the entire sequence for optimized playback
