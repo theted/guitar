@@ -1,5 +1,11 @@
 let audioCtx: AudioContext | null = null;
 
+type ActiveVoice = {
+  stop: (time?: number) => void;
+};
+
+const activeVoices = new Set<ActiveVoice>();
+
 export type SoundType = 
   | 'marimba' | 'sine' | 'organ' | 'piano' | 'square' | 'saw'
   | 'guitar-clean' | 'guitar-distorted' | 'bass' | 'synth-lead' 
@@ -9,13 +15,22 @@ export const getAudioContext = () => {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     try { audioCtx.resume(); } catch {}
-  } else { 
-    try { audioCtx.resume(); } catch {} 
+  } else {
+    try { audioCtx.resume(); } catch {}
   }
   return audioCtx;
 };
 
 export const getCurrentTime = (): number => getAudioContext().currentTime;
+
+export const stopAllAudio = () => {
+  const now = getCurrentTime();
+  Array.from(activeVoices).forEach((voice) => {
+    try {
+      voice.stop(now);
+    } catch {}
+  });
+};
 
 // Utility functions for common Web Audio patterns
 const createGainNode = (ctx: AudioContext, startTime: number, duration: number, envelope: EnvelopeConfig): GainNode => {
@@ -493,7 +508,10 @@ const createDistortion = (ctx: AudioContext, config: { drive: number; tone: numb
   return shaper;
 };
 
-const createDelay = (ctx: AudioContext, config: { time: number; feedback: number; wet: number }): { input: GainNode; output: GainNode } => {
+const createDelay = (
+  ctx: AudioContext,
+  config: { time: number; feedback: number; wet: number }
+): { input: GainNode; output: GainNode; delayNode: DelayNode; feedbackNode: GainNode; wetNode: GainNode } => {
   const input = ctx.createGain();
   const output = ctx.createGain();
   const delay = ctx.createDelay(Math.max(0.001, config.time));
@@ -511,7 +529,7 @@ const createDelay = (ctx: AudioContext, config: { time: number; feedback: number
   wet.connect(output);
   input.connect(output); // dry signal
   
-  return { input, output };
+  return { input, output, delayNode: delay, feedbackNode: feedback, wetNode: wet };
 };
 
 // Main sound synthesis function
@@ -521,72 +539,88 @@ const synthesizeSound = (
   startTime: number,
   duration: number,
   config: SoundConfig
-): void => {
+): ActiveVoice => {
   // Create master gain node
   const master = createGainNode(ctx, startTime, duration, config.masterEnvelope);
   master.connect(ctx.destination);
-  
+
+  const nodesToDisconnect: AudioNode[] = [master];
+  const oscillators: OscillatorNode[] = [];
+  const layerGains: GainNode[] = [];
+
   // Build effects chain from end to beginning (master <- reverb <- delay <- distortion <- filter <- input)
   let chainInput: AudioNode = master;
-  
+
   // Reverb (last in chain)
   if (config.effects?.reverb) {
     const reverb = createReverb(ctx, config.effects.reverb);
     const wetGain = ctx.createGain();
     const dryGain = ctx.createGain();
     const mixGain = ctx.createGain();
-    
+
+    nodesToDisconnect.push(reverb, wetGain, dryGain, mixGain);
+
     wetGain.gain.value = config.effects.reverb.wet;
     dryGain.gain.value = 1 - config.effects.reverb.wet;
-    
+
     // Connect reverb effect
     mixGain.connect(reverb);
     reverb.connect(wetGain);
     wetGain.connect(master);
-    
+
     // Connect dry path
     mixGain.connect(dryGain);
     dryGain.connect(master);
-    
+
     chainInput = mixGain;
   }
-  
+
   // Delay (before reverb)
   if (config.effects?.delay) {
     const delayEffect = createDelay(ctx, config.effects.delay);
+    nodesToDisconnect.push(
+      delayEffect.input,
+      delayEffect.output,
+      delayEffect.delayNode,
+      delayEffect.feedbackNode,
+      delayEffect.wetNode
+    );
     delayEffect.output.connect(chainInput);
     chainInput = delayEffect.input;
   }
-  
+
   // Distortion (before delay)
   if (config.effects?.distortion) {
     const distortion = createDistortion(ctx, config.effects.distortion);
     const wetGain = ctx.createGain();
     const dryGain = ctx.createGain();
     const mixGain = ctx.createGain();
-    
+
+    nodesToDisconnect.push(distortion, wetGain, dryGain, mixGain);
+
     wetGain.gain.value = config.effects.distortion.wet;
     dryGain.gain.value = 1 - config.effects.distortion.wet;
-    
+
     // Connect distortion effect
     mixGain.connect(distortion);
     distortion.connect(wetGain);
     wetGain.connect(chainInput);
-    
+
     // Connect dry path
     mixGain.connect(dryGain);
     dryGain.connect(chainInput);
-    
+
     chainInput = mixGain;
   }
-  
+
   // Filter (first in chain)
   if (config.filter) {
-    const filterFreq = config.filter.frequency > 20 
-      ? config.filter.frequency 
+    const filterFreq = config.filter.frequency > 20
+      ? config.filter.frequency
       : baseFreq * config.filter.frequency;
-    
+
     const filter = createFilter(ctx, config.filter.type, Math.min(20000, filterFreq), config.filter.Q);
+    nodesToDisconnect.push(filter);
     filter.connect(chainInput);
     chainInput = filter;
   }
@@ -595,28 +629,79 @@ const synthesizeSound = (
   config.layers.forEach((layer) => {
     const freq = baseFreq * layer.frequency;
     const osc = createOscillator(ctx, freq, layer.type);
-    
+
     // Create individual gain envelope for this layer
     const layerEnvelope = {
       ...config.masterEnvelope,
       ...layer.envelope,
       attackLevel: (layer.envelope?.attackLevel ?? config.masterEnvelope.attackLevel) * layer.gain
     };
-    
+
     const layerGain = createGainNode(ctx, startTime, duration, layerEnvelope);
-    
+    layerGains.push(layerGain);
+    nodesToDisconnect.push(layerGain);
+
     // Apply detune if specified
     if (layer.detune) {
       osc.detune.value = layer.detune;
     }
-    
+
     // Connect to the effects chain input
     osc.connect(layerGain);
     layerGain.connect(chainInput);
-    
+
     osc.start(startTime);
     osc.stop(startTime + duration);
+
+    oscillators.push(osc);
   });
+
+  const voice: ActiveVoice & { stopped: boolean } = {
+    stopped: false,
+    stop: (time = ctx.currentTime) => {
+      if (voice.stopped) return;
+      voice.stopped = true;
+
+      const now = ctx.currentTime;
+      const stopAt = Math.max(time, now, startTime);
+
+      try {
+        master.gain.cancelScheduledValues(now);
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+      } catch {}
+
+      layerGains.forEach((gain) => {
+        try {
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+        } catch {}
+      });
+
+      oscillators.forEach((osc) => {
+        try {
+          osc.stop(Math.max(stopAt, now + 0.01));
+        } catch {}
+        try { osc.disconnect(); } catch {}
+      });
+
+      nodesToDisconnect.forEach((node) => {
+        try { node.disconnect(); } catch {}
+      });
+
+      activeVoices.delete(voice);
+    }
+  };
+
+  activeVoices.add(voice);
+
+  const cleanupDelayMs = Math.max(0, (startTime + duration - ctx.currentTime) * 1000 + 200);
+  window.setTimeout(() => {
+    voice.stop(startTime + duration);
+  }, cleanupDelayMs);
+
+  return voice;
 };
 
 // Public API
