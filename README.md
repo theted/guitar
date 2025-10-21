@@ -1,95 +1,148 @@
-# Guitar scale finder
+# Guitar Scale Finder
 
-React rewrite of a [2015 codepen](https://codepen.io/theted/pen/zrvaYP), exploring best practices.
+An interactive web application for visualizing and practicing guitar scales. Learn scales across different tunings, hear them played back with various instruments, and explore different musical patterns and phrases.
 
 ![guitar scale finder](http://sundbergmedia.com/files/guitar.png)
 
+## Overview
 
-### Features
+Guitar Scale Finder is a React-based educational tool that helps guitarists visualize, understand, and practice scales on a virtual fretboard. The app features interactive playback, customizable instrument configurations, and a variety of musical patterns to help you master scales in any key.
 
-- Arbitrary tunings, number of strings & frets
-- Nifty scales & support for defining scales
+## Features
 
-### Design goals
+### Scale & Music Theory
+- Multiple scales including major, minor, pentatonic, blues, and more
+- All 12 keys (chromatic tones)
+- Configurable starting octave
+- Visual highlighting of scale notes on the fretboard
+- Octave highlighting to understand note relationships
 
-- Simplicity - "one thing does one thing".
-- Architecture - logical and easy to undertand.
-- Data flow should make sense.
-- Code quality.
+### Playback & Phrases
+- Automated phrase playback with adjustable BPM (30-700)
+- 20+ practice patterns including:
+  - Full scale runs (ascending/descending)
+  - Interval exercises (thirds, fourths, sixths)
+  - Motif patterns (1-2-3-2, four-note groups)
+  - Guitar techniques (alternate picking, sweep arpeggios, tremolo)
+  - Advanced patterns (neo-classical, polyrhythms, djent palm mutes)
+  - Chord patterns (triads, sevenths, power chords)
+- Loop mode for continuous practice
+- Swing rhythm option
+- Adjustable octave range (1-5 octaves)
+- "Once per tone" mode to play each note only once
 
-## TODO:s
+### Instrument Configuration
+- Multiple tuning presets (standard, drop D, open tunings, etc.)
+- Customizable number of strings (1-100)
+- Customizable number of frets (1-100)
+- Low string at top or bottom display option
 
-- Make it playable!
+### Sound Options
+15 different instrument sounds:
+- Acoustic: Marimba, Piano, Organ, Bells, Strings, Flute, Brass
+- Synthesizers: Sine, Square, Saw, Synth Lead, Synth Pad
+- Guitar: Clean Guitar, Distorted Guitar, Bass
 
----
+### Visual Customization
+- Note highlighting during playback
+- Adjustable trail length (100-4000ms)
+- Minimal highlight mode
+- Legend-only mode
+- Reduce animations option for performance
 
-# Getting Started with Create React App
+## Getting Started
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### Installation
 
-## Available Scripts
+```bash
+# Install dependencies
+yarn install
 
-In the project directory, you can run:
+# Start development server
+yarn start
+```
 
-### `yarn start`
+The app will open at [http://localhost:3000](http://localhost:3000)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Building for Production
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```bash
+# Run tests
+yarn test
 
-### `yarn test`
+# Create production build
+yarn build
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Usage
 
-### `yarn build`
+### Basic Usage
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. **Select a Scale**: Choose from the scale dropdown (major, minor, pentatonic, etc.)
+2. **Choose a Key**: Pick any of the 12 chromatic keys
+3. **View the Fretboard**: Notes in the selected scale are highlighted on the fretboard
+4. **Click Notes**: Click any highlighted note to hear it
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Playing Phrases
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Select a phrase pattern from the "Phrase" dropdown
+2. Click the play button to hear the pattern
+3. Watch the visual feedback as notes are played
+4. Adjust BPM, octaves, and other settings to customize the playback
+5. Enable "Loop" to practice continuously
 
-### `yarn eject`
+### Customizing Your Instrument
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+1. Choose a tuning preset or keep standard tuning
+2. Adjust the number of strings and frets
+3. Select your preferred sound from 15 instrument options
+4. Toggle "Low string at bottom" for traditional tab-style orientation
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Practice Tips
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- Start with "Full Scale" phrase at a slow BPM (60-80)
+- Use "Loop" mode and gradually increase tempo
+- Try "Thirds" or "Fourths" to practice interval recognition
+- Enable "Once per tone" to focus on note positions without repetition
+- Use "Minimal highlight" for cleaner visual feedback
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Development
 
-## Learn More
+### Available Scripts
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- `yarn start` - Run development server
+- `yarn dev` - Alternative dev server command
+- `yarn build` - Build for production (includes TypeScript checking)
+- `yarn preview` - Preview production build
+- `yarn test` - Run tests in watch mode
+- `yarn test:ui` - Run tests with UI
+- `yarn coverage` - Generate test coverage report
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Technology Stack
 
-### Code Splitting
+- React 19 with TypeScript
+- Vite for build tooling
+- Zustand for state management
+- Tailwind CSS for styling
+- Radix UI for accessible components
+- Framer Motion for animations
+- Web Audio API for sound generation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Design Philosophy
 
-### Analyzing the Bundle Size
+- **Simplicity**: Each component has a single, clear responsibility
+- **Architecture**: Logical and easy to understand code structure
+- **Data Flow**: Clear, unidirectional state management
+- **Code Quality**: TypeScript, tests, and best practices throughout
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## History
 
-### Making a Progressive Web App
+This is a modern React rewrite of a [2015 CodePen](https://codepen.io/theted/pen/zrvaYP), rebuilt from the ground up to explore current best practices in React development, TypeScript, and modern web audio.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## License
 
-### Advanced Configuration
+ISC
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Author
 
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Fredrik Sundberg <fredrik@sundbergmedia.com>
