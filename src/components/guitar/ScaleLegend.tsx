@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useCallback, useEffect } from 'react';
 import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
 import { ScaleName, PhraseMode, scales } from '@/constants';
 import { Play } from 'lucide-react';
@@ -20,13 +20,14 @@ type Props = {
   scheduleHorizon?: number;
   onPlayNote?: (absSemitone: number, durationMs?: number) => void;
   stopAllPlayback?: () => void;
+  stopSignal?: number;
   soundType?: SoundType;
   reduceAnimations?: boolean;
   minimalHighlight?: boolean;
   trailLength?: number;
 };
 
-const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ scale, scales, keyy, playingAbs, highlightEnabled = true, mode, stepMs, swing, octaves = 2, scheduleHorizon = 800, onPlayNote, stopAllPlayback, soundType = 'marimba', reduceAnimations = false, minimalHighlight = false, trailLength = 1200, descend = false, loop = false }) => {
+const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ scale, scales, keyy, playingAbs, highlightEnabled = true, mode, stepMs, swing, octaves = 2, scheduleHorizon = 800, onPlayNote, stopAllPlayback, stopSignal, soundType = 'marimba', reduceAnimations = false, minimalHighlight = false, trailLength = 1200, descend = false, loop = false }) => {
   const keyOffset = keyToOffset(keyy);
   const pcs = getScalePitchClasses(scales[scale]);
 
@@ -35,14 +36,24 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
   const [isPlaying, setIsPlaying] = React.useState(false);
   const schedulerSessionRef = React.useRef<number | null>(null);
   const playSessionRef = React.useRef<number>(0);
-  
-  const clearPlayTimers = () => {
+  const ignoredStopSignalRef = React.useRef<Set<number>>(new Set());
+  const lastStopSignalRef = React.useRef(stopSignal);
+
+  const clearPlayTimers = useCallback(() => {
+    playSessionRef.current += 1;
     if (schedulerSessionRef.current != null) {
       scheduler.stopSession(schedulerSessionRef.current);
       schedulerSessionRef.current = null;
     }
     stopAllAudio();
-  };
+  }, []);
+
+  const triggerGlobalStop = useCallback(() => {
+    if (!stopAllPlayback) return;
+    const predictedNext = typeof stopSignal === 'number' ? stopSignal + 1 : 0;
+    ignoredStopSignalRef.current.add(predictedNext);
+    stopAllPlayback();
+  }, [stopAllPlayback, stopSignal]);
 
   // Pre-compute the entire sequence for optimized playback
   const preComputedEvents = useMemo(() => {
@@ -72,10 +83,10 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
     return events;
   }, [relSequence, stepMs, swing, keyOffset]);
 
-  const playArpeggio = () => {
+  const playArpeggio = useCallback(() => {
     // Cancel previous playback immediately
     clearPlayTimers();
-    stopAllPlayback?.();
+    triggerGlobalStop();
     const session = playSessionRef.current + 1;
     playSessionRef.current = session;
     setIsPlaying(true);
@@ -127,24 +138,61 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
     if (!loop) {
       const totalDuration = allEvents[allEvents.length - 1].startTimeSec - startTime + 
                            allEvents[allEvents.length - 1].durSec;
-      setTimeout(() => {
+      window.setTimeout(() => {
         if (playSessionRef.current === session) {
           setIsPlaying(false);
           clearPlayTimers();
         }
       }, totalDuration * 1000 + 100); // Small buffer
     }
-  };
+  }, [clearPlayTimers, triggerGlobalStop, preComputedEvents, onPlayNote, soundType, trailLength, reduceAnimations, minimalHighlight, loop]);
 
-  const onTogglePlay = () => {
+  const onTogglePlay = useCallback(() => {
     if (isPlaying) {
       clearPlayTimers();
-      stopAllPlayback?.();
+      triggerGlobalStop();
       setIsPlaying(false);
     } else {
       playArpeggio();
     }
-  };
+  }, [isPlaying, clearPlayTimers, triggerGlobalStop, playArpeggio]);
+
+  useEffect(() => {
+    if (stopSignal == null) return;
+    if (lastStopSignalRef.current === stopSignal) return;
+    lastStopSignalRef.current = stopSignal;
+
+    if (ignoredStopSignalRef.current.has(stopSignal)) {
+      ignoredStopSignalRef.current.delete(stopSignal);
+      return;
+    }
+
+    ignoredStopSignalRef.current.clear();
+    setIsPlaying(false);
+    clearPlayTimers();
+  }, [stopSignal, clearPlayTimers]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.key !== 'Enter') return;
+      if (!event.metaKey && !event.ctrlKey) return;
+
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tagName = target.tagName;
+        const isEditable = target.isContentEditable || target.closest('[contenteditable="true"]');
+        if (isEditable) return;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return;
+      }
+
+      event.preventDefault();
+      onTogglePlay();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onTogglePlay]);
 
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
@@ -192,6 +240,7 @@ const ScaleLegend: React.FC<Props & { descend?: boolean; loop?: boolean }> = ({ 
           onClick={onTogglePlay}
           className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs uppercase tracking-wide text-zinc-100 hover:bg-white/10 hover:border-white/25 transition-colors"
           title={isPlaying ? 'Pause phrase' : 'Play phrase'}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
         >
           <Play className="h-4 w-4" /> {isPlaying ? 'Pause' : 'Play'}
         </button>
