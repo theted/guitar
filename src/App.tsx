@@ -14,8 +14,9 @@ const App: React.FC = () => {
   const [playingAbs, setPlayingAbs] = React.useState<number | null>(null);
   const [playingSet, setPlayingSet] = React.useState<number[]>([]);
   const playingTimersRef = React.useRef<Record<number, number>>({});
+  const [stopSignal, setStopSignal] = React.useState(0);
 
-  const stopAllPlayback = () => {
+  const stopAllPlayback = React.useCallback(() => {
     scheduler.stopAll();
     stopAllAudio();
     Object.values(playingTimersRef.current).forEach((tid) => {
@@ -24,10 +25,11 @@ const App: React.FC = () => {
     playingTimersRef.current = {};
     setPlayingSet([]);
     setPlayingAbs(null);
-    
+
     // Stop tone-based animations
     toneAnimationManager.stopAll();
-  };
+    setStopSignal((cur) => cur + 1);
+  }, []);
 
   const flashPlaying = (absSemitone: number, durationMs = 200) => {
     setPlayingAbs(absSemitone);
@@ -57,6 +59,7 @@ const App: React.FC = () => {
           playingSet={playingSet}
           onPlayNote={flashPlaying}
           stopAllPlayback={stopAllPlayback}
+          stopSignal={stopSignal}
         />
       </main>
     </div>

@@ -10,9 +10,10 @@ type Props = {
   playingSet?: number[];
   onPlayNote?: (absSemitone: number, durationMs?: number) => void;
   stopAllPlayback?: () => void;
+  stopSignal?: number;
 };
 
-const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPlayback }) => {
+const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPlayback, stopSignal }) => {
   const {
     strings,
     frets,
@@ -94,6 +95,7 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
         scheduleHorizon={scheduleHorizon}
         onPlayNote={onPlayNote}
         stopAllPlayback={stopAllPlayback}
+        stopSignal={stopSignal}
         soundType={soundType}
         reduceAnimations={reduceAnimations}
         minimalHighlight={minimalHighlight}
