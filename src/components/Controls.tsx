@@ -48,6 +48,29 @@ const CheckboxControl: React.FC<{
   </div>
 );
 
+const FieldRow: React.FC<{
+  label: React.ReactNode;
+  htmlFor?: string;
+  children: React.ReactNode;
+  className?: string;
+  alignTop?: boolean;
+}> = ({ label, htmlFor, children, className = "", alignTop = false }) => (
+  <div
+    className={`flex flex-col gap-2 sm:flex-row sm:gap-4 ${
+      alignTop ? "sm:items-start" : "sm:items-center"
+    } ${className}`}
+  >
+    {htmlFor ? (
+      <Label htmlFor={htmlFor} className="text-base text-white sm:w-40">
+        {label}
+      </Label>
+    ) : (
+      <span className="text-base text-white sm:w-40">{label}</span>
+    )}
+    <div className="flex-1 min-w-0">{children}</div>
+  </div>
+);
+
 const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
   const {
     scale,
@@ -87,31 +110,29 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                 </span>
                 <span>Scale</span>
               </header>
-              <div className="grid gap-3">
-                <div className="grid gap-1">
-                  <Label className="text-base text-white">Scale</Label>
-                  <Select
-                    value={scale}
-                    onValueChange={(v) => {
-                      stopAllPlayback();
-                      setFormState({ scale: v as ScaleName });
-                    }}
-                  >
-                    <SelectTrigger className="h-10 bg-white text-base text-black">
-                      <SelectValue placeholder="Select scale" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-black">
-                      {Object.keys(scales).map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {ucFirst(s)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1">
-                    <Label className="text-base text-white">Key</Label>
+              <div className="flex flex-col gap-4">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <FieldRow label="Scale" className="md:col-span-2 xl:col-span-1">
+                    <Select
+                      value={scale}
+                      onValueChange={(v) => {
+                        stopAllPlayback();
+                        setFormState({ scale: v as ScaleName });
+                      }}
+                    >
+                      <SelectTrigger className="h-10 w-full bg-white text-base text-black">
+                        <SelectValue placeholder="Select scale" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black">
+                        {Object.keys(scales).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {ucFirst(s)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldRow>
+                  <FieldRow label="Key">
                     <Select
                       value={tone}
                       onValueChange={(v) => {
@@ -119,7 +140,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         setFormState({ tone: v as Tone });
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white text-base text-black">
+                      <SelectTrigger className="h-10 w-full bg-white text-base text-black">
                         <SelectValue placeholder="Select key" />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black">
@@ -130,9 +151,8 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="grid gap-1">
-                    <Label className="text-base text-white">Start octave</Label>
+                  </FieldRow>
+                  <FieldRow label="Start octave">
                     <Select
                       value={String(startOctave)}
                       onValueChange={(v) => {
@@ -140,7 +160,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         setFormState({ startOctave: parseInt(v, 10) });
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white text-base text-black">
+                      <SelectTrigger className="h-10 w-full bg-white text-base text-black">
                         <SelectValue placeholder="Octave" />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black">
@@ -151,50 +171,46 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                <div className="grid gap-1">
-                  <Label className="text-base text-white">Phrase</Label>
-                  <Select
-                    value={phraseMode}
-                    onValueChange={(v) => {
-                      stopAllPlayback();
-                      setFormState({ phraseMode: v as PhraseMode });
-                    }}
-                  >
-                    <SelectTrigger className="h-10 bg-white text-base text-black">
-                      <SelectValue placeholder="Select phrase" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-black">
-                      <SelectItem value="full-scale">📈 Full Scale</SelectItem>
-                      <SelectItem value="snake">🐍 Snake Pattern</SelectItem>
-                      <SelectItem value="snake-complex">🐍 Snake Complex</SelectItem>
-                      <SelectItem value="motif-1232">🎵 1-2-3-2 Motif</SelectItem>
-                      <SelectItem value="thirds">🎼 Thirds</SelectItem>
-                      <SelectItem value="fourths">🎼 Fourths</SelectItem>
-                      <SelectItem value="sixths">🎼 Sixths</SelectItem>
-                      <SelectItem value="four-note-groups">🎼 Four Note Groups</SelectItem>
-                      <SelectItem value="triads">🎹 Triads</SelectItem>
-                      <SelectItem value="sevenths">🎹 Sevenths</SelectItem>
-                      <SelectItem value="alternate-picking">🎸 Alternate Picking</SelectItem>
-                      <SelectItem value="pedal-tone">🎸 Pedal Tone</SelectItem>
-                      <SelectItem value="sequence-asc">🎸 Sequence Up</SelectItem>
-                      <SelectItem value="sequence-desc">🎸 Sequence Down</SelectItem>
-                      <SelectItem value="skip-pattern">🎸 Skip Pattern</SelectItem>
-                      <SelectItem value="sweep-arp">🎸 Sweep Arpeggio</SelectItem>
-                      <SelectItem value="neo-classical">🎸 Neo-Classical</SelectItem>
-                      <SelectItem value="power-chord">🎸 Power Chord</SelectItem>
-                      <SelectItem value="djent-palm">🤘 Djent Palm Mute</SelectItem>
-                      <SelectItem value="polyrhythm">🤘 Polyrhythm 7/4</SelectItem>
-                      <SelectItem value="breakdown-chug">🤘 Breakdown Chug</SelectItem>
-                      <SelectItem value="tremolo">🤘 Tremolo Picking</SelectItem>
-                      <SelectItem value="legato-cascade">🤘 Legato Cascade</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1">
-                    <Label className="text-base text-white">Octaves</Label>
+                  </FieldRow>
+                  <FieldRow label="Phrase" className="md:col-span-2 xl:col-span-1">
+                    <Select
+                      value={phraseMode}
+                      onValueChange={(v) => {
+                        stopAllPlayback();
+                        setFormState({ phraseMode: v as PhraseMode });
+                      }}
+                    >
+                      <SelectTrigger className="h-10 w-full bg-white text-base text-black">
+                        <SelectValue placeholder="Select phrase" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black">
+                        <SelectItem value="full-scale">📈 Full Scale</SelectItem>
+                        <SelectItem value="snake">🐍 Snake Pattern</SelectItem>
+                        <SelectItem value="snake-complex">🐍 Snake Complex</SelectItem>
+                        <SelectItem value="motif-1232">🎵 1-2-3-2 Motif</SelectItem>
+                        <SelectItem value="thirds">🎼 Thirds</SelectItem>
+                        <SelectItem value="fourths">🎼 Fourths</SelectItem>
+                        <SelectItem value="sixths">🎼 Sixths</SelectItem>
+                        <SelectItem value="four-note-groups">🎼 Four Note Groups</SelectItem>
+                        <SelectItem value="triads">🎹 Triads</SelectItem>
+                        <SelectItem value="sevenths">🎹 Sevenths</SelectItem>
+                        <SelectItem value="alternate-picking">🎸 Alternate Picking</SelectItem>
+                        <SelectItem value="pedal-tone">🎸 Pedal Tone</SelectItem>
+                        <SelectItem value="sequence-asc">🎸 Sequence Up</SelectItem>
+                        <SelectItem value="sequence-desc">🎸 Sequence Down</SelectItem>
+                        <SelectItem value="skip-pattern">🎸 Skip Pattern</SelectItem>
+                        <SelectItem value="sweep-arp">🎸 Sweep Arpeggio</SelectItem>
+                        <SelectItem value="neo-classical">🎸 Neo-Classical</SelectItem>
+                        <SelectItem value="power-chord">🎸 Power Chord</SelectItem>
+                        <SelectItem value="djent-palm">🤘 Djent Palm Mute</SelectItem>
+                        <SelectItem value="polyrhythm">🤘 Polyrhythm 7/4</SelectItem>
+                        <SelectItem value="breakdown-chug">🤘 Breakdown Chug</SelectItem>
+                        <SelectItem value="tremolo">🤘 Tremolo Picking</SelectItem>
+                        <SelectItem value="legato-cascade">🤘 Legato Cascade</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FieldRow>
+                  <FieldRow label="Octaves">
                     <Select
                       value={String(phraseOctaves)}
                       onValueChange={(v) => {
@@ -202,7 +218,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         setFormState({ phraseOctaves: parseInt(v, 10) });
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white text-base text-black">
+                      <SelectTrigger className="h-10 w-full bg-white text-base text-black">
                         <SelectValue placeholder="Octaves" />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black">
@@ -213,78 +229,86 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="grid gap-2">
+                  </FieldRow>
+                  <FieldRow
+                    label="Phrase options"
+                    className="md:col-span-2"
+                    alignTop
+                  >
+                    <div className="flex flex-wrap gap-4">
+                      <CheckboxControl
+                        id="phraseDescend"
+                        label="Descend"
+                        checked={phraseDescend}
+                        onChange={(checked) => {
+                          stopAllPlayback();
+                          setFormState({ phraseDescend: checked });
+                        }}
+                      />
+                      <CheckboxControl
+                        id="phraseLoop"
+                        label="Loop"
+                        checked={phraseLoop}
+                        onChange={(checked) => {
+                          stopAllPlayback();
+                          setFormState({ phraseLoop: checked });
+                        }}
+                      />
+                      <CheckboxControl
+                        id="oncePerTone"
+                        label="Once per tone"
+                        checked={oncePerTone}
+                        onChange={(checked) => {
+                          stopAllPlayback();
+                          setFormState({ oncePerTone: checked });
+                        }}
+                      />
+                    </div>
+                  </FieldRow>
+                </div>
+                <div className="grid gap-2 border-t border-white/10 pt-3">
+                  <span className="text-sm font-semibold uppercase tracking-wide text-white/70">
+                    Highlights
+                  </span>
+                  <div className="flex flex-wrap gap-4">
                     <CheckboxControl
-                      id="phraseDescend"
-                      label="Descend"
-                      checked={phraseDescend}
+                      id="highlightEnabled"
+                      label="Highlight notes"
+                      checked={highlightEnabled}
                       onChange={(checked) => {
                         stopAllPlayback();
-                        setFormState({ phraseDescend: checked });
+                        setFormState({ highlightEnabled: checked });
                       }}
                     />
                     <CheckboxControl
-                      id="phraseLoop"
-                      label="Loop"
-                      checked={phraseLoop}
+                      id="legendOnly"
+                      label="Legend only"
+                      checked={legendOnly}
                       onChange={(checked) => {
                         stopAllPlayback();
-                        setFormState({ phraseLoop: checked });
+                        setFormState({ legendOnly: checked });
                       }}
                     />
                     <CheckboxControl
-                      id="oncePerTone"
-                      label="Once per tone"
-                      checked={oncePerTone}
+                      id="octaveHighlight"
+                      label="Octave highlight"
+                      checked={octaveHighlight}
                       onChange={(checked) => {
                         stopAllPlayback();
-                        setFormState({ oncePerTone: checked });
+                        setFormState({ octaveHighlight: checked });
+                      }}
+                    />
+                    <CheckboxControl
+                      id="minimalHighlight"
+                      label="Minimal highlight"
+                      checked={minimalHighlight}
+                      onChange={(checked) => {
+                        stopAllPlayback();
+                        setFormState({ minimalHighlight: checked });
                       }}
                     />
                   </div>
                 </div>
-              </div>
-              <div className="grid gap-2 border-t border-white/10 pt-3">
-                <span className="text-sm font-semibold uppercase tracking-wide text-white/70">
-                  Highlights
-                </span>
-                <CheckboxControl
-                  id="highlightEnabled"
-                  label="Highlight notes"
-                  checked={highlightEnabled}
-                  onChange={(checked) => {
-                    stopAllPlayback();
-                    setFormState({ highlightEnabled: checked });
-                  }}
-                />
-                <CheckboxControl
-                  id="legendOnly"
-                  label="Legend only"
-                  checked={legendOnly}
-                  onChange={(checked) => {
-                    stopAllPlayback();
-                    setFormState({ legendOnly: checked });
-                  }}
-                />
-                <CheckboxControl
-                  id="octaveHighlight"
-                  label="Octave highlight"
-                  checked={octaveHighlight}
-                  onChange={(checked) => {
-                    stopAllPlayback();
-                    setFormState({ octaveHighlight: checked });
-                  }}
-                />
-                <CheckboxControl
-                  id="minimalHighlight"
-                  label="Minimal highlight"
-                  checked={minimalHighlight}
-                  onChange={(checked) => {
-                    stopAllPlayback();
-                    setFormState({ minimalHighlight: checked });
-                  }}
-                />
               </div>
             </section>
 
@@ -296,9 +320,8 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                 </span>
                 <span>Instrument</span>
               </header>
-              <div className="grid gap-3">
-                <div className="grid gap-1">
-                  <Label className="text-base text-white">Tuning</Label>
+              <div className="flex flex-col gap-4">
+                <FieldRow label="Tuning">
                   <Select
                     value={tuningName}
                     onValueChange={(v) => {
@@ -306,7 +329,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       setFormState({ tuningName: v as TuningName });
                     }}
                   >
-                    <SelectTrigger className="h-10 bg-white text-base text-black">
+                    <SelectTrigger className="h-10 w-full bg-white text-base text-black">
                       <SelectValue placeholder="Select tuning" />
                     </SelectTrigger>
                     <SelectContent className="bg-white text-black">
@@ -317,12 +340,9 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1">
-                    <Label htmlFor="strings" className="text-base text-white">
-                      Strings
-                    </Label>
+                </FieldRow>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <FieldRow label="Strings" htmlFor="strings">
                     <Input
                       id="strings"
                       onChange={(e) => {
@@ -336,13 +356,10 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       type="number"
                       min={1}
                       max={100}
-                      className="h-10 text-base"
+                      className="h-10 w-full text-base"
                     />
-                  </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="frets" className="text-base text-white">
-                      Frets
-                    </Label>
+                  </FieldRow>
+                  <FieldRow label="Frets" htmlFor="frets">
                     <Input
                       id="frets"
                       onChange={(e) => {
@@ -356,12 +373,11 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       type="number"
                       min={1}
                       max={100}
-                      className="h-10 text-base"
+                      className="h-10 w-full text-base"
                     />
-                  </div>
+                  </FieldRow>
                 </div>
-                <div className="grid gap-1">
-                  <Label className="text-base text-white">Sound</Label>
+                <FieldRow label="Sound">
                   <Select
                     value={soundType}
                     onValueChange={(v) => {
@@ -369,7 +385,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       setFormState({ soundType: v as SoundType });
                     }}
                   >
-                    <SelectTrigger className="h-10 bg-white text-base text-black">
+                    <SelectTrigger className="h-10 w-full bg-white text-base text-black">
                       <SelectValue placeholder="Select sound" />
                     </SelectTrigger>
                     <SelectContent className="bg-white text-black">
@@ -398,18 +414,20 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FieldRow>
               </div>
               <div className="border-t border-white/10 pt-3">
-                <CheckboxControl
-                  id="lowAtBottom"
-                  label="Low string at bottom"
-                  checked={lowAtBottom}
-                  onChange={(checked) => {
-                    stopAllPlayback();
-                    setFormState({ lowAtBottom: checked });
-                  }}
-                />
+                <div className="flex flex-wrap gap-4">
+                  <CheckboxControl
+                    id="lowAtBottom"
+                    label="Low string at bottom"
+                    checked={lowAtBottom}
+                    onChange={(checked) => {
+                      stopAllPlayback();
+                      setFormState({ lowAtBottom: checked });
+                    }}
+                  />
+                </div>
               </div>
             </section>
 
@@ -421,11 +439,9 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                 </span>
                 <span>Playback</span>
               </header>
-              <div className="grid gap-3">
-                <div className="grid gap-1">
-                  <Label htmlFor="bpm" className="text-base text-white">
-                    BPM: {bpm}
-                  </Label>
+
+              <div className="flex flex-col gap-4">
+                <FieldRow label={`BPM: ${bpm}`} htmlFor="bpm">
                   <Slider
                     id="bpm"
                     min={30}
@@ -436,12 +452,10 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       stopAllPlayback();
                       setFormState({ bpm: v });
                     }}
+                    className="mt-1"
                   />
-                </div>
-                <div className="grid gap-1">
-                  <Label htmlFor="trailLength" className="text-base text-white">
-                    Trail: {trailLength}ms
-                  </Label>
+                </FieldRow>
+                <FieldRow label={`Trail: ${trailLength}ms`} htmlFor="trailLength">
                   <Slider
                     id="trailLength"
                     min={100}
@@ -452,12 +466,10 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                       stopAllPlayback();
                       setFormState({ trailLength: v });
                     }}
+                    className="mt-1"
                   />
-                </div>
-                <div className="grid gap-1">
-                  <Label htmlFor="scheduleHorizon" className="text-base text-white">
-                    Schedule horizon (ms)
-                  </Label>
+                </FieldRow>
+                <FieldRow label="Schedule horizon (ms)" htmlFor="scheduleHorizon">
                   <Input
                     id="scheduleHorizon"
                     type="number"
@@ -474,11 +486,12 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
                         });
                       }
                     }}
-                    className="h-10 text-base"
+                    className="h-10 w-full text-base"
                   />
-                </div>
+                </FieldRow>
               </div>
-              <div className="grid gap-2 border-t border-white/10 pt-3">
+
+              <div className="flex flex-wrap gap-4 border-t border-white/10 pt-3">
                 <CheckboxControl
                   id="swing"
                   label="Swing"
