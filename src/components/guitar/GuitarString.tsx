@@ -1,17 +1,109 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import cx from "classnames";
-import { getNoteWithOctave, getScalePitchClasses, keyToOffset } from "@/music";
+import { getNoteWithOctave } from "@/music";
 import { SoundType } from "@/audio";
 import { scheduler } from "@/scheduler";
 import Field from "@/components/common/Field";
-import { ScaleName, scales } from "@/constants";
+import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
+import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
+
+type ScaleDefinition = typeof baseScales;
+
+const OffsetField: React.FC<{ value: number; onChange: (value: number) => void }> = ({ value, onChange }) => (
+  <Field
+    onChange={(next) => onChange(parseInt(next, 10) || 0)}
+    value={String(value)}
+    type="number"
+    className="absolute left-2 top-1 w-16 text-xs opacity-0 hover:opacity-100"
+  />
+);
+
+type UseFretClickArgs = {
+  soundType: SoundType;
+  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
+};
+
+const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
+  return useCallback(
+    (note: number) => {
+      scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs));
+    },
+    [soundType, onPlayNote]
+  );
+};
+
+type StringFretProps = {
+  descriptor: FretDescriptor;
+  onClick: (note: number) => void;
+  reduceAnimations: boolean;
+  trailLength: number;
+  minimalHighlight: boolean;
+};
+
+const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnimations, trailLength, minimalHighlight }) => {
+  const ref = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    toneAnimationManager.applyToneClass(element, descriptor.actualNote);
+  }, [descriptor.actualNote]);
+
+  const baseClasses =
+    "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none";
+
+  const colorClasses = descriptor.isBase && descriptor.showScaleHighlight
+    ? "bg-black/70 text-white border-white/20"
+    : descriptor.showScaleHighlight
+    ? "bg-zinc-700/60 text-white border-white/10"
+    : "bg-zinc-800/40 text-zinc-100 border-white/10";
+
+  return (
+    <div
+      ref={ref}
+      data-abs={descriptor.actualNote}
+      className={cx(
+        baseClasses,
+        colorClasses,
+        "fret-button",
+        reduceAnimations ? "" : "hover:bg-white/20 transition-transform duration-75 hover:scale-[1.03]"
+      )}
+      onClick={() => onClick(descriptor.actualNote)}
+    >
+      {getNoteWithOctave(descriptor.actualNote)}
+      {descriptor.showScaleHighlight && descriptor.degree && !minimalHighlight && (
+        <span
+          className={cx(
+            "absolute top-1 right-1 text-[11px] px-1 py-0.5 rounded",
+            descriptor.isBase ? "bg-emerald-500/30" : "bg-amber-500/30"
+          )}
+        >
+          {descriptor.degree}
+        </span>
+      )}
+      <span className="tone-overlay" />
+      {descriptor.isPlayingNote && (
+        <span
+          className="note-fade-overlay note-fade-strong"
+          style={{ animationDuration: `${trailLength}ms` }}
+        />
+      )}
+      {!descriptor.isPlayingNote && descriptor.isPlayingOctave && !reduceAnimations && (
+        <span
+          className="note-fade-overlay note-fade-weak"
+          style={{ animationDuration: `${trailLength}ms` }}
+        />
+      )}
+    </div>
+  );
+};
 
 type Props = {
   idx: number;
   note: number;
   frets: number;
-  scales: typeof scales;
+  scales?: ScaleDefinition;
   scale: ScaleName;
   keyy: string;
   scaleHighlightBottomOnly?: boolean;
@@ -24,7 +116,6 @@ type Props = {
   soundType?: SoundType;
   playingAbs?: number | null;
   playingSet?: number[];
-  playingIndex?: number | null;
   onPlayNote?: (absSemitone: number, durationMs?: number) => void;
 };
 
@@ -32,7 +123,7 @@ const GuitarString: React.FC<Props> = ({
   idx,
   note,
   frets,
-  scales,
+  scales = baseScales,
   scale,
   keyy,
   scaleHighlightBottomOnly = false,
@@ -45,110 +136,43 @@ const GuitarString: React.FC<Props> = ({
   soundType = "marimba",
   playingAbs,
   playingSet = [],
-  playingIndex,
   onPlayNote,
 }) => {
   const [offset, setOffset] = useState<number>(0);
-  const elements = Array.from({ length: frets + 1 }, (_, i) => i);
-  const pcs = getScalePitchClasses(scales[scale]);
-  const keyOffset = keyToOffset(keyy);
-  const elementRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const fretDescriptors = useStringNotes({
+    note,
+    frets,
+    offset,
+    scale,
+    keyy,
+    scaleMap: scales,
+    scaleHighlightBottomOnly,
+    isBottom,
+    highlightEnabled,
+    octaveHighlight,
+    playingAbs,
+    playingSet,
+  });
+
+  const handleFretClick = useFretClick({ soundType, onPlayNote });
 
   return (
-    <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string">
-      <Field
-        onChange={(v) => setOffset(parseInt(v, 10) || 0)}
-        value={String(offset)}
-        type="number"
-        className="absolute left-2 top-1 opacity-0 hover:opacity-100 w-16 text-xs"
-      />
-
-      {elements.map((val) => {
-        const actualNote = note + val + offset;
-        const relPc = (((actualNote - keyOffset) % 12) + 12) % 12;
-        const isSelected = pcs.includes(relPc);
-        const isBase = relPc === 0;
-        const showScaleHighlight = isSelected && (!scaleHighlightBottomOnly || isBottom);
-        const degree = isSelected ? pcs.indexOf(relPc) + 1 : null;
-        const isPlayingNote =
-          highlightEnabled && playingSet.includes(actualNote);
-        const isPlayingOctave =
-          highlightEnabled &&
-          octaveHighlight &&
-          typeof playingAbs === "number" &&
-          Math.floor(playingAbs / 12) === Math.floor(actualNote / 12) &&
-          isSelected;
-
-        const baseClasses =
-          "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none";
-        const colorClasses = isBase && showScaleHighlight
-          ? "bg-black/70 text-white border-white/20"
-          : showScaleHighlight
-          ? "bg-zinc-700/60 text-white border-white/10"
-          : "bg-zinc-800/40 text-zinc-100 border-white/10";
-        const playingClasses = "";
-
-        return (
-          <div
-            key={val}
-            ref={(el) => {
-              elementRefs.current[val] = el;
-              if (el) {
-                toneAnimationManager.applyToneClass(el, actualNote);
-              }
-            }}
-            data-abs={actualNote}
-            className={cx(
-              baseClasses,
-              colorClasses,
-              playingClasses,
-              "fret-button",
-              reduceAnimations
-                ? ""
-                : "hover:bg-white/20 transition-transform duration-75 hover:scale-[1.03]"
-            )}
-            onClick={() => {
-              scheduler.triggerNow(
-                actualNote,
-                300,
-                soundType,
-                (abs, durMs) => onPlayNote?.(abs, durMs)
-              );
-            }}
-          >
-            {getNoteWithOctave(actualNote)}
-            {/* {(isSelected || isBase) && !minimalHighlight && (
-              <span className={cx('absolute bottom-1 left-1.5 w-2 h-2 rounded-full', isBase ? 'bg-emerald-400' : 'bg-amber-400')} />
-            )} */}
-            {showScaleHighlight && degree && !minimalHighlight && (
-              <span
-                className={cx(
-                  "absolute top-1 right-1 text-[11px] px-1 py-0.5 rounded",
-                  isBase ? "bg-emerald-500/30" : "bg-amber-500/30"
-                )}
-              >
-                {degree}
-              </span>
-            )}
-            {/* Tone-based animation overlay */}
-            <span className="tone-overlay" />
-            
-            {/* Legacy fallback overlays */}
-            {isPlayingNote && (
-              <span
-                className="note-fade-overlay note-fade-strong"
-                style={{ animationDuration: `${trailLength}ms` }}
-              />
-            )}
-            {!isPlayingNote && isPlayingOctave && !reduceAnimations && (
-              <span
-                className="note-fade-overlay note-fade-weak"
-                style={{ animationDuration: `${trailLength}ms` }}
-              />
-            )}
-          </div>
-        );
-      })}
+    <div
+      data-string-index={idx}
+      className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string"
+    >
+      <OffsetField value={offset} onChange={setOffset} />
+      {fretDescriptors.map((descriptor) => (
+        <StringFret
+          key={descriptor.fret}
+          descriptor={descriptor}
+          onClick={handleFretClick}
+          reduceAnimations={reduceAnimations}
+          trailLength={trailLength}
+          minimalHighlight={minimalHighlight}
+        />
+      ))}
     </div>
   );
 };
