@@ -5,10 +5,19 @@ import ControlsPanel from '@/components/controls/ControlsPanel';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
 import { scheduler } from '@/scheduler';
-import { stopAllAudio } from '@/audio';
+import { stopAllAudio, ensureAudioInitialized } from '@/audio';
 
 const App: React.FC = () => {
   const [panelOpen, setPanelOpen] = React.useState(false);
+
+  // Warm up AudioContext on the first user interaction anywhere on the page.
+  // This ensures the context is already running (and the pipeline primed) before
+  // the user clicks Play — avoiding the "must click a fret first" workaround.
+  React.useEffect(() => {
+    const warmUp = () => { ensureAudioInitialized().catch(() => {}); };
+    document.addEventListener('pointerdown', warmUp, { once: true });
+    return () => document.removeEventListener('pointerdown', warmUp);
+  }, []);
 
   const trailLength = useFormStore((s) => s.trailLength);
   const minimalHighlight = useFormStore((s) => s.minimalHighlight);

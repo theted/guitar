@@ -1,4 +1,4 @@
-import { activeVoices, type ActiveVoice } from "./context";
+import { activeVoices, voicesByNote, MAX_POLYPHONY, type ActiveVoice } from "./context";
 import { VOICE_STOP_RAMP_SEC, VOICE_CLEANUP_EXTRA_MS, VOICE_MIN_STOP_SEC } from "../constants";
 import { createReverb, createDistortion, createDelay } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
@@ -64,11 +64,21 @@ export const semitoneToFrequency = (semitoneFromE0: number): number => {
 
 export const synthesizeSound = (
   ctx: AudioContext,
+  semitone: number,
   baseFreq: number,
   startTime: number,
   duration: number,
   config: SoundConfig,
 ): ActiveVoice => {
+  // Voice stealing: stop any existing voice on this pitch before creating the new one.
+  // Prevents volume doubling when the same note is retriggered rapidly.
+  voicesByNote.get(semitone)?.stop();
+
+  // Polyphony cap: if we're at the limit, evict the oldest active voice.
+  // Sets iterate in insertion order so .values().next() gives the oldest entry.
+  if (activeVoices.size >= MAX_POLYPHONY) {
+    activeVoices.values().next().value?.stop();
+  }
   const master = createGainNode(ctx, startTime, duration, config.masterEnvelope);
   master.connect(ctx.destination);
 
@@ -201,10 +211,12 @@ export const synthesizeSound = (
       });
 
       activeVoices.delete(voice);
+      if (voicesByNote.get(semitone) === voice) voicesByNote.delete(semitone);
     },
   };
 
   activeVoices.add(voice);
+  voicesByNote.set(semitone, voice);
 
   const cleanupDelayMs = Math.max(0, (startTime + duration - ctx.currentTime) * 1000 + VOICE_CLEANUP_EXTRA_MS);
   window.setTimeout(() => {

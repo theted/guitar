@@ -117,11 +117,11 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
         <button
           type="button"
           onClick={onTogglePlay}
-          className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs uppercase tracking-wide text-zinc-100 hover:bg-white/10 hover:border-white/25 transition-colors"
+          className="inline-flex items-center gap-2.5 rounded-lg border border-white/20 bg-white/8 px-5 py-2.5 text-sm font-medium text-zinc-100 hover:bg-white/14 hover:border-white/35 active:scale-95 transition-all duration-150 shadow-sm"
           title={isPlaying ? "Pause phrase" : "Play phrase"}
           aria-keyshortcuts="Control+Enter Meta+Enter"
         >
-          <Play className="h-4 w-4" /> {isPlaying ? "Pause" : "Play"}
+          <Play className="h-4.5 w-4.5" /> {isPlaying ? "Pause" : "Play"}
         </button>
       </div>
     </div>

@@ -182,7 +182,7 @@
 }
 
 .app-content {
-  animation: app-fade-in 600ms ease-out 150ms both;
+  animation: app-fade-in 700ms ease-out 150ms both;
 }
 
 /* ─── Tone-based animation system ───────────────────────────────────────── */

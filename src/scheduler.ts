@@ -19,6 +19,12 @@ import {
   SCHEDULER_TICK_MS,
 } from './constants';
 
+/**
+ * Events further than this many seconds in the past are skipped without scheduling.
+ * Prevents a burst of stale audio when the tab resumes after being backgrounded.
+ */
+const STALE_THRESHOLD_SEC = 0.5;
+
 type UiCallback = (absSemitone: number, durationMs: number) => void;
 
 export type PlaybackEvent = {
@@ -96,11 +102,16 @@ class AudioScheduler {
       session.events[session.nextScheduleIdx].startTimeSec <= until
     ) {
       const evt = session.events[session.nextScheduleIdx];
+      session.nextScheduleIdx++;
+
+      // Skip events that are too far in the past — avoids a burst of stale audio
+      // when the tab was backgrounded and setTimeout ticks fire late.
+      if (evt.startTimeSec < now - STALE_THRESHOLD_SEC) continue;
+
       playSemitoneAt(evt.abs, evt.startTimeSec, {
         duration: Math.max(0.2, evt.durSec),
         type: session.soundType,
       });
-      session.nextScheduleIdx++;
     }
 
     if (session.nextScheduleIdx < session.events.length) {
