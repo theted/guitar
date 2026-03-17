@@ -52,7 +52,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="app-content min-h-screen w-full">
       <div className="app-bg" />
 
       {/* Slim top bar */}

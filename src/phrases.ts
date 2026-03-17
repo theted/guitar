@@ -1,287 +1,214 @@
 import { PhraseMode } from './constants';
 import type { PitchClass, AbsSemitone } from './types/music';
 
-// Shared helper: builds the degree sequence for the snake/motif-1232 pattern.
-// Pattern: 1-2-3-2-3-4-3-4-5-... (overlapping ascending triplets)
-const buildSnakeDegSeq = (lastDeg: number): number[] => {
-  const degSeq: number[] = [];
-  if (lastDeg >= 3) {
-    degSeq.push(1, 2, 3, 2);
-    for (let deg = 3; deg <= lastDeg - 1; deg += 1) {
-      degSeq.push(deg, deg + 1);
-      if (deg < lastDeg - 1) {
-        degSeq.push(deg);
-      }
+// Shared helper: degree sequence for the snake/motif-1232 overlapping-triplet pattern.
+// Pattern: 1-2-3-2-3-4-3-4-5-...
+const buildSnakeDegSeq = (n: number): number[] => {
+  if (n >= 3) {
+    const degs = [1, 2, 3, 2];
+    for (let d = 3; d <= n - 1; d += 1) {
+      degs.push(d, d + 1);
+      if (d < n - 1) degs.push(d);
     }
-  } else {
-    for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
+    return degs;
   }
-  return degSeq;
+  return Array.from({ length: n }, (_, i) => i + 1);
 };
 
-// Build relative semitone sequence for a given scale's pitch classes (pcs),
-// phrase mode, and number of octaves.
-export const buildRelSequence = (pcs: PitchClass[], mode: PhraseMode, octaves: number, withDesc: boolean = false): AbsSemitone[] => {
-  const clampOct = Math.max(1, Math.min(5, Math.floor(octaves)));
+// Full ascending degree sequence 1..n
+const ascDegSeq = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1);
 
-  const expandAcrossOctaves = (oneOctRel: number[], desc: boolean): AbsSemitone[] => {
-    const asc: number[] = [];
-    for (let o = 0; o < clampOct; o += 1) asc.push(...oneOctRel.map((r) => r + o * 12));
-    if (!desc) return asc as AbsSemitone[];
-    const apex = (oneOctRel.length > 0 ? clampOct * 12 + oneOctRel[0] : clampOct * 12);
-    return [...asc, apex, ...asc.slice().reverse()] as AbsSemitone[];
-  };
+// Expand a single-octave semitone array across multiple octaves, with optional descent
+const expandAcrossOctaves = (oneOct: number[], clampOct: number, desc: boolean): AbsSemitone[] => {
+  const asc: number[] = [];
+  for (let o = 0; o < clampOct; o += 1) asc.push(...oneOct.map((r) => r + o * 12));
+  if (!desc) return asc as AbsSemitone[];
+  const apex = oneOct.length > 0 ? clampOct * 12 + oneOct[0] : clampOct * 12;
+  return [...asc, apex, ...asc.slice().reverse()] as AbsSemitone[];
+};
 
-  if (mode === 'full-scale') {
-    return expandAcrossOctaves(pcs, withDesc);
-  }
+// Each builder returns the single-octave semitone sequence for its phrase mode.
+// buildRelSequence handles octave expansion for all of them.
+type OctBuilder = (pcs: PitchClass[]) => number[];
 
-  if (mode === 'snake') {
-    const oneOct = buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+const modeBuilders: Record<PhraseMode, OctBuilder> = {
+  'full-scale': (pcs) => [...pcs],
 
-  if (mode === 'snake-complex') {
-    const pattern0 = [0,3,2,1,2,3,2,1,4,3,2,3];
-    const lastDeg = pcs.length;
-    const oneOct = pattern0
-      .map((z) => (z % lastDeg + lastDeg) % lastDeg)
-      .map((z) => pcs[z]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'snake':      (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),
+  'motif-1232': (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),
 
-  if (mode === 'motif-1232') {
-    const oneOct = buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'snake-complex': (pcs) => {
+    const pattern0 = [0, 3, 2, 1, 2, 3, 2, 1, 4, 3, 2, 3];
+    const n = pcs.length;
+    return pattern0.map((z) => pcs[(z % n + n) % n]);
+  },
 
-  if (mode === 'four-note-groups') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    if (lastDeg >= 4) {
-      for (let s = 1; s <= lastDeg - 3; s += 1) degSeq.push(s, s + 1, s + 2, s + 3);
+  'four-note-groups': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    if (n >= 4) {
+      for (let s = 1; s <= n - 3; s += 1) degs.push(s, s + 1, s + 2, s + 3);
     } else {
-      for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
+      degs.push(...ascDegSeq(n));
     }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'thirds') {
-    const lastDeg = pcs.length;
-    const skip = 2;
-    const degSeq: number[] = [];
-    for (let s = 1; s + skip <= lastDeg; s += 1) degSeq.push(s, s + skip);
-    if (degSeq.length === 0) {
-      for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'thirds': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
+    if (degs.length === 0) degs.push(...ascDegSeq(n));
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'fourths') {
-    const lastDeg = pcs.length;
-    const skip = 3;
-    const degSeq: number[] = [];
-    for (let s = 1; s + skip <= lastDeg; s += 1) degSeq.push(s, s + skip);
-    if (degSeq.length === 0) { for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d); }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'fourths': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let s = 1; s + 3 <= n; s += 1) degs.push(s, s + 3);
+    if (degs.length === 0) degs.push(...ascDegSeq(n));
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'sixths') {
-    const lastDeg = pcs.length;
-    const gap = 5;
-    const degSeq: number[] = [];
-    if (lastDeg >= 6) {
-      for (let s = 1; s <= lastDeg; s += 1) {
-        const t = s + gap;
-        const d2 = ((t - 1) % lastDeg) + 1;
-        degSeq.push(s, d2);
-      }
+  'sixths': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    if (n >= 6) {
+      for (let s = 1; s <= n; s += 1) degs.push(s, ((s + 4) % n) + 1);
     } else {
-      for (let s = 1; s + 2 <= lastDeg; s += 1) degSeq.push(s, s + 2);
-      if (degSeq.length === 0) for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
+      for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
+      if (degs.length === 0) degs.push(...ascDegSeq(n));
     }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'triads') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let s = 1; s + 4 <= lastDeg; s += 1) degSeq.push(s, s + 2, s + 4);
-    if (degSeq.length === 0) for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'triads': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let s = 1; s + 4 <= n; s += 1) degs.push(s, s + 2, s + 4);
+    if (degs.length === 0) degs.push(...ascDegSeq(n));
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'sevenths') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let s = 1; s + 6 <= lastDeg; s += 1) degSeq.push(s, s + 2, s + 4, s + 6);
-    if (degSeq.length === 0) {
-      for (let s = 1; s + 4 <= lastDeg; s += 1) degSeq.push(s, s + 2, s + 4);
-      if (degSeq.length === 0) for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
+  'sevenths': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let s = 1; s + 6 <= n; s += 1) degs.push(s, s + 2, s + 4, s + 6);
+    if (degs.length === 0) {
+      for (let s = 1; s + 4 <= n; s += 1) degs.push(s, s + 2, s + 4);
+      if (degs.length === 0) degs.push(...ascDegSeq(n));
     }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  // Rock/Metal patterns
-  if (mode === 'alternate-picking') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let d = 1; d <= lastDeg; d += 1) degSeq.push(d);
-    for (let d = lastDeg; d >= 1; d -= 1) degSeq.push(d);
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'alternate-picking': (pcs) => {
+    const up = ascDegSeq(pcs.length);
+    return [...up, ...up.slice().reverse()].map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'pedal-tone') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [1];
-    for (let d = 2; d <= lastDeg; d += 1) {
-      degSeq.push(d, 1);
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'pedal-tone': (pcs) => {
+    const degs: number[] = [1];
+    for (let d = 2; d <= pcs.length; d += 1) degs.push(d, 1);
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'sequence-asc') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let d = 1; d <= lastDeg - 2; d += 1) {
-      degSeq.push(d, d + 1, d + 2);
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'sequence-asc': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let d = 1; d <= n - 2; d += 1) degs.push(d, d + 1, d + 2);
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'sequence-desc') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let d = lastDeg; d >= 3; d -= 1) {
-      degSeq.push(d, d - 1, d - 2);
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'sequence-desc': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let d = n; d >= 3; d -= 1) degs.push(d, d - 1, d - 2);
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'skip-pattern') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let d = 1; d <= lastDeg - 1; d += 1) {
-      if (d + 2 <= lastDeg) {
-        degSeq.push(d, d + 2);
-      } else {
-        degSeq.push(d, d + 1);
-      }
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'skip-pattern': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let d = 1; d <= n - 1; d += 1) degs.push(d, d + 2 <= n ? d + 2 : d + 1);
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'sweep-arp') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let d = 1; d <= lastDeg; d += 2) degSeq.push(d);
-    for (let i = degSeq.length - 2; i >= 0; i -= 1) {
-      degSeq.push(degSeq[i]);
-    }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'sweep-arp': (pcs) => {
+    const up: number[] = [];
+    for (let d = 1; d <= pcs.length; d += 2) up.push(d);
+    return [...up, ...up.slice(0, -1).reverse()].map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'neo-classical') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
+  'neo-classical': (pcs) => {
+    const n = pcs.length;
     const pattern = [1, 2, 4, 5];
-    if (lastDeg >= 7) pattern.push(7);
-
-    pattern.forEach(d => { if (d <= lastDeg) degSeq.push(d); });
-    if (lastDeg >= 8) degSeq.push(lastDeg);
-
+    if (n >= 7) pattern.push(7);
+    const degs: number[] = [];
+    pattern.forEach((d) => { if (d <= n) degs.push(d); });
+    if (n >= 8) degs.push(n);
     for (let i = pattern.length - 1; i >= 0; i -= 1) {
-      if (pattern[i] <= lastDeg) degSeq.push(pattern[i]);
+      if (pattern[i] <= n) degs.push(pattern[i]);
     }
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'power-chord': (pcs) => {
+    const n = pcs.length;
+    const fifth = n >= 5 ? 5 : n;
+    const fourth = n >= 4 ? 4 : n;
+    return [1, 1, fifth, fifth, 1, 1, fifth, fifth, fourth, fourth, 1, 1].map((d) => pcs[d - 1]);
+  },
 
-  if (mode === 'power-chord') {
-    const lastDeg = pcs.length;
-    const fifth = lastDeg >= 5 ? 5 : lastDeg;
-    const fourth = lastDeg >= 4 ? 4 : lastDeg;
-    const degSeq = [1, 1, fifth, fifth, 1, 1, fifth, fifth, fourth, fourth, 1, 1];
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'djent-palm': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [1, 1, 1];
+    if (n >= 6) degs.push(6);
+    degs.push(1, 1);
+    if (n >= 4) degs.push(4);
+    degs.push(1, 1);
+    if (n >= 5) degs.push(5);
+    degs.push(1, 1);
+    if (n >= 3) degs.push(3);
+    return degs.map((d) => pcs[Math.min(d, n) - 1]);
+  },
 
-  if (mode === 'djent-palm') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [1, 1, 1];
-    if (lastDeg >= 6) degSeq.push(6);
-    degSeq.push(1, 1);
-    if (lastDeg >= 4) degSeq.push(4);
-    degSeq.push(1, 1);
-    if (lastDeg >= 5) degSeq.push(5);
-    degSeq.push(1, 1);
-    if (lastDeg >= 3) degSeq.push(3);
+  'polyrhythm': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    for (let i = 0; i < 14; i += 1) degs.push(((i % 7) % n) + 1);
+    return degs.map((d) => pcs[d - 1]);
+  },
 
-    const oneOct = degSeq.map((d) => pcs[Math.min(d, lastDeg) - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+  'breakdown-chug': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [1, 1, 1, 1];
+    if (n >= 6) degs.push(6, 6);
+    if (n >= 4) degs.push(4, 4);
+    degs.push(1, 1, 1, 1);
+    return degs.map((d) => pcs[Math.min(d, n) - 1]);
+  },
 
-  if (mode === 'polyrhythm') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-    for (let i = 0; i < 14; i += 1) {
-      degSeq.push(((i % 7) % lastDeg) + 1);
+  'tremolo': (pcs) => Array<number>(8).fill(pcs[0]),
+
+  'legato-cascade': (pcs) => {
+    const n = pcs.length;
+    const degs: number[] = [];
+    if (n >= 5) degs.push(1, 3, 5, 1, 3, 5);
+    if (n >= 6) degs.push(2, 4, 6, 2, 4, 6);
+    if (degs.length === 0) {
+      for (let d = 1; d <= Math.min(3, n); d += 1) degs.push(d, d, d);
     }
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
+    return degs.map((d) => pcs[Math.min(d, n) - 1]);
+  },
+};
 
-  if (mode === 'breakdown-chug') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [1, 1, 1, 1];
-    if (lastDeg >= 6) degSeq.push(6, 6);
-    if (lastDeg >= 4) degSeq.push(4, 4);
-    degSeq.push(1, 1, 1, 1);
-
-    const oneOct = degSeq.map((d) => pcs[Math.min(d, lastDeg) - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
-
-  if (mode === 'tremolo') {
-    const degSeq: number[] = Array(8).fill(1);
-    const oneOct = degSeq.map((d) => pcs[d - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
-
-  if (mode === 'legato-cascade') {
-    const lastDeg = pcs.length;
-    const degSeq: number[] = [];
-
-    if (lastDeg >= 5) {
-      degSeq.push(1, 3, 5, 1, 3, 5);
-    }
-
-    if (lastDeg >= 6) {
-      degSeq.push(2, 4, 6, 2, 4, 6);
-    }
-
-    if (degSeq.length === 0) {
-      for (let d = 1; d <= Math.min(3, lastDeg); d += 1) {
-        degSeq.push(d, d, d);
-      }
-    }
-
-    const oneOct = degSeq.map((d) => pcs[Math.min(d, lastDeg) - 1]);
-    return expandAcrossOctaves(oneOct, withDesc);
-  }
-
-  return [];
+export const buildRelSequence = (
+  pcs: PitchClass[],
+  mode: PhraseMode,
+  octaves: number,
+  withDesc = false,
+): AbsSemitone[] => {
+  const clampOct = Math.max(1, Math.min(5, Math.floor(octaves)));
+  const oneOct = modeBuilders[mode]?.(pcs) ?? [];
+  return expandAcrossOctaves(oneOct, clampOct, withDesc);
 };
