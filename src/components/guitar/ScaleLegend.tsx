@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo } from "react";
-import { keyToOffset, getScalePitchClasses, getNote } from "@/music";
-import { ScaleName, PhraseMode, scales } from "@/constants";
-import { Play } from "lucide-react";
-import { SoundType } from "@/audio";
-import { usePhraseEvents } from "./hooks/usePhraseEvents";
-import { usePhrasePlayer } from "./hooks/usePhrasePlayer";
-import ScaleDegree from "./ScaleDegree";
+import React, { useMemo, useCallback } from 'react';
+import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
+import { ScaleName, PhraseMode, scales } from '@/constants';
+import { Play } from 'lucide-react';
+import { SoundType, ensureAudioInitialized } from '@/audio';
+import { usePhraseEvents } from './hooks/usePhraseEvents';
+import { usePhrasePlayer } from './hooks/usePhrasePlayer';
+import ScaleDegree from './ScaleDegree';
 
 interface ScaleLegendProps {
   scale: ScaleName;
@@ -16,7 +16,8 @@ interface ScaleLegendProps {
   stepMs: number;
   swing: boolean;
   octaves?: number;
-  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
+  scheduleHorizon?: number;
+  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
   stopAllPlayback?: () => void;
   stopSignal?: number;
   soundType?: SoundType;
@@ -30,8 +31,6 @@ interface ScaleLegendProps {
 const ScaleLegend: React.FC<ScaleLegendProps> = ({
   scale,
   keyy,
-  playingAbs,
-  highlightEnabled = true,
   mode,
   stepMs,
   swing,
@@ -59,11 +58,16 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
     keyOffset,
   });
 
-  const { isPlaying, onTogglePlay } = usePhrasePlayer({
+  const phrasePlayNote = useCallback(
+    (abs: number, durationMs?: number) => onPlayNote?.(abs, durationMs, 'phrase'),
+    [onPlayNote]
+  );
+
+  const { isPlaying, onTogglePlay: togglePlay } = usePhrasePlayer({
     events,
     loopDuration,
     loop,
-    onPlayNote,
+    onPlayNote: phrasePlayNote,
     soundType,
     trailLength,
     reduceAnimations,
@@ -72,32 +76,17 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
     stopSignal,
   });
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-      if (event.key !== "Enter") return;
-      if (!event.metaKey && !event.ctrlKey) return;
-
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const tagName = target.tagName;
-        const isEditable = target.isContentEditable || target.closest('[contenteditable="true"]');
-        if (isEditable) return;
-        if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+  const onTogglePlay = useCallback(async () => {
+    if (!isPlaying) {
+      try {
+        await ensureAudioInitialized();
+      } catch (error) {
+        console.error('Failed to initialize audio:', error);
+        return;
       }
-
-      event.preventDefault();
-      onTogglePlay();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onTogglePlay]);
-
-  const highlightedPitchClass = useMemo(() => {
-    if (!highlightEnabled || typeof playingAbs !== "number") return null;
-    return ((playingAbs % 12) + 12) % 12;
-  }, [highlightEnabled, playingAbs]);
+    }
+    togglePlay();
+  }, [isPlaying, togglePlay]);
 
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
@@ -106,7 +95,8 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
           const abs = keyOffset + pc;
           const noteLabel = getNote(abs);
           const isTonic = index === 0;
-          const isActive = highlightedPitchClass === (((abs % 12) + 12) % 12);
+          // Tone-based animation handles highlighting — disable React state highlight to prevent doubling
+          const isActive = false;
 
           return (
             <ScaleDegree

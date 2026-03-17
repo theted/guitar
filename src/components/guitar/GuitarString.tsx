@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import cx from "classnames";
 import { getNoteWithOctave } from "@/music";
-import { SoundType } from "@/audio";
+import { SoundType, ensureAudioInitialized } from "@/audio";
 import { scheduler } from "@/scheduler";
 import Field from "@/components/common/Field";
 import { scales as baseScales, type ScaleName } from "@/constants";
@@ -21,13 +21,18 @@ const OffsetField: React.FC<{ value: number; onChange: (value: number) => void }
 
 type UseFretClickArgs = {
   soundType: SoundType;
-  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
+  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
 };
 
 const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
   return useCallback(
-    (note: number) => {
-      scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs));
+    async (note: number) => {
+      try {
+        await ensureAudioInitialized();
+        scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs, 'fretboard'));
+      } catch (error) {
+        console.error('Failed to play note:', error);
+      }
     },
     [soundType, onPlayNote]
   );
@@ -41,7 +46,7 @@ type StringFretProps = {
   minimalHighlight: boolean;
 };
 
-const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnimations, trailLength, minimalHighlight }) => {
+const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnimations, minimalHighlight }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -82,19 +87,8 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
           {descriptor.degree}
         </span>
       )}
+      {/* Tone-based animation overlay — primary highlighting system */}
       <span className="tone-overlay" />
-      {descriptor.isPlayingNote && (
-        <span
-          className="note-fade-overlay note-fade-strong"
-          style={{ animationDuration: `${trailLength}ms` }}
-        />
-      )}
-      {!descriptor.isPlayingNote && descriptor.isPlayingOctave && !reduceAnimations && (
-        <span
-          className="note-fade-overlay note-fade-weak"
-          style={{ animationDuration: `${trailLength}ms` }}
-        />
-      )}
     </div>
   );
 };
@@ -116,11 +110,12 @@ type Props = {
   soundType?: SoundType;
   playingAbs?: number | null;
   playingSet?: number[];
-  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
-};
+  playingIndex?: number | null;
+  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
+}
 
 const GuitarString: React.FC<Props> = ({
-  idx,
+  idx: _idx,
   note,
   frets,
   scales = baseScales,
@@ -158,10 +153,7 @@ const GuitarString: React.FC<Props> = ({
   const handleFretClick = useFretClick({ soundType, onPlayNote });
 
   return (
-    <div
-      data-string-index={idx}
-      className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string"
-    >
+    <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string">
       <OffsetField value={offset} onChange={setOffset} />
       {fretDescriptors.map((descriptor) => (
         <StringFret

@@ -1,5 +1,4 @@
 import { getCurrentTime, playSemitoneAt, SoundType } from './audio';
-import { toneAnimationManager } from './lib/tone-animation';
 
 type UiCallback = (absSemitone: number, durationMs: number) => void;
 
@@ -163,10 +162,8 @@ class AudioScheduler {
           s.onUiNote(event.abs, Math.round(event.durSec * 1000)); 
         } catch {}
         
-        // Trigger tone-based animation (much more efficient)
-        if (!s.reduceAnimations) {
-          toneAnimationManager.flashTone(event.abs, s.trailLength);
-        }
+        // Tone-based animation is now handled by the onUiNote callback (flashPlaying)
+        // This ensures proper source-aware animation behavior
         
         eventIndex++;
       }

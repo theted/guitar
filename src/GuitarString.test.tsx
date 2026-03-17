@@ -13,17 +13,17 @@ describe('GuitarString highlighting', () => {
     keyy: 'e',
   };
 
-  it('shows octave overlay when enabled', () => {
+  it('shows tone overlay for highlighting', () => {
     render(<GuitarString {...baseProps} highlightEnabled={true} octaveHighlight={true} playingAbs={5} />); // same octave as E4
     const e4 = screen.getByText(/E4/i);
-    const overlay = e4.parentElement?.querySelector('.note-fade-overlay');
+    const overlay = e4.parentElement?.querySelector('.tone-overlay');
     expect(overlay).toBeInTheDocument();
   });
 
-  it('does not highlight when disabled', () => {
+  it('has tone overlay present regardless of highlighting state', () => {
     render(<GuitarString {...baseProps} highlightEnabled={false} playingAbs={5} />);
     const e4 = screen.getByText(/E4/i);
-    const overlay = e4.parentElement?.querySelector('.note-fade-overlay');
-    expect(overlay).toBeNull();
+    const overlay = e4.parentElement?.querySelector('.tone-overlay');
+    expect(overlay).toBeInTheDocument(); // tone-overlay is always present, animations are controlled via CSS classes
   });
 });

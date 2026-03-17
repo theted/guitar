@@ -8,7 +8,7 @@ import { useFormStore } from "@/store";
 type Props = {
   playingAbs?: number | null;
   playingSet?: number[];
-  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
+  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
   stopAllPlayback?: () => void;
   stopSignal?: number;
 };

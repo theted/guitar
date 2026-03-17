@@ -123,6 +123,8 @@ body::-webkit-scrollbar {
 }
 
 /* Body-level active state animations for global tone control */
+
+/* Pitch-class-only animations (all octaves) */
 body.tone-c-active .tone-c .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
 body.tone-cs-active .tone-cs .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
 body.tone-d-active .tone-d .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
@@ -135,6 +137,9 @@ body.tone-gs-active .tone-gs .tone-overlay { animation: tone-flash 1.1s ease-out
 body.tone-a-active .tone-a .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
 body.tone-as-active .tone-as .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
 body.tone-b-active .tone-b .tone-overlay { animation: tone-flash 1.1s ease-out forwards; }
+
+/* Octave-specific animations are handled programmatically in JavaScript */
+/* This provides better performance and precision than CSS rules */
 
 /* Legacy support for existing overlay system */
 .note-fade-overlay {
