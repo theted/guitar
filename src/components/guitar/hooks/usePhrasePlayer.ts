@@ -81,15 +81,13 @@ export const usePhrasePlayer = ({
       }
     }
 
-    const sessionId = scheduler.startOptimizedSession(
+    const sessionId = scheduler.startPhraseSession(
       allEvents,
       (abs, durationMs) => {
         if (playSessionRef.current !== session) return;
         onPlayNote?.(abs, durationMs);
       },
       soundType,
-      trailLength,
-      reduceAnimations || minimalHighlight
     );
 
     schedulerSessionRef.current = sessionId;
