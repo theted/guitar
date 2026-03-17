@@ -1,49 +1,49 @@
 @import "tailwindcss";
 
-/* ─── Dark-mode variant (class-based, same as v3 darkMode: ["class"]) ─── */
+/* ─── Dark-mode variant (class-based) ──────────────────────────────────── */
 @variant dark (&:where(.dark, .dark *));
 
-/* ─── Theme: custom design tokens ──────────────────────────────────────── */
+/* ─── Theme: design tokens mapped to Tailwind's --color-* namespace ─────── */
 /*
-  CSS vars below hold raw HSL channel values (e.g. "240 10% 3.9%") so that
-  Tailwind color utilities can apply opacity modifiers like bg-background/50.
-  The @theme block maps them to Tailwind's --color-* namespace.
+  CSS vars hold full OKLCH color values. @theme maps them so Tailwind
+  utilities like bg-background, text-foreground, border-border work.
+  Opacity modifiers (bg-background/50) use color-mix() — works with any
+  CSS color value, no raw-channel trick needed.
 */
 @theme {
-  /* Semantic color tokens */
-  --color-border:                 hsl(var(--border));
-  --color-input:                  hsl(var(--input));
-  --color-ring:                   hsl(var(--ring));
-  --color-background:             hsl(var(--background));
-  --color-foreground:             hsl(var(--foreground));
+  --color-background:             var(--background);
+  --color-foreground:             var(--foreground);
+  --color-border:                 var(--border);
+  --color-input:                  var(--input);
+  --color-ring:                   var(--ring);
 
-  --color-primary:                hsl(var(--primary));
-  --color-primary-foreground:     hsl(var(--primary-foreground));
+  --color-card:                   var(--card);
+  --color-card-foreground:        var(--card-foreground);
 
-  --color-secondary:              hsl(var(--secondary));
-  --color-secondary-foreground:   hsl(var(--secondary-foreground));
+  --color-popover:                var(--popover);
+  --color-popover-foreground:     var(--popover-foreground);
 
-  --color-destructive:            hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-primary:                var(--primary);
+  --color-primary-foreground:     var(--primary-foreground);
 
-  --color-muted:                  hsl(var(--muted));
-  --color-muted-foreground:       hsl(var(--muted-foreground));
+  --color-secondary:              var(--secondary);
+  --color-secondary-foreground:   var(--secondary-foreground);
 
-  --color-accent:                 hsl(var(--accent));
-  --color-accent-foreground:      hsl(var(--accent-foreground));
+  --color-muted:                  var(--muted);
+  --color-muted-foreground:       var(--muted-foreground);
 
-  --color-popover:                hsl(var(--popover));
-  --color-popover-foreground:     hsl(var(--popover-foreground));
+  --color-accent:                 var(--accent);
+  --color-accent-foreground:      var(--accent-foreground);
 
-  --color-card:                   hsl(var(--card));
-  --color-card-foreground:        hsl(var(--card-foreground));
+  --color-destructive:            var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
   /* Border radius scale */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Accordion animations (previously in tailwind.config keyframes) */
+  /* Accordion animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up:   accordion-up   0.2s ease-out;
 }
@@ -52,97 +52,130 @@
   from { height: 0; }
   to   { height: var(--radix-accordion-content-height); }
 }
-
 @keyframes accordion-up {
   from { height: var(--radix-accordion-content-height); }
   to   { height: 0; }
 }
 
-/* ─── Raw HSL design token values ──────────────────────────────────────── */
+/* ─── OKLCH color palette ───────────────────────────────────────────────── */
+/*
+  All values in OKLCH: oklch(Lightness Chroma Hue)
+  Hue 264° = blue-indigo direction for the blue undertone.
+  The app is always dark, so dark values are the :root defaults.
+  The .dark block is kept for explicit class-based toggling.
+
+  Perceptual notes:
+    L 0.06–0.12 = near-black range (backgrounds)
+    L 0.15–0.22 = dark surface range (cards, borders)
+    L 0.55–0.65 = mid range (muted text)
+    L 0.95–0.98 = near-white range (foreground text)
+*/
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  --background:             oklch(0.088 0.018 264);
+  --foreground:             oklch(0.962 0.007 264);
+
+  --card:                   oklch(0.108 0.020 264);
+  --card-foreground:        oklch(0.962 0.007 264);
+
+  --popover:                oklch(0.108 0.020 264);
+  --popover-foreground:     oklch(0.962 0.007 264);
+
+  --primary:                oklch(0.962 0.007 264);
+  --primary-foreground:     oklch(0.138 0.020 264);
+
+  --secondary:              oklch(0.162 0.020 264);
+  --secondary-foreground:   oklch(0.962 0.007 264);
+
+  --muted:                  oklch(0.158 0.016 264);
+  --muted-foreground:       oklch(0.592 0.012 264);
+
+  --accent:                 oklch(0.162 0.020 264);
+  --accent-foreground:      oklch(0.962 0.007 264);
+
+  --destructive:            oklch(0.555 0.225 27);
+  --destructive-foreground: oklch(0.962 0.007 264);
+
+  --border:                 oklch(0.215 0.022 264);
+  --input:                  oklch(0.215 0.022 264);
+  --ring:                   oklch(0.835 0.012 264);
+
   --radius: 0.5rem;
 }
 
-.dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
+/* Light-mode override (explicit .dark toggle) */
+.light {
+  --background:             oklch(0.990 0.003 264);
+  --foreground:             oklch(0.148 0.014 264);
+  --card:                   oklch(0.990 0.003 264);
+  --card-foreground:        oklch(0.148 0.014 264);
+  --popover:                oklch(0.990 0.003 264);
+  --popover-foreground:     oklch(0.148 0.014 264);
+  --primary:                oklch(0.148 0.014 264);
+  --primary-foreground:     oklch(0.990 0.003 264);
+  --secondary:              oklch(0.938 0.009 264);
+  --secondary-foreground:   oklch(0.148 0.014 264);
+  --muted:                  oklch(0.938 0.009 264);
+  --muted-foreground:       oklch(0.475 0.010 264);
+  --accent:                 oklch(0.938 0.009 264);
+  --accent-foreground:      oklch(0.148 0.014 264);
+  --destructive:            oklch(0.577 0.245 27);
+  --destructive-foreground: oklch(0.990 0.003 264);
+  --border:                 oklch(0.882 0.010 264);
+  --input:                  oklch(0.882 0.010 264);
+  --ring:                   oklch(0.148 0.014 264);
 }
 
-/* ─── Base styles ───────────────────────────────────────────────────────── */
-/* In v4, border-color no longer defaults to gray — apply explicitly */
-* {
-  border-color: hsl(var(--border));
+/* ─── Base layer — resets that utilities must be able to override ────────── */
+/*
+  CRITICAL: must be inside @layer base so that @layer utilities (Tailwind
+  classes like border-white/10) have higher cascade priority and can override.
+  Unlayered styles always win over any layered style, which was the v4 bug
+  that made border-white/10 show as the full --border color on fret buttons.
+*/
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    color: var(--foreground);
+    /* Base fill behind the gradient — matches the darkest gradient stop */
+    background-color: oklch(0.065 0.012 268);
+  }
+
+  body::-webkit-scrollbar { display: none; }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  }
 }
 
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  color: hsl(var(--foreground));
-  background-color: #08080a;
-}
-
-/* Hide scrollbars in WebKit for safety */
-body::-webkit-scrollbar {
-  display: none;
-}
-
-/* ─── App layout ────────────────────────────────────────────────────────── */
+/* ─── App background gradient ───────────────────────────────────────────── */
+/*
+  Asymmetric bloom: rich blue-indigo at top-left fades to near-black.
+  Using OKLCH gradient interpolation for smooth, hue-consistent transitions.
+*/
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   background: radial-gradient(
-    circle at 20% 20%,
-    rgba(34, 36, 42, 0.95) 0%,
-    rgba(20, 22, 26, 0.95) 35%,
-    rgba(12, 14, 18, 1) 70%,
-    rgba(8, 8, 10, 1) 100%
+    ellipse 110% 75% at 12% 0%,
+    oklch(0.185 0.055 252) 0%,
+    oklch(0.118 0.032 260) 30%,
+    oklch(0.082 0.020 265) 60%,
+    oklch(0.065 0.012 268) 100%
   );
   will-change: opacity, transform;
   animation: app-bg-reveal 750ms ease-out both;
@@ -164,7 +197,8 @@ body::-webkit-scrollbar {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: rgba(8, 145, 178, 0.6);
+  /* Cyan note-flash — OKLCH equivalent of the original rgba(8,145,178,0.6) */
+  background: oklch(0.62 0.17 200 / 0.65);
   opacity: 0;
   contain: layout style paint;
 }
@@ -203,12 +237,12 @@ body.tone-b-active  .tone-b  .tone-overlay {
 }
 
 .note-fade-strong {
-  background: rgba(8, 145, 178, 0.7);
+  background: oklch(0.62 0.17 200 / 0.70);
   opacity: 0.9;
 }
 
 .note-fade-weak {
-  background: rgba(8, 145, 178, 0.35);
+  background: oklch(0.62 0.17 200 / 0.35);
   opacity: 0.7;
 }
 
@@ -229,18 +263,16 @@ body.tone-b-active  .tone-b  .tone-overlay {
 }
 
 .fret-button.tone-active-flash {
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4), 0 0 12px rgba(34, 211, 238, 0.15);
+  box-shadow:
+    0 0 0 1px oklch(0.78 0.16 200 / 0.40),
+    0 0 14px oklch(0.62 0.17 200 / 0.18);
 }
 
 /* ─── Panel scrollbar ───────────────────────────────────────────────────── */
-aside::-webkit-scrollbar       { width: 4px; }
-aside::-webkit-scrollbar-track { background: transparent; }
-aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-aside::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
+aside::-webkit-scrollbar         { width: 4px; }
+aside::-webkit-scrollbar-track   { background: transparent; }
+aside::-webkit-scrollbar-thumb   { background: oklch(1 0 0 / 0.10); border-radius: 2px; }
+aside::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.20); }
 
 /* ─── Keyframes ─────────────────────────────────────────────────────────── */
 @keyframes tone-flash {
