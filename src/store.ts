@@ -55,7 +55,7 @@ const initial: FormState = {
 
 export const useFormStore = create<FormState>()(
   persist(
-    (set, get) => ({
+    (_set, _get) => ({
       ...initial,
     }),
     { name: 'formState' }

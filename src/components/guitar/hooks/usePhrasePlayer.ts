@@ -139,6 +139,7 @@ export const usePhrasePlayer = ({
     }
 
     ignoredStopSignalRef.current.clear();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsPlaying(false);
     clearPlayTimers();
   }, [stopSignal, clearPlayTimers]);

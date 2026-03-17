@@ -1,4 +1,4 @@
-import { tones, Tone } from "./constants";
+import { tones, Tone } from "./constants/tones";
 
 const noteKeys = Object.keys(tones);
 
@@ -17,14 +17,13 @@ const getKey = (offset: number): string => noteKeys[offset % noteKeys.length];
 
 const keyToOffset = (key: string): number => noteMap[key];
 
-const getTones = (scale: readonly number[], steps: number, key?: string) => {
+const getTones = (scale: readonly number[], steps: number, _key?: string) => {
   let step = 0;
   const ret: number[] = [];
 
   // TODO: need to take offset into account
   while (step < steps + 9) {
     const rest = scale.map((interval) => {
-      // eslint-disable-next-line no-plusplus
       step += interval;
       return step;
     });

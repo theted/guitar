@@ -301,7 +301,7 @@ export const buildRelSequence = (pcs: number[], mode: PhraseMode, octaves: numbe
   }
 
   if (mode === 'tremolo') {
-    const lastDeg = pcs.length;
+    const _lastDeg = pcs.length;
     // Tremolo picking on root: 1-1-1-1-1-1-1-1
     const degSeq: number[] = Array(8).fill(1);
     const oneOct = degSeq.map((d) => pcs[d - 1]);

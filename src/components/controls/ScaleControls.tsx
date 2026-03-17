@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PhraseMode, ScaleName, Tone, scales, tones } from "@/constants";
-import { ucFirst } from "@/helpers";
+import { ucFirst } from "@/lib/utils";
 import { setFormState, useFormStore, type FormState } from "@/store";
 import FormToggle from "./FormToggle";
 

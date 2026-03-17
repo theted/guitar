@@ -1,6 +1,6 @@
 import React from "react";
 import GuitarString from "./GuitarString";
-import type { RenderedString } from "./useRenderedStrings";
+import type { RenderedString } from "./hooks/useRenderedStrings";
 import type { ScaleName } from "@/constants";
 import { scales } from "@/constants";
 import type { SoundType } from "@/audio";

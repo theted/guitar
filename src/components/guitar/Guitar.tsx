@@ -2,7 +2,7 @@ import React from "react";
 import ScaleLegend from "./ScaleLegend";
 import GuitarNeck from "./GuitarNeck";
 import FretMarkers from "@/components/guitar/FretMarkers";
-import { useRenderedStrings } from "@/components/guitar/useRenderedStrings";
+import { useRenderedStrings } from "@/components/guitar/hooks/useRenderedStrings";
 import { useFormStore } from "@/store";
 
 type Props = {

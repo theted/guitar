@@ -39,7 +39,7 @@ const App: React.FC = () => {
   }, []);
 
   // Unified playback function for both individual notes and phrase playback
-  const playNote = (absSemitone: number, durationMs = 200, source: 'fretboard' | 'phrase' = 'fretboard') => {
+  const playNote = (absSemitone: number, durationMs = 200, _source: 'fretboard' | 'phrase' = 'fretboard') => {
     // Handle visual highlighting
     setPlayingAbs(absSemitone);
     setPlayingSet((cur) => (cur.includes(absSemitone) ? cur : [...cur, absSemitone]));

@@ -4,5 +4,5 @@ import App from "./App";
 test("renders controls", () => {
   render(<App />);
   expect(screen.getByText(/Frets/i)).toBeInTheDocument();
-  expect(screen.getByText(/Scale/i)).toBeInTheDocument();
+  expect(screen.getAllByText(/Scale/i).length).toBeGreaterThan(0);
 });

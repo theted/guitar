@@ -57,15 +57,6 @@ export const useRenderedStrings = ({
     }
 
     const descriptors: RenderedString[] = ordered.map((originalIndex, renderIndex) => {
-      if (tuning.length === 0) {
-        return {
-          originalIndex,
-          renderIndex,
-          baseNote: 0,
-          isBottom: renderIndex === ordered.length - 1,
-        };
-      }
-
       const tuningIndex = tuning.length - 1 - (originalIndex % tuning.length);
       const cycle = Math.floor(originalIndex / tuning.length);
       const baseNote = absBaseByTuningIndex[tuningIndex] - cycle * 12;
