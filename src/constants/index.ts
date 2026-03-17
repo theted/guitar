@@ -3,3 +3,5 @@ export { tones, type Tone } from "./tones";
 export { tunings, type TuningName, type Tuning } from "./tunings";
 export { type PhraseMode } from "./phrases";
 export { DEFAULTS } from "./defaults";
+export * from "./scheduler";
+export * from "./animation";
