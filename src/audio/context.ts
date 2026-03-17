@@ -9,7 +9,7 @@ let isAudioInitialized = false;
 
 const initializeAudio = async (): Promise<AudioContext> => {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext!)();
     try {
       audioCtx.resume();
     } catch {}
@@ -36,7 +36,7 @@ const initializeAudio = async (): Promise<AudioContext> => {
 
 export const getAudioContext = (): AudioContext => {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext!)();
   }
 
   if (!isAudioInitialized && audioCtx.state === "suspended") {

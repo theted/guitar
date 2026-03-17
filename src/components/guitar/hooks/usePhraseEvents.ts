@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { PhraseMode } from "@/constants";
 import { buildRelSequence } from "@/phrases";
+import type { PitchClass } from "@/types";
 
 export type PhraseEvent = {
   abs: number;
@@ -28,7 +29,7 @@ export const usePhraseEvents = ({
   keyOffset,
 }: UsePhraseEventsArgs) => {
   const relSequence = useMemo(
-    () => buildRelSequence(pitchClasses, mode, octaves, descend),
+    () => buildRelSequence(pitchClasses as PitchClass[], mode, octaves, descend),
     [pitchClasses, mode, octaves, descend]
   );
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scheduler } from "@/scheduler";
 import { getCurrentTime, SoundType, stopAllAudio } from "@/audio";
+import { AUDIO_LOOKAHEAD_SEC } from "@/constants";
 import type { PhraseEvent } from "./usePhraseEvents";
 
 type UsePhrasePlayerArgs = {
@@ -63,7 +64,7 @@ export const usePhrasePlayer = ({
     playSessionRef.current = session;
     setIsPlaying(true);
 
-    const startTime = getCurrentTime() + 0.03;
+    const startTime = getCurrentTime() + AUDIO_LOOKAHEAD_SEC;
     let allEvents = events.map((event) => ({
       ...event,
       startTimeSec: startTime + event.startTimeSec,

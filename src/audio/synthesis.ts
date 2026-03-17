@@ -1,4 +1,5 @@
 import { activeVoices, type ActiveVoice } from "./context";
+import { VOICE_STOP_RAMP_SEC, VOICE_CLEANUP_EXTRA_MS, VOICE_MIN_STOP_SEC } from "../constants";
 import { createReverb, createDistortion, createDelay } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
 
@@ -179,19 +180,19 @@ export const synthesizeSound = (
       try {
         master.gain.cancelScheduledValues(now);
         master.gain.setValueAtTime(0.0001, now);
-        master.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + VOICE_STOP_RAMP_SEC);
       } catch {}
 
       layerGains.forEach((gain) => {
         try {
           gain.gain.cancelScheduledValues(now);
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + VOICE_STOP_RAMP_SEC);
         } catch {}
       });
 
       oscillators.forEach((osc) => {
-        try { osc.stop(Math.max(stopAt, now + 0.01)); } catch {}
+        try { osc.stop(Math.max(stopAt, now + VOICE_MIN_STOP_SEC)); } catch {}
         try { osc.disconnect(); } catch {}
       });
 
@@ -205,7 +206,7 @@ export const synthesizeSound = (
 
   activeVoices.add(voice);
 
-  const cleanupDelayMs = Math.max(0, (startTime + duration - ctx.currentTime) * 1000 + 200);
+  const cleanupDelayMs = Math.max(0, (startTime + duration - ctx.currentTime) * 1000 + VOICE_CLEANUP_EXTRA_MS);
   window.setTimeout(() => {
     voice.stop(startTime + duration);
   }, cleanupDelayMs);

@@ -1,4 +1,5 @@
 import { getCurrentTime, playSemitoneAt, SoundType } from './audio';
+import { AUDIO_LOOKAHEAD_SEC, RAF_EPSILON_SEC } from './constants';
 
 type UiCallback = (absSemitone: number, durationMs: number) => void;
 
@@ -120,7 +121,7 @@ class AudioScheduler {
       // auto-stop after first dispatch
       this.stopSession(sid);
     });
-    const start = getCurrentTime() + 0.03; // slight lookahead for stable start
+    const start = getCurrentTime() + AUDIO_LOOKAHEAD_SEC; // slight lookahead for stable start
     const durSec = Math.max(0.05, durationMs / 1000);
     this.scheduleNoteAt(sid, absSemitone, start, durSec, soundType);
   }
@@ -129,8 +130,7 @@ class AudioScheduler {
     if (s.rafId != null) return;
     const step = () => {
       const now = getCurrentTime();
-      const epsilon = 0.004; // ~4ms
-      while (s.uiEvents.length && now + epsilon >= s.uiEvents[0].timeSec) {
+      while (s.uiEvents.length && now + RAF_EPSILON_SEC >= s.uiEvents[0].timeSec) {
         const evt = s.uiEvents.shift()!;
         try { s.onUiNote(evt.abs, Math.round(evt.durSec * 1000)); } catch {}
       }
@@ -151,10 +151,8 @@ class AudioScheduler {
     
     const step = () => {
       const now = getCurrentTime();
-      const epsilon = 0.004; // ~4ms precision
-      
       // Process all events that should trigger now
-      while (eventIndex < s.events.length && now + epsilon >= s.events[eventIndex].startTimeSec) {
+      while (eventIndex < s.events.length && now + RAF_EPSILON_SEC >= s.events[eventIndex].startTimeSec) {
         const event = s.events[eventIndex];
         
         // Trigger UI callback

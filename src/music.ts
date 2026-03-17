@@ -1,6 +1,5 @@
 import { tones, Tone } from "./constants/tones";
-
-const noteKeys = Object.keys(tones);
+import type { PitchClass, KeyOffset } from "./types/music";
 
 const noteMap = (tones as readonly string[]).reduce<Record<string, number>>(
   (accumulator, target) => ({
@@ -13,48 +12,23 @@ const noteMap = (tones as readonly string[]).reduce<Record<string, number>>(
 const getNote = (offset: number): Tone =>
   tones[((offset % tones.length) + tones.length) % tones.length];
 
-const getKey = (offset: number): string => noteKeys[offset % noteKeys.length];
+const keyToOffset = (key: string): KeyOffset => noteMap[key] as KeyOffset;
 
-const keyToOffset = (key: string): number => noteMap[key];
+export { getNote, keyToOffset };
 
-const getTones = (scale: readonly number[], steps: number, _key?: string) => {
-  let step = 0;
-  const ret: number[] = [];
-
-  // TODO: need to take offset into account
-  while (step < steps + 9) {
-    const rest = scale.map((interval) => {
-      step += interval;
-      return step;
-    });
-
-    ret.push(...rest);
-  }
-
-  return [0, ...ret]; // in order to include base tone...
-};
-
-export { getNote, getKey, getTones, keyToOffset };
-
-// New helpers to reason about scale pitch classes and degrees
 // Returns cumulative semitone positions within an octave for the given scale
 // e.g., [2,2,1,2,2,2,1] -> [0,2,4,5,7,9,11]
-export const getScalePitchClasses = (scale: readonly number[]): number[] => {
-  // Build cumulative semitone positions within one octave by
-  // cycling through the provided intervals until we reach 12.
-  // This ensures short definitions like [1] (chromatic) or [3]
-  // (diminished thirds) expand to the intended pitch classes.
-  const pcs: number[] = [0];
+export const getScalePitchClasses = (scale: readonly number[]): PitchClass[] => {
+  const pcs: PitchClass[] = [0 as PitchClass];
   let acc = 0;
   if (scale.length === 0) return pcs;
-  // Safety cap to avoid infinite loops if given pathological data
-  const maxSteps = 24; // enough to cover edge cases
+  const maxSteps = 24;
   let steps = 0;
   while (acc < 12 && steps < maxSteps) {
     for (const interval of scale) {
       acc += interval;
       if (acc >= 12) break;
-      pcs.push(acc % 12);
+      pcs.push((acc % 12) as PitchClass);
     }
     steps += 1;
   }
@@ -69,7 +43,7 @@ export const getDegreeInScale = (
 ): number | null => {
   const pcs = getScalePitchClasses(scale);
   const pc = (((noteAbs - keyOffset) % 12) + 12) % 12;
-  const idx = pcs.indexOf(pc);
+  const idx = pcs.indexOf(pc as PitchClass);
   return idx >= 0 ? idx + 1 : null;
 };
 

@@ -2,6 +2,7 @@
  * Performance-optimized tone-based animation system
  * Groups elements by pitch class or octave-specific notes and manages animations globally
  */
+import { TONE_ANIMATION_DEFAULT_DURATION_MS, OCTAVE_SWEEP_MIN, OCTAVE_SWEEP_MAX } from '../constants';
 
 const PITCH_CLASS_NAMES = [
   'tone-c', 'tone-cs', 'tone-d', 'tone-ds', 
@@ -76,7 +77,7 @@ class ToneAnimationManager {
    * @param durationMs - Animation duration in milliseconds  
    * @param forceMode - Override the global mode for this specific call
    */
-  flashTone(absSemitone: number, durationMs: number = 1200, forceMode?: AnimationMode): void {
+  flashTone(absSemitone: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS, forceMode?: AnimationMode): void {
     const effectiveMode = forceMode || this.mode;
     const animationKey = effectiveMode === 'pitch-class' 
       ? `pc-${((absSemitone % 12) + 12) % 12}`
@@ -172,7 +173,7 @@ class ToneAnimationManager {
     PITCH_CLASS_NAMES.forEach(cls => {
       element.classList.remove(cls);
       // Also remove octave-specific classes
-      for (let oct = -5; oct <= 10; oct++) {
+      for (let oct = OCTAVE_SWEEP_MIN; oct <= OCTAVE_SWEEP_MAX; oct++) {
         element.classList.remove(`${cls}-oct${oct}`);
       }
     });

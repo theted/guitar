@@ -1,6 +1,4 @@
-import React from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import React from 'react';
 
 type FormNumberProps = {
   id: string;
@@ -23,26 +21,27 @@ const FormNumber: React.FC<FormNumberProps> = ({
   min,
   max,
   step,
-  className = "h-10 text-base",
 }) => {
   return (
-    <div className="grid gap-1">
-      <Label htmlFor={id} className="text-base text-white">
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-[11px] font-medium uppercase tracking-wider text-white/40">
         {label}
-      </Label>
-      <Input
+      </label>
+      <input
         id={id}
         type="number"
         value={String(value)}
         min={min}
         max={max}
         step={step}
-        onChange={(event) => {
+        onChange={(e) => {
           stopAllPlayback();
-          const nextValue = parseInt((event.target as HTMLInputElement).value, 10);
-          onChange(Number.isNaN(nextValue) ? 0 : nextValue);
+          const next = parseInt(e.target.value, 10);
+          onChange(Number.isNaN(next) ? 0 : next);
         }}
-        className={className}
+        className="h-8 w-full rounded-md border border-white/[0.08] bg-white/[0.05] px-2.5 text-sm text-white/80
+          focus:outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] transition-colors
+          [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
     </div>
   );

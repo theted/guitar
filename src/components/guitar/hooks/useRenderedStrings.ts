@@ -47,7 +47,7 @@ export const useRenderedStrings = ({
       for (let s = lastIndex - 1; s >= 0; s -= 1) {
         const pitchClass = tuningPitchClasses[s];
         const above = absBaseByTuningIndex[s + 1];
-        let candidate = pitchClass;
+        let candidate: number = pitchClass;
 
         while (candidate >= above) candidate -= 12;
         while (candidate + 12 < above) candidate += 12;

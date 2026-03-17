@@ -1,19 +1,19 @@
 import React from 'react';
-import Controls from '@/components/Controls';
+import { Settings } from 'lucide-react';
 import Guitar from '@/components/guitar/Guitar';
+import ControlsPanel from '@/components/controls/ControlsPanel';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
 import { scheduler } from '@/scheduler';
 import { stopAllAudio } from '@/audio';
 
 const App: React.FC = () => {
-  // Playback highlight state lives locally
+  const [panelOpen, setPanelOpen] = React.useState(false);
+
   const trailLength = useFormStore((s) => s.trailLength);
   const minimalHighlight = useFormStore((s) => s.minimalHighlight);
   const octaveHighlight = useFormStore((s) => s.octaveHighlight);
 
-  // Set default animation mode based on octave highlight setting
-  // This is now only used for phrase playback - fretboard clicks are always octave-specific
   React.useEffect(() => {
     toneAnimationManager.setMode(octaveHighlight ? 'octave-specific' : 'pitch-class');
   }, [octaveHighlight]);
@@ -32,26 +32,17 @@ const App: React.FC = () => {
     playingTimersRef.current = {};
     setPlayingSet([]);
     setPlayingAbs(null);
-
-    // Stop tone-based animations
     toneAnimationManager.stopAll();
     setStopSignal((cur) => cur + 1);
   }, []);
 
-  // Unified playback function for both individual notes and phrase playback
   const playNote = (absSemitone: number, durationMs = 200, _source: 'fretboard' | 'phrase' = 'fretboard') => {
-    // Handle visual highlighting
     setPlayingAbs(absSemitone);
     setPlayingSet((cur) => (cur.includes(absSemitone) ? cur : [...cur, absSemitone]));
     const trailMs = Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
-    
-    // Always use octave-specific highlighting for both fretboard clicks and phrase playback
-    // This ensures only the specific note being played is highlighted, not all octaves
     toneAnimationManager.flashTone(absSemitone, minimalHighlight ? durationMs : trailMs, 'octave-specific');
-    
-    // Clean up highlighting after duration
     const tid = window.setTimeout(() => {
       setPlayingSet((cur) => cur.filter((n) => n !== absSemitone));
       if (playingTimersRef.current[absSemitone]) delete playingTimersRef.current[absSemitone];
@@ -61,10 +52,26 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="min-h-screen w-full">
       <div className="app-bg" />
-      <Controls stopAllPlayback={stopAllPlayback} />
-      <main className="fixed inset-0 flex items-center justify-center px-6 pt-[96px]">
+
+      {/* Slim top bar */}
+      <header className="fixed top-0 left-0 right-0 z-30 h-12 flex items-center justify-between px-4 border-b border-white/[0.06] bg-black/60 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <span className="text-white/90 text-sm font-semibold tracking-wide">Guitar Scale Finder</span>
+        </div>
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/50 hover:text-white/90 hover:bg-white/[0.06] transition-all text-xs uppercase tracking-widest font-medium"
+          aria-label="Open settings"
+        >
+          <Settings className="w-3.5 h-3.5" />
+          <span>Settings</span>
+        </button>
+      </header>
+
+      {/* Guitar — only 48px top offset now */}
+      <main className="fixed inset-0 flex items-center justify-center px-4 pt-12">
         <Guitar
           playingAbs={playingAbs}
           playingSet={playingSet}
@@ -73,9 +80,14 @@ const App: React.FC = () => {
           stopSignal={stopSignal}
         />
       </main>
+
+      <ControlsPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        stopAllPlayback={stopAllPlayback}
+      />
     </div>
   );
 };
 
 export default App;
-
