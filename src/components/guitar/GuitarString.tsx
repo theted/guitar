@@ -42,7 +42,6 @@ type StringFretProps = {
   descriptor: FretDescriptor;
   onClick: (note: number) => void;
   reduceAnimations: boolean;
-  trailLength: number;
   minimalHighlight: boolean;
 };
 
@@ -53,10 +52,8 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
     const element = ref.current;
     if (!element) return;
     toneAnimationManager.applyToneClass(element, descriptor.actualNote);
+    return () => { toneAnimationManager.clearToneClass(element); };
   }, [descriptor.actualNote]);
-
-  const baseClasses =
-    "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none";
 
   const colorClasses = descriptor.isBase && descriptor.showScaleHighlight
     ? "bg-black/70 text-white border-white/20"
@@ -69,7 +66,7 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
       ref={ref}
       data-abs={descriptor.actualNote}
       className={cx(
-        baseClasses,
+        "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none",
         colorClasses,
         "fret-button",
         reduceAnimations ? "" : "hover:bg-white/20 transition-transform duration-75 hover:scale-[1.03]"
@@ -102,19 +99,14 @@ type Props = {
   keyy: string;
   scaleHighlightBottomOnly?: boolean;
   isBottom?: boolean;
-  highlightEnabled?: boolean;
-  octaveHighlight?: boolean;
   reduceAnimations?: boolean;
   trailLength?: number;
   minimalHighlight?: boolean;
   soundType?: SoundType;
-  playingAbs?: number | null;
-  playingSet?: number[];
-  playingIndex?: number | null;
   onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
 }
 
-const GuitarString: React.FC<Props> = ({
+const GuitarString: React.FC<Props> = React.memo(({
   idx: _idx,
   note,
   frets,
@@ -123,14 +115,9 @@ const GuitarString: React.FC<Props> = ({
   keyy,
   scaleHighlightBottomOnly = false,
   isBottom = false,
-  highlightEnabled = true,
-  octaveHighlight = true,
   reduceAnimations = false,
-  trailLength = 1200,
   minimalHighlight = false,
   soundType = "marimba",
-  playingAbs,
-  playingSet = [],
   onPlayNote,
 }) => {
   const [offset, setOffset] = useState<number>(0);
@@ -144,10 +131,6 @@ const GuitarString: React.FC<Props> = ({
     scaleMap: scales,
     scaleHighlightBottomOnly,
     isBottom,
-    highlightEnabled,
-    octaveHighlight,
-    playingAbs,
-    playingSet,
   });
 
   const handleFretClick = useFretClick({ soundType, onPlayNote });
@@ -161,12 +144,11 @@ const GuitarString: React.FC<Props> = ({
           descriptor={descriptor}
           onClick={handleFretClick}
           reduceAnimations={reduceAnimations}
-          trailLength={trailLength}
           minimalHighlight={minimalHighlight}
         />
       ))}
     </div>
   );
-};
+});
 
 export default GuitarString;

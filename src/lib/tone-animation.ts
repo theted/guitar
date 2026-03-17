@@ -2,11 +2,11 @@
  * Performance-optimized tone-based animation system
  * Groups elements by pitch class or octave-specific notes and manages animations globally
  */
-import { TONE_ANIMATION_DEFAULT_DURATION_MS, OCTAVE_SWEEP_MIN, OCTAVE_SWEEP_MAX } from '../constants';
+import { TONE_ANIMATION_DEFAULT_DURATION_MS } from '../constants';
 
 const PITCH_CLASS_NAMES = [
-  'tone-c', 'tone-cs', 'tone-d', 'tone-ds', 
-  'tone-e', 'tone-f', 'tone-fs', 'tone-g', 
+  'tone-c', 'tone-cs', 'tone-d', 'tone-ds',
+  'tone-e', 'tone-f', 'tone-fs', 'tone-g',
   'tone-gs', 'tone-a', 'tone-as', 'tone-b'
 ];
 
@@ -15,176 +15,141 @@ type AnimationMode = 'pitch-class' | 'octave-specific';
 class ToneAnimationManager {
   private activeTimeouts = new Map<string, number>();
   private mode: AnimationMode = 'octave-specific';
+  // Pre-built registry: "pc{pc}-oct{octave}" → Set of fret button elements
+  private registry = new Map<string, Set<HTMLElement>>();
 
-  /**
-   * Set animation mode: 'pitch-class' highlights all octaves, 'octave-specific' highlights only matching octave
-   */
   setMode(mode: AnimationMode): void {
     this.mode = mode;
   }
 
-  /**
-   * Get the CSS class name for a pitch class (0-11)
-   */
   getPitchClassName(pitchClass: number): string {
     return PITCH_CLASS_NAMES[((pitchClass % 12) + 12) % 12];
   }
 
-  /**
-   * Get octave number from absolute semitone (C4 = 0)
-   */
   getOctave(absSemitone: number): number {
     return Math.floor(absSemitone / 12);
   }
 
-  /**
-   * Get unique identifier for animation grouping
-   */
-  private getAnimationKey(absSemitone: number): string {
-    if (this.mode === 'pitch-class') {
-      const pitchClass = ((absSemitone % 12) + 12) % 12;
-      return `pc-${pitchClass}`;
-    } else {
-      // octave-specific mode
-      const pitchClass = ((absSemitone % 12) + 12) % 12;
-      const octave = this.getOctave(absSemitone);
-      return `pc-${pitchClass}-oct-${octave}`;
-    }
+  private registryKey(pitchClass: number, octave: number): string {
+    return `pc${pitchClass}-oct${octave}`;
   }
 
   /**
-   * Get CSS class identifier for body class
+   * Register a fret element in the tone registry and apply tone CSS classes.
+   * Uses dataset.toneAbs guard to skip no-op updates.
    */
-  private getBodyClassName(absSemitone: number): string {
-    if (this.mode === 'pitch-class') {
-      const pitchClass = ((absSemitone % 12) + 12) % 12;
-      const className = this.getPitchClassName(pitchClass);
-      return `${className}-active`;
-    } else {
-      // octave-specific mode
-      const pitchClass = ((absSemitone % 12) + 12) % 12;
-      const octave = this.getOctave(absSemitone);
-      const className = this.getPitchClassName(pitchClass);
-      return `${className}-oct${octave}-active`;
+  applyToneClass(element: HTMLElement, absSemitone: number): void {
+    // Skip if semitone hasn't changed — avoids all work on re-render
+    if (element.dataset.toneAbs === String(absSemitone)) return;
+
+    // Remove from old registry slot and remove old CSS classes
+    const oldKey = element.dataset.toneKey;
+    if (oldKey) {
+      this.registry.get(oldKey)?.delete(element);
+      const oldPc = element.dataset.tonePc;
+      const oldOct = element.dataset.toneOct;
+      if (oldPc !== undefined && oldOct !== undefined) {
+        const oldCls = PITCH_CLASS_NAMES[parseInt(oldPc, 10)];
+        if (oldCls) {
+          element.classList.remove(oldCls, `${oldCls}-oct${oldOct}`);
+        }
+      }
     }
+
+    const pitchClass = ((absSemitone % 12) + 12) % 12;
+    const octave = this.getOctave(absSemitone);
+    const pitchClassName = PITCH_CLASS_NAMES[pitchClass];
+    const key = this.registryKey(pitchClass, octave);
+
+    // Register in new slot
+    let slot = this.registry.get(key);
+    if (!slot) { slot = new Set(); this.registry.set(key, slot); }
+    slot.add(element);
+
+    // Apply CSS classes (tone-group only added once since classList is idempotent)
+    element.classList.add('tone-group', pitchClassName, `${pitchClassName}-oct${octave}`);
+
+    // Store metadata for fast future updates and cleanup
+    element.dataset.toneAbs = String(absSemitone);
+    element.dataset.toneKey = key;
+    element.dataset.tonePc = String(pitchClass);
+    element.dataset.toneOct = String(octave);
   }
 
   /**
-   * Trigger animation for all elements of a specific tone/octave
-   * This replaces individual element animations with more efficient grouped animations
-   * 
-   * @param absSemitone - The absolute semitone to animate
-   * @param durationMs - Animation duration in milliseconds  
-   * @param forceMode - Override the global mode for this specific call
+   * Remove an element from the registry (call on unmount).
    */
+  clearToneClass(element: HTMLElement): void {
+    const key = element.dataset.toneKey;
+    if (key) this.registry.get(key)?.delete(element);
+    const oldPc = element.dataset.tonePc;
+    const oldOct = element.dataset.toneOct;
+    if (oldPc !== undefined && oldOct !== undefined) {
+      const oldCls = PITCH_CLASS_NAMES[parseInt(oldPc, 10)];
+      if (oldCls) element.classList.remove('tone-group', oldCls, `${oldCls}-oct${oldOct}`);
+    }
+    delete element.dataset.toneAbs;
+    delete element.dataset.toneKey;
+    delete element.dataset.tonePc;
+    delete element.dataset.toneOct;
+  }
+
   flashTone(absSemitone: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS, forceMode?: AnimationMode): void {
-    const effectiveMode = forceMode || this.mode;
-    const animationKey = effectiveMode === 'pitch-class' 
-      ? `pc-${((absSemitone % 12) + 12) % 12}`
-      : `pc-${((absSemitone % 12) + 12) % 12}-oct-${this.getOctave(absSemitone)}`;
-    
-    // Clear any existing timeout for this animation group
-    const existingTimeout = this.activeTimeouts.get(animationKey);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
+    const effectiveMode = forceMode ?? this.mode;
+    const pitchClass = ((absSemitone % 12) + 12) % 12;
+    const animationKey = effectiveMode === 'pitch-class'
+      ? `pc-${pitchClass}`
+      : `pc-${pitchClass}-oct-${this.getOctave(absSemitone)}`;
+
+    const existing = this.activeTimeouts.get(animationKey);
+    if (existing) clearTimeout(existing);
 
     if (effectiveMode === 'pitch-class') {
-      // Use the original CSS class approach for pitch-class mode
-      const pitchClass = ((absSemitone % 12) + 12) % 12;
-      const className = this.getPitchClassName(pitchClass);
-      const bodyClassName = `${className}-active`;
-      
+      const bodyClassName = `${PITCH_CLASS_NAMES[pitchClass]}-active`;
       document.body.classList.add(bodyClassName);
-      
-      const timeoutId = window.setTimeout(() => {
+      const tid = window.setTimeout(() => {
         document.body.classList.remove(bodyClassName);
         this.activeTimeouts.delete(animationKey);
       }, durationMs);
-      
-      this.activeTimeouts.set(animationKey, timeoutId);
+      this.activeTimeouts.set(animationKey, tid);
     } else {
-      // For octave-specific mode, use a more targeted approach
       this.flashOctaveSpecific(absSemitone, durationMs, animationKey);
     }
   }
 
   /**
-   * Flash only elements that match both pitch class and octave
+   * Flash elements matching pitch class + octave using the pre-built registry.
+   * No DOM queries — O(matched elements) instead of O(all fret buttons).
    */
   private flashOctaveSpecific(absSemitone: number, durationMs: number, animationKey: string): void {
     const pitchClass = ((absSemitone % 12) + 12) % 12;
     const octave = this.getOctave(absSemitone);
-    const pitchClassName = this.getPitchClassName(pitchClass);
-    
-    // Find all elements that match both tone and octave
-    const selector = `.${pitchClassName}-oct${octave} .tone-overlay`;
-    const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
-    
-    // Animate each matching element using Web Animation API (but only the matched subset)
-    elements.forEach(el => {
-      try {
-        el.animate([
-          { opacity: 0.9, transform: 'translateZ(0)' }, 
-          { opacity: 0, transform: 'translateZ(0)' }
-        ], { 
-          duration: durationMs, 
-          easing: 'ease-out' 
-        });
-      } catch {}
-    });
-    
-    // Set timeout to clean up
-    const timeoutId = window.setTimeout(() => {
-      this.activeTimeouts.delete(animationKey);
-    }, durationMs);
-    
-    this.activeTimeouts.set(animationKey, timeoutId);
+    const elements = this.registry.get(this.registryKey(pitchClass, octave));
+
+    if (elements) {
+      elements.forEach((el) => {
+        const overlay = el.querySelector('.tone-overlay') as HTMLElement | null;
+        if (!overlay) return;
+        try {
+          overlay.animate(
+            [{ opacity: 0.9, transform: 'translateZ(0)' }, { opacity: 0, transform: 'translateZ(0)' }],
+            { duration: durationMs, easing: 'ease-out' }
+          );
+        } catch { /* ignore if Web Animation API unavailable */ }
+      });
+    }
+
+    const tid = window.setTimeout(() => { this.activeTimeouts.delete(animationKey); }, durationMs);
+    this.activeTimeouts.set(animationKey, tid);
   }
 
-  /**
-   * Stop all active animations
-   */
   stopAll(): void {
-    // Clear all timeouts
-    this.activeTimeouts.forEach((timeoutId) => {
-      clearTimeout(timeoutId);
-    });
+    this.activeTimeouts.forEach((tid) => clearTimeout(tid));
     this.activeTimeouts.clear();
-
-    // Remove all active classes (both pitch-class and octave-specific)
     const bodyClasses = Array.from(document.body.classList);
-    bodyClasses.forEach(cls => {
-      if (cls.includes('-active')) {
-        document.body.classList.remove(cls);
-      }
-    });
-  }
-
-  /**
-   * Apply tone classes to an element based on its absolute semitone
-   */
-  applyToneClass(element: HTMLElement, absSemitone: number): void {
-    const pitchClass = ((absSemitone % 12) + 12) % 12;
-    const octave = this.getOctave(absSemitone);
-    const pitchClassName = this.getPitchClassName(pitchClass);
-    
-    // Remove any existing tone classes
-    PITCH_CLASS_NAMES.forEach(cls => {
-      element.classList.remove(cls);
-      // Also remove octave-specific classes
-      for (let oct = OCTAVE_SWEEP_MIN; oct <= OCTAVE_SWEEP_MAX; oct++) {
-        element.classList.remove(`${cls}-oct${oct}`);
-      }
-    });
-    
-    // Add the correct tone classes and base tone-group class
-    element.classList.add('tone-group', pitchClassName, `${pitchClassName}-oct${octave}`);
+    bodyClasses.forEach((cls) => { if (cls.includes('-active')) document.body.classList.remove(cls); });
   }
 }
 
-// Export singleton instance
 export const toneAnimationManager = new ToneAnimationManager();
-
-// Export utilities
 export { PITCH_CLASS_NAMES };

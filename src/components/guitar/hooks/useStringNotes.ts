@@ -15,10 +15,6 @@ type UseStringNotesArgs = {
   scaleMap?: ScaleMap;
   scaleHighlightBottomOnly: boolean;
   isBottom: boolean;
-  highlightEnabled: boolean;
-  octaveHighlight: boolean;
-  playingAbs?: number | null;
-  playingSet?: number[];
 };
 
 type FretDescriptor = {
@@ -28,8 +24,6 @@ type FretDescriptor = {
   isBase: boolean;
   showScaleHighlight: boolean;
   degree: number | null;
-  isPlayingNote: boolean;
-  isPlayingOctave: boolean;
 };
 
 export const useStringNotes = ({
@@ -41,10 +35,6 @@ export const useStringNotes = ({
   scaleMap = scales,
   scaleHighlightBottomOnly,
   isBottom,
-  highlightEnabled,
-  octaveHighlight,
-  playingAbs,
-  playingSet = [],
 }: UseStringNotesArgs): FretDescriptor[] => {
   return useMemo(() => {
     const descriptors: FretDescriptor[] = [];
@@ -58,41 +48,12 @@ export const useStringNotes = ({
       const isBase = relativePc === 0;
       const showScaleHighlight = isSelected && (!scaleHighlightBottomOnly || isBottom);
       const degree = isSelected ? pitchClasses.indexOf(relativePc) + 1 : null;
-      const isPlayingNote = highlightEnabled && playingSet.includes(actualNote);
-      const isPlayingOctave =
-        highlightEnabled &&
-        octaveHighlight &&
-        typeof playingAbs === "number" &&
-        Math.floor(playingAbs / 12) === Math.floor(actualNote / 12) &&
-        isSelected;
 
-      descriptors.push({
-        fret,
-        actualNote,
-        isSelected,
-        isBase,
-        showScaleHighlight,
-        degree,
-        isPlayingNote,
-        isPlayingOctave,
-      });
+      descriptors.push({ fret, actualNote, isSelected, isBase, showScaleHighlight, degree });
     }
 
     return descriptors;
-  }, [
-    note,
-    frets,
-    offset,
-    scale,
-    keyy,
-    scaleMap,
-    scaleHighlightBottomOnly,
-    isBottom,
-    highlightEnabled,
-    octaveHighlight,
-    playingAbs,
-    playingSet,
-  ]);
+  }, [note, frets, offset, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom]);
 };
 
 export type { FretDescriptor };

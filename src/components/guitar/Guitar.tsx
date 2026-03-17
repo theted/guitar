@@ -1,4 +1,5 @@
 import React from "react";
+import { useShallow } from "zustand/react/shallow";
 import ScaleLegend from "./ScaleLegend";
 import GuitarNeck from "./GuitarNeck";
 import FretMarkers from "@/components/guitar/FretMarkers";
@@ -6,14 +7,12 @@ import { useRenderedStrings } from "@/components/guitar/hooks/useRenderedStrings
 import { useFormStore } from "@/store";
 
 type Props = {
-  playingAbs?: number | null;
-  playingSet?: number[];
   onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
   stopAllPlayback?: () => void;
   stopSignal?: number;
 };
 
-const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPlayback, stopSignal }) => {
+const Guitar: React.FC<Props> = ({ onPlayNote, stopAllPlayback, stopSignal }) => {
   const {
     strings,
     frets,
@@ -36,7 +35,7 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
     trailLength,
     minimalHighlight,
     soundType,
-  } = useFormStore((state) => ({
+  } = useFormStore(useShallow((state) => ({
     strings: state.strings,
     frets: state.frets,
     scale: state.scale,
@@ -58,9 +57,9 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
     trailLength: state.trailLength,
     minimalHighlight: state.minimalHighlight,
     soundType: state.soundType,
-  }));
+  })));
 
-  const stepMs = 60000 / Math.max(1, bpm);
+  const stepMs = Math.round(60000 / Math.max(1, bpm));
   const enableHighlight = highlightEnabled && !legendOnly;
 
   const { descriptors, fretMarkers } = useRenderedStrings({
@@ -76,7 +75,6 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
       <ScaleLegend
         scale={scale}
         keyy={keyy}
-        playingAbs={playingAbs}
         highlightEnabled={enableHighlight}
         mode={phraseMode}
         stepMs={stepMs}
@@ -97,15 +95,11 @@ const Guitar: React.FC<Props> = ({ playingAbs, playingSet, onPlayNote, stopAllPl
         frets={frets}
         scale={scale}
         keyy={keyy}
-        highlightEnabled={enableHighlight}
         scaleHighlightBottomOnly={oncePerTone}
-        octaveHighlight={octaveHighlight && !minimalHighlight}
         reduceAnimations={reduceAnimations}
         trailLength={trailLength}
         minimalHighlight={minimalHighlight}
         soundType={soundType}
-        playingAbs={playingAbs}
-        playingSet={playingSet}
         onPlayNote={onPlayNote}
       />
       <FretMarkers markers={fretMarkers} />

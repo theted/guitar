@@ -18,8 +18,6 @@ const App: React.FC = () => {
     toneAnimationManager.setMode(octaveHighlight ? 'octave-specific' : 'pitch-class');
   }, [octaveHighlight]);
 
-  const [playingAbs, setPlayingAbs] = React.useState<number | null>(null);
-  const [playingSet, setPlayingSet] = React.useState<number[]>([]);
   const playingTimersRef = React.useRef<Record<number, number>>({});
   const [stopSignal, setStopSignal] = React.useState(0);
 
@@ -30,26 +28,20 @@ const App: React.FC = () => {
       try { window.clearTimeout(tid); } catch {}
     });
     playingTimersRef.current = {};
-    setPlayingSet([]);
-    setPlayingAbs(null);
     toneAnimationManager.stopAll();
     setStopSignal((cur) => cur + 1);
   }, []);
 
-  const playNote = (absSemitone: number, durationMs = 200, _source: 'fretboard' | 'phrase' = 'fretboard') => {
-    setPlayingAbs(absSemitone);
-    setPlayingSet((cur) => (cur.includes(absSemitone) ? cur : [...cur, absSemitone]));
+  const playNote = React.useCallback((absSemitone: number, durationMs = 200, _source: 'fretboard' | 'phrase' = 'fretboard') => {
     const trailMs = Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
     toneAnimationManager.flashTone(absSemitone, minimalHighlight ? durationMs : trailMs, 'octave-specific');
     const tid = window.setTimeout(() => {
-      setPlayingSet((cur) => cur.filter((n) => n !== absSemitone));
-      if (playingTimersRef.current[absSemitone]) delete playingTimersRef.current[absSemitone];
-      setPlayingAbs((cur) => (cur === absSemitone ? null : cur));
+      delete playingTimersRef.current[absSemitone];
     }, minimalHighlight ? durationMs : trailMs);
     playingTimersRef.current[absSemitone] = tid as unknown as number;
-  };
+  }, [trailLength, minimalHighlight]);
 
   return (
     <div className="app-content min-h-screen w-full">
@@ -73,8 +65,6 @@ const App: React.FC = () => {
       {/* Guitar — only 48px top offset now */}
       <main className="fixed inset-0 flex items-center justify-center px-4 pt-12">
         <Guitar
-          playingAbs={playingAbs}
-          playingSet={playingSet}
           onPlayNote={playNote}
           stopAllPlayback={stopAllPlayback}
           stopSignal={stopSignal}

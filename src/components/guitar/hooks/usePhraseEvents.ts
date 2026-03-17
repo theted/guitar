@@ -38,7 +38,7 @@ export const usePhraseEvents = ({
       return { events: [] as PhraseEvent[], loopDuration: 0 };
     }
 
-    const straightMs = Math.max(20, stepMs);
+    const straightMs = Math.max(20, Math.round(stepMs));
     const longF = 4 / 3;
     const shortF = 2 / 3;
 

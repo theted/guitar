@@ -14,14 +14,14 @@ describe('GuitarString highlighting', () => {
   };
 
   it('shows tone overlay for highlighting', () => {
-    render(<GuitarString {...baseProps} highlightEnabled={true} octaveHighlight={true} playingAbs={5} />); // same octave as E4
+    render(<GuitarString {...baseProps} />);
     const e4 = screen.getByText(/E4/i);
     const overlay = e4.parentElement?.querySelector('.tone-overlay');
     expect(overlay).toBeInTheDocument();
   });
 
   it('has tone overlay present regardless of highlighting state', () => {
-    render(<GuitarString {...baseProps} highlightEnabled={false} playingAbs={5} />);
+    render(<GuitarString {...baseProps} />);
     const e4 = screen.getByText(/E4/i);
     const overlay = e4.parentElement?.querySelector('.tone-overlay');
     expect(overlay).toBeInTheDocument(); // tone-overlay is always present, animations are controlled via CSS classes

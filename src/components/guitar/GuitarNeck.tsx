@@ -10,32 +10,24 @@ type GuitarNeckProps = {
   frets: number;
   scale: ScaleName;
   keyy: string;
-  highlightEnabled: boolean;
   scaleHighlightBottomOnly: boolean;
-  octaveHighlight: boolean;
   reduceAnimations: boolean;
   trailLength: number;
   minimalHighlight: boolean;
   soundType?: SoundType;
-  playingAbs?: number | null;
-  playingSet?: number[];
   onPlayNote?: (absSemitone: number, durationMs?: number) => void;
 };
 
-const GuitarNeck: React.FC<GuitarNeckProps> = ({
+const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({
   descriptors,
   frets,
   scale,
   keyy,
-  highlightEnabled,
   scaleHighlightBottomOnly,
-  octaveHighlight,
   reduceAnimations,
   trailLength,
   minimalHighlight,
   soundType,
-  playingAbs,
-  playingSet,
   onPlayNote,
 }) => {
   return (
@@ -51,19 +43,15 @@ const GuitarNeck: React.FC<GuitarNeckProps> = ({
           keyy={keyy}
           scaleHighlightBottomOnly={scaleHighlightBottomOnly}
           isBottom={descriptor.isBottom}
-          highlightEnabled={highlightEnabled}
-          octaveHighlight={octaveHighlight}
           reduceAnimations={reduceAnimations}
           trailLength={trailLength}
           minimalHighlight={minimalHighlight}
           soundType={soundType}
-          playingAbs={playingAbs}
-          playingSet={playingSet}
           onPlayNote={onPlayNote}
         />
       ))}
     </div>
   );
-};
+});
 
 export default GuitarNeck;
