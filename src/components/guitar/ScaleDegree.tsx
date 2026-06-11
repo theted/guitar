@@ -9,22 +9,14 @@ type ScaleDegreeProps = {
   interval?: string;
   abs: number;
   isTonic: boolean;
-  isActive: boolean;
-  reduceAnimations: boolean;
-  minimalHighlight: boolean;
-  trailLength: number;
 };
 
-const ScaleDegree: React.FC<ScaleDegreeProps> = ({
+const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
   index,
   label,
   interval,
   abs,
   isTonic,
-  isActive,
-  reduceAnimations,
-  minimalHighlight,
-  trailLength,
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
@@ -32,13 +24,12 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = ({
     const element = ref.current;
     if (!element) return;
     toneAnimationManager.applyToneClass(element, abs);
+    return () => { toneAnimationManager.clearToneClass(element); };
   }, [abs]);
 
   const classes = cx(
     "relative overflow-hidden px-2 py-1 rounded-md text-sm uppercase tracking-wide transition-colors border",
-    isActive
-      ? "bg-cyan-600/20 text-cyan-100 border-cyan-400"
-      : isTonic
+    isTonic
       ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/70"
       : "bg-amber-500/15 text-amber-200 border-amber-400/50"
   );
@@ -51,11 +42,8 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = ({
         <span className="ml-1.5 text-[10px] normal-case opacity-50">{interval}</span>
       )}
       <span className="tone-overlay" />
-      {isActive && !reduceAnimations && !minimalHighlight && (
-        <span className="note-fade-overlay note-fade-strong" style={{ animationDuration: `${trailLength}ms` }} />
-      )}
     </div>
   );
-};
+});
 
 export default ScaleDegree;

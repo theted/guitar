@@ -21,8 +21,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-src/style.css
-src/style.css.map
 
 dist/
 IDEA.md

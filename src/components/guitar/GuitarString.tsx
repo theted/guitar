@@ -35,7 +35,9 @@ type StringFretProps = {
   minimalHighlight: boolean;
 };
 
-const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnimations, minimalHighlight }) => {
+// Memoized: ~150 instances render per fretboard; descriptor identity is stable
+// (useStringNotes memo) so unrelated store changes skip all of them.
+const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, onClick, reduceAnimations, minimalHighlight }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -86,7 +88,7 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
       <span className="tone-overlay" />
     </div>
   );
-};
+});
 
 type Props = {
   idx: number;
@@ -98,7 +100,6 @@ type Props = {
   scaleHighlightBottomOnly?: boolean;
   isBottom?: boolean;
   reduceAnimations?: boolean;
-  trailLength?: number;
   minimalHighlight?: boolean;
   soundType?: SoundType;
   selectedChordDegree?: number | null;

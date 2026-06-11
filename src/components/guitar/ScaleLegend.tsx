@@ -9,13 +9,10 @@ import ScaleDegree from './ScaleDegree';
 
 // Pure display of the scale's degrees; playback lives in usePlayback/TopBar.
 const ScaleLegend: React.FC = () => {
-  const { scale, keyy, reduceAnimations, minimalHighlight, trailLength } = useFormStore(
+  const { scale, keyy } = useFormStore(
     useShallow((state) => ({
       scale: state.scale,
       keyy: state.tone,
-      reduceAnimations: state.reduceAnimations,
-      minimalHighlight: state.minimalHighlight,
-      trailLength: state.trailLength,
     }))
   );
 
@@ -36,10 +33,6 @@ const ScaleLegend: React.FC = () => {
           interval={intervalName(pc)}
           abs={keyOffset + pc}
           isTonic={index === 0}
-          isActive={false}
-          reduceAnimations={reduceAnimations}
-          minimalHighlight={minimalHighlight}
-          trailLength={trailLength}
         />
       ))}
     </div>

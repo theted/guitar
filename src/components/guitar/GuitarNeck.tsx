@@ -13,14 +13,13 @@ type GuitarNeckProps = {
 
 const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote }) => {
   const {
-    scale, keyy, oncePerTone, reduceAnimations, trailLength, minimalHighlight,
+    scale, keyy, oncePerTone, reduceAnimations, minimalHighlight,
     soundType, selectedChordDegree,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     keyy: state.tone,
     oncePerTone: state.oncePerTone,
     reduceAnimations: state.reduceAnimations,
-    trailLength: state.trailLength,
     minimalHighlight: state.minimalHighlight,
     soundType: state.soundType,
     selectedChordDegree: state.selectedChordDegree,
@@ -39,7 +38,6 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           scaleHighlightBottomOnly={oncePerTone}
           isBottom={descriptor.isBottom}
           reduceAnimations={reduceAnimations}
-          trailLength={trailLength}
           minimalHighlight={minimalHighlight}
           soundType={soundType}
           selectedChordDegree={selectedChordDegree}

@@ -59,38 +59,28 @@ export const usePhrasePlayer = ({
     setIsPlaying(true);
 
     const startTime = getCurrentTime() + AUDIO_LOOKAHEAD_SEC;
-    let allEvents = events.map((event) => ({
+    const absoluteEvents = events.map((event) => ({
       ...event,
       startTimeSec: startTime + event.startTimeSec,
     }));
 
-    if (loop && loopDuration > 0) {
-      const maxLoops = Math.ceil(60 / loopDuration);
-      for (let i = 1; i < maxLoops; i += 1) {
-        const loopEvents = events.map((event) => ({
-          ...event,
-          startTimeSec: startTime + event.startTimeSec + i * loopDuration,
-        }));
-        allEvents = allEvents.concat(loopEvents);
-      }
-    }
-
+    // Looping repeats this single pass natively in the scheduler — no event
+    // pre-generation, and it runs until stopped instead of for a fixed window.
     const sessionId = scheduler.startPhraseSession(
-      allEvents,
+      absoluteEvents,
       (abs, durationMs) => {
         if (playSessionRef.current !== session) return;
         onPlayNote?.(abs, durationMs);
       },
       soundType,
+      loop ? loopDuration : undefined,
     );
 
     schedulerSessionRef.current = sessionId;
 
     if (!loop) {
-      const totalDuration =
-        allEvents.length > 0
-          ? allEvents[allEvents.length - 1].startTimeSec - startTime + allEvents[allEvents.length - 1].durSec
-          : 0;
+      const last = absoluteEvents[absoluteEvents.length - 1];
+      const totalDuration = last ? last.startTimeSec - startTime + last.durSec : 0;
 
       window.setTimeout(() => {
         if (playSessionRef.current !== session) return;

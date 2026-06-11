@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
@@ -21,8 +21,7 @@ export type PlayNoteFn = (
 export const usePlayback = () => {
   const {
     scale, tone, phraseMode, bpm, swing, phraseOctaves, phraseDescend,
-    phraseLoop, soundType, trailLength, minimalHighlight, reduceAnimations,
-    selectedChordDegree,
+    phraseLoop, soundType, selectedChordDegree,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
@@ -33,39 +32,43 @@ export const usePlayback = () => {
     phraseDescend: state.phraseDescend,
     phraseLoop: state.phraseLoop,
     soundType: state.soundType,
-    trailLength: state.trailLength,
-    minimalHighlight: state.minimalHighlight,
-    reduceAnimations: state.reduceAnimations,
     selectedChordDegree: state.selectedChordDegree,
   })));
 
   const playingTimersRef = useRef<Record<number, number>>({});
+  const isPlayingRef = useRef(false);
   const [stopSignal, setStopSignal] = useState(0);
 
   const stopAllPlayback = useCallback(() => {
     scheduler.stopAll();
     stopAllAudio();
+    const hadTimers = Object.keys(playingTimersRef.current).length > 0;
     Object.values(playingTimersRef.current).forEach((tid) => {
       try { window.clearTimeout(tid); } catch { /* already cleared */ }
     });
     playingTimersRef.current = {};
     toneAnimationManager.stopAll();
-    setStopSignal((cur) => cur + 1);
+    // The signal exists to reset an active phrase session; bumping it while
+    // idle would just re-render the whole tree for nothing.
+    if (hadTimers || isPlayingRef.current) setStopSignal((cur) => cur + 1);
   }, []);
 
+  // Flash settings are read at call time so this callback stays stable —
+  // dragging the trail slider must not re-render the fretboard.
   const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200) => {
+    const { trailLength, minimalHighlight, reduceAnimations } = useFormStore.getState();
     // Long visual trails are an animation; honor both opt-outs
     const flashMs = minimalHighlight || reduceAnimations
       ? durationMs
       : Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
-    toneAnimationManager.flashTone(absSemitone, flashMs, "octave-specific");
+    toneAnimationManager.flashTone(absSemitone, flashMs);
     const tid = window.setTimeout(() => {
       delete playingTimersRef.current[absSemitone];
     }, flashMs);
     playingTimersRef.current[absSemitone] = tid as unknown as number;
-  }, [trailLength, minimalHighlight, reduceAnimations]);
+  }, []);
 
   const keyOffset = useMemo(() => keyToOffset(tone), [tone]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
@@ -105,6 +108,10 @@ export const usePlayback = () => {
     stopAllPlayback,
     stopSignal,
   });
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   const togglePlay = useCallback(async () => {
     if (!isPlaying) {

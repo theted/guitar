@@ -39,6 +39,10 @@ type PhraseSession = {
   events: PlaybackEvent[];
   nextScheduleIdx: number; // next event to schedule audio for
   nextUiIdx: number;       // next event to fire UI callback for
+  /** When set, the event list repeats every this many seconds, indefinitely */
+  loopDurationSec: number | null;
+  scheduleCycle: number;   // loop iteration the audio scheduler is in
+  uiCycle: number;         // loop iteration the UI callbacks are in
   onUiNote: UiCallback;
   soundType: SoundType;
   tickHandle: number | null;
@@ -71,6 +75,7 @@ class AudioScheduler {
     events: PlaybackEvent[],
     onUiNote: UiCallback,
     soundType: SoundType,
+    loopDurationSec?: number,
   ): number {
     const id = this.nextId++;
     const session: PhraseSession = {
@@ -78,6 +83,10 @@ class AudioScheduler {
       events,
       nextScheduleIdx: 0,
       nextUiIdx: 0,
+      // Guard against zero-length loops spinning the scheduler
+      loopDurationSec: loopDurationSec && loopDurationSec > 0.05 ? loopDurationSec : null,
+      scheduleCycle: 0,
+      uiCycle: 0,
       onUiNote,
       soundType,
       tickHandle: null,
@@ -97,24 +106,30 @@ class AudioScheduler {
     const now = getCurrentTime();
     const until = now + SCHEDULE_AHEAD_SEC;
 
-    while (
-      session.nextScheduleIdx < session.events.length &&
-      session.events[session.nextScheduleIdx].startTimeSec <= until
-    ) {
+    for (;;) {
+      if (session.nextScheduleIdx >= session.events.length) {
+        if (session.loopDurationSec == null) break;
+        // Wrap into the next loop iteration; event times shift by one period
+        session.nextScheduleIdx = 0;
+        session.scheduleCycle += 1;
+      }
       const evt = session.events[session.nextScheduleIdx];
+      const startTimeSec =
+        evt.startTimeSec + session.scheduleCycle * (session.loopDurationSec ?? 0);
+      if (startTimeSec > until) break;
       session.nextScheduleIdx++;
 
       // Skip events that are too far in the past — avoids a burst of stale audio
       // when the tab was backgrounded and setTimeout ticks fire late.
-      if (evt.startTimeSec < now - STALE_THRESHOLD_SEC) continue;
+      if (startTimeSec < now - STALE_THRESHOLD_SEC) continue;
 
-      playSemitoneAt(evt.abs, evt.startTimeSec, {
+      playSemitoneAt(evt.abs, startTimeSec, {
         duration: Math.max(0.2, evt.durSec),
         type: session.soundType,
       });
     }
 
-    if (session.nextScheduleIdx < session.events.length) {
+    if (session.loopDurationSec != null || session.nextScheduleIdx < session.events.length) {
       session.tickHandle = window.setTimeout(
         () => this._audioTick(session),
         SCHEDULER_TICK_MS,
@@ -132,16 +147,21 @@ class AudioScheduler {
   private _uiRaf(session: PhraseSession): void {
     const now = getCurrentTime();
 
-    while (
-      session.nextUiIdx < session.events.length &&
-      session.events[session.nextUiIdx].startTimeSec <= now + RAF_EPSILON_SEC
-    ) {
+    for (;;) {
+      if (session.nextUiIdx >= session.events.length) {
+        if (session.loopDurationSec == null) break;
+        session.nextUiIdx = 0;
+        session.uiCycle += 1;
+      }
       const evt = session.events[session.nextUiIdx];
+      const startTimeSec =
+        evt.startTimeSec + session.uiCycle * (session.loopDurationSec ?? 0);
+      if (startTimeSec > now + RAF_EPSILON_SEC) break;
       try { session.onUiNote(evt.abs, Math.round(evt.durSec * 1000)); } catch { /* noop */ }
       session.nextUiIdx++;
     }
 
-    if (session.nextUiIdx < session.events.length) {
+    if (session.loopDurationSec != null || session.nextUiIdx < session.events.length) {
       session.rafHandle = requestAnimationFrame(
         () => this._uiRaf(session),
       ) as unknown as number;
