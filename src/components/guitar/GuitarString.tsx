@@ -1,23 +1,13 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import cx from "classnames";
 import { getNoteWithOctave } from "@/music";
 import { SoundType, ensureAudioInitialized } from "@/audio";
 import { scheduler } from "@/scheduler";
-import Field from "@/components/common/Field";
 import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
 
 type ScaleDefinition = typeof baseScales;
-
-const OffsetField: React.FC<{ value: number; onChange: (value: number) => void }> = ({ value, onChange }) => (
-  <Field
-    onChange={(next) => onChange(parseInt(next, 10) || 0)}
-    value={String(value)}
-    type="number"
-    className="absolute left-2 top-1 w-16 text-xs opacity-0 hover:opacity-100"
-  />
-);
 
 type UseFretClickArgs = {
   soundType: SoundType;
@@ -120,12 +110,9 @@ const GuitarString: React.FC<Props> = React.memo(({
   soundType = "marimba",
   onPlayNote,
 }) => {
-  const [offset, setOffset] = useState<number>(0);
-
   const fretDescriptors = useStringNotes({
     note,
     frets,
-    offset,
     scale,
     keyy,
     scaleMap: scales,
@@ -137,7 +124,6 @@ const GuitarString: React.FC<Props> = React.memo(({
 
   return (
     <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string">
-      <OffsetField value={offset} onChange={setOffset} />
       {fretDescriptors.map((descriptor) => (
         <StringFret
           key={descriptor.fret}

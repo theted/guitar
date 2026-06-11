@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, Tone, PhraseMode } from './constants';
+import { DEFAULTS, ScaleName, TuningName, Tone, PhraseMode, scales } from './constants';
 import { SoundType } from './audio';
 
 export type FormState = {
@@ -53,12 +53,26 @@ const initial: FormState = {
   oncePerTone: false,
 };
 
+// Migrates persisted state from older app versions; runs when the stored
+// version is below the current one.
+export const migrateFormState = (persisted: unknown): FormState => {
+  const state = { ...initial, ...(persisted as Partial<FormState>) };
+  if (!(state.scale in scales)) {
+    state.scale = DEFAULTS.SCALE;
+  }
+  return state;
+};
+
 export const useFormStore = create<FormState>()(
   persist(
     (_set, _get) => ({
       ...initial,
     }),
-    { name: 'formState' }
+    {
+      name: 'formState',
+      version: 1,
+      migrate: (persisted) => migrateFormState(persisted),
+    }
   )
 );
 

@@ -1,16 +1,15 @@
 # --- Build stage ---
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (better layer caching)
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copy source
 COPY . .
 
-# Build CSS from Stylus and then the app
-RUN yarn styles && yarn build
+RUN npm run build
 
 # --- Runtime stage ---
 FROM nginx:alpine AS runner

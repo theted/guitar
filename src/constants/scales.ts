@@ -41,10 +41,6 @@ export const scales = {
   "minor thirds": [3], // Diminished 7th chord as scale (C-Eb-Gb-A)
   "major thirds": [4], // Augmented triad (C-E-Ab)
   "whole steps": [2], // Same as whole tone but expressed as repeating interval
-
-  // Test/experimental (kept for compatibility)
-  test: [2],
-  weird: [4],
 } as const;
 
 export type ScaleName = keyof typeof scales;

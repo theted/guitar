@@ -9,7 +9,6 @@ type ScaleMap = typeof scales;
 type UseStringNotesArgs = {
   note: number;
   frets: number;
-  offset: number;
   scale: ScaleName;
   keyy: string;
   scaleMap?: ScaleMap;
@@ -29,7 +28,6 @@ type FretDescriptor = {
 export const useStringNotes = ({
   note,
   frets,
-  offset,
   scale,
   keyy,
   scaleMap = scales,
@@ -42,7 +40,7 @@ export const useStringNotes = ({
     const keyOffset = keyToOffset(keyy);
 
     for (let fret = 0; fret <= frets; fret += 1) {
-      const actualNote = note + fret + offset;
+      const actualNote = note + fret;
       const relativePc = asPitchClass((((actualNote - keyOffset) % 12) + 12) % 12);
       const isSelected = pitchClasses.includes(relativePc);
       const isBase = relativePc === 0;
@@ -53,7 +51,7 @@ export const useStringNotes = ({
     }
 
     return descriptors;
-  }, [note, frets, offset, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom]);
+  }, [note, frets, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom]);
 };
 
 export type { FretDescriptor };
