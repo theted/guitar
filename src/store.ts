@@ -26,6 +26,8 @@ export type FormState = {
   soundType: SoundType;
   startOctave: number;
   oncePerTone: boolean;
+  /** 1-based degree of the highlighted diatonic chord, or null for none */
+  selectedChordDegree: number | null;
 };
 
 const prefersReducedMotion =
@@ -56,6 +58,7 @@ const initial: FormState = {
   soundType: 'marimba',
   startOctave: 6,
   oncePerTone: false,
+  selectedChordDegree: null,
 };
 
 // v1 keys were spelled with sharps only; flat keys now use their conventional names

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
+import { getDiatonicChords } from "@/theory/chords";
 import { scales } from "@/constants";
 import { scheduler } from "@/scheduler";
 import { stopAllAudio, ensureAudioInitialized } from "@/audio";
@@ -21,6 +22,7 @@ export const usePlayback = () => {
   const {
     scale, tone, phraseMode, bpm, swing, phraseOctaves, phraseDescend,
     phraseLoop, soundType, trailLength, minimalHighlight, reduceAnimations,
+    selectedChordDegree,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
@@ -34,6 +36,7 @@ export const usePlayback = () => {
     trailLength: state.trailLength,
     minimalHighlight: state.minimalHighlight,
     reduceAnimations: state.reduceAnimations,
+    selectedChordDegree: state.selectedChordDegree,
   })));
 
   const playingTimersRef = useRef<Record<number, number>>({});
@@ -68,8 +71,18 @@ export const usePlayback = () => {
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
   const stepMs = Math.round(60000 / Math.max(1, bpm));
 
+  // Chord arpeggio mode plays the selected diatonic chord's tones (the tonic
+  // chord when none is selected) through the regular phrase machinery.
+  const phrasePitchClasses = useMemo(() => {
+    if (phraseMode !== "chord-arp") return pitchClasses;
+    const chords = getDiatonicChords(tone, pitchClasses);
+    const chord = (selectedChordDegree != null ? chords[selectedChordDegree - 1] : null) ?? chords[0];
+    if (!chord) return pitchClasses;
+    return [...chord.pcs].sort((a, b) => a - b);
+  }, [phraseMode, tone, pitchClasses, selectedChordDegree]);
+
   const { events, loopDuration } = usePhraseEvents({
-    pitchClasses,
+    pitchClasses: phrasePitchClasses,
     mode: phraseMode,
     octaves: phraseOctaves,
     descend: phraseDescend,

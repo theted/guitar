@@ -4,6 +4,7 @@ import { SoundType, ensureAudioInitialized } from "@/audio";
 import { scheduler } from "@/scheduler";
 import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
+import { intervalName } from "@/theory/intervals";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
 
 type ScaleDefinition = typeof baseScales;
@@ -44,7 +45,14 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
     return () => { toneAnimationManager.clearToneClass(element); };
   }, [descriptor.actualNote]);
 
-  const colorClasses = descriptor.isBase && descriptor.showScaleHighlight
+  const chordActive = descriptor.chordTone !== null;
+  const colorClasses = chordActive && descriptor.chordTone
+    ? descriptor.isChordRoot
+      ? "bg-cyan-950/80 text-white border-cyan-400/60"
+      : "bg-zinc-600/70 text-white border-cyan-400/30"
+    : chordActive && descriptor.showScaleHighlight
+    ? "bg-zinc-800/40 text-zinc-400 border-white/10" // scale note dimmed while a chord is shown
+    : descriptor.isBase && descriptor.showScaleHighlight
     ? "bg-black/70 text-white border-white/20"
     : descriptor.showScaleHighlight
     ? "bg-zinc-700/60 text-white border-white/10"
@@ -54,6 +62,7 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
     <div
       ref={ref}
       data-abs={descriptor.actualNote}
+      title={`${descriptor.label} · ${intervalName(descriptor.relativePc)}`}
       className={cx(
         "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none",
         colorClasses,
@@ -92,6 +101,7 @@ type Props = {
   trailLength?: number;
   minimalHighlight?: boolean;
   soundType?: SoundType;
+  selectedChordDegree?: number | null;
   onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
 }
 
@@ -107,6 +117,7 @@ const GuitarString: React.FC<Props> = React.memo(({
   reduceAnimations = false,
   minimalHighlight = false,
   soundType = "marimba",
+  selectedChordDegree = null,
   onPlayNote,
 }) => {
   const fretDescriptors = useStringNotes({
@@ -117,6 +128,7 @@ const GuitarString: React.FC<Props> = React.memo(({
     scaleMap: scales,
     scaleHighlightBottomOnly,
     isBottom,
+    selectedChordDegree,
   });
 
   const handleFretClick = useFretClick({ soundType, onPlayNote });

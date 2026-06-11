@@ -33,6 +33,8 @@ type OctBuilder = (pcs: PitchClass[]) => number[];
 
 const modeBuilders: Record<PhraseMode, OctBuilder> = {
   'full-scale': (pcs) => [...pcs],
+  // The chord's tones arrive as the pcs (selected in usePlayback); ascend them
+  'chord-arp':  (pcs) => [...pcs],
 
   'snake':      (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),
   'motif-1232': (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),

@@ -5,6 +5,8 @@ import { toneAnimationManager } from "@/lib/tone-animation";
 type ScaleDegreeProps = {
   index: number;
   label: string;
+  /** Interval name relative to the tonic, e.g. "m3" */
+  interval?: string;
   abs: number;
   isTonic: boolean;
   isActive: boolean;
@@ -16,6 +18,7 @@ type ScaleDegreeProps = {
 const ScaleDegree: React.FC<ScaleDegreeProps> = ({
   index,
   label,
+  interval,
   abs,
   isTonic,
   isActive,
@@ -44,6 +47,9 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = ({
     <div ref={ref} className={classes} data-pc={abs % 12}>
       <span className="mr-1 font-semibold">{index + 1}</span>
       {label}
+      {interval && (
+        <span className="ml-1.5 text-[10px] normal-case opacity-50">{interval}</span>
+      )}
       <span className="tone-overlay" />
       {isActive && !reduceAnimations && !minimalHighlight && (
         <span className="note-fade-overlay note-fade-strong" style={{ animationDuration: `${trailLength}ms` }} />

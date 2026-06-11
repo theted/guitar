@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { keyToOffset, getScalePitchClasses } from '@/music';
 import { getScaleSpelling, formatNote } from '@/theory/spelling';
+import { intervalName } from '@/theory/intervals';
 import { scales } from '@/constants';
 import { useFormStore } from '@/store';
 import ScaleDegree from './ScaleDegree';
@@ -32,6 +33,7 @@ const ScaleLegend: React.FC = () => {
           key={pc}
           index={index}
           label={degreeLabels[index]}
+          interval={intervalName(pc)}
           abs={keyOffset + pc}
           isTonic={index === 0}
           isActive={false}

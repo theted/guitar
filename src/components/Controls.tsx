@@ -2,13 +2,15 @@ import React from 'react';
 import ScaleControls from '@/components/controls/ScaleControls';
 import InstrumentControls from '@/components/controls/InstrumentControls';
 import PlaybackControls from '@/components/controls/PlaybackControls';
+import ScaleInfo from '@/components/controls/ScaleInfo';
 
-type Tab = 'scale' | 'instrument' | 'playback';
+type Tab = 'scale' | 'instrument' | 'playback' | 'info';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'scale', label: 'Scale' },
   { id: 'instrument', label: 'Instrument' },
   { id: 'playback', label: 'Playback' },
+  { id: 'info', label: 'Info' },
 ];
 
 interface ControlsProps {
@@ -45,6 +47,7 @@ const Controls: React.FC<ControlsProps> = ({ stopAllPlayback }) => {
         {activeTab === 'scale' && <ScaleControls stopAllPlayback={stopAllPlayback} />}
         {activeTab === 'instrument' && <InstrumentControls stopAllPlayback={stopAllPlayback} />}
         {activeTab === 'playback' && <PlaybackControls stopAllPlayback={stopAllPlayback} />}
+        {activeTab === 'info' && <ScaleInfo />}
       </div>
     </div>
   );

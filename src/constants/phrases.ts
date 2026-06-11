@@ -21,7 +21,8 @@ export type PhraseMode =
   | "polyrhythm"
   | "breakdown-chug"
   | "tremolo"
-  | "legato-cascade";
+  | "legato-cascade"
+  | "chord-arp";
 
 // Display metadata for the phrase picker, grouped by playing style.
 export const PHRASE_MODE_GROUPS: ReadonlyArray<{
@@ -49,6 +50,7 @@ export const PHRASE_MODE_GROUPS: ReadonlyArray<{
   {
     label: "Arpeggios",
     modes: [
+      { value: "chord-arp", label: "🎹 Chord Arpeggio" },
       { value: "triads", label: "🎹 Triads" },
       { value: "sevenths", label: "🎹 Sevenths" },
       { value: "sweep-arp", label: "🎸 Sweep Arpeggio" },
