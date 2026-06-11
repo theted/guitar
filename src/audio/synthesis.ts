@@ -12,6 +12,9 @@ const createGainNode = (
   const gain = ctx.createGain();
   const { attack, attackLevel, decay, sustain, release } = envelope;
 
+  // Exponential ramps reject zero targets and negative times
+  const sustainLevel = Math.max(0.0001, sustain);
+
   gain.gain.setValueAtTime(0.0001, startTime);
 
   if (attack > 0) {
@@ -25,10 +28,18 @@ const createGainNode = (
   }
 
   if (sustain !== attackLevel) {
-    gain.gain.exponentialRampToValueAtTime(sustain, startTime + attack + decay);
+    gain.gain.exponentialRampToValueAtTime(sustainLevel, startTime + attack + decay);
   }
 
-  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration - release);
+  // Release fades over the tail of the note (oscillators hard-stop at
+  // startTime + duration). Clamped so the ramp can never start before the
+  // sustain point or target a time in the past — short notes with long
+  // releases used to compute a negative time here, which threw on a freshly
+  // created AudioContext and silenced the first playback entirely.
+  const noteEnd = startTime + duration;
+  const releaseStart = Math.max(startTime + attack + decay, noteEnd - release);
+  gain.gain.setValueAtTime(sustainLevel, releaseStart);
+  gain.gain.exponentialRampToValueAtTime(0.0001, Math.max(noteEnd, releaseStart + 0.005));
 
   return gain;
 };

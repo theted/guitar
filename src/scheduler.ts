@@ -123,10 +123,15 @@ class AudioScheduler {
       // when the tab was backgrounded and setTimeout ticks fire late.
       if (startTimeSec < now - STALE_THRESHOLD_SEC) continue;
 
-      playSemitoneAt(evt.abs, startTimeSec, {
-        duration: Math.max(0.2, evt.durSec),
-        type: session.soundType,
-      });
+      // One failed note must not break the tick chain and silence the session
+      try {
+        playSemitoneAt(evt.abs, startTimeSec, {
+          duration: Math.max(0.2, evt.durSec),
+          type: session.soundType,
+        });
+      } catch (error) {
+        console.error('Failed to schedule note:', error);
+      }
     }
 
     if (session.loopDurationSec != null || session.nextScheduleIdx < session.events.length) {
