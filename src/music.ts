@@ -1,18 +1,13 @@
 import { tones, Tone } from "./constants/tones";
+import { parseKey } from "./theory/spelling";
 import type { PitchClass, KeyOffset } from "./types/music";
-
-const noteMap = (tones as readonly string[]).reduce<Record<string, number>>(
-  (accumulator, target) => ({
-    ...accumulator,
-    [target]: Object.keys(accumulator).length,
-  }),
-  {}
-);
 
 const getNote = (offset: number): Tone =>
   tones[((offset % tones.length) + tones.length) % tones.length];
 
-const keyToOffset = (key: string): KeyOffset => noteMap[key] as KeyOffset;
+// Accepts any letter+accidental name ("bb", "f#", "e"), including the legacy
+// sharp-only names that may live in persisted state or tuning definitions.
+const keyToOffset = (key: string): KeyOffset => parseKey(key).pc as number as KeyOffset;
 
 export { getNote, keyToOffset };
 

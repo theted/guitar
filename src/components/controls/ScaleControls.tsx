@@ -2,7 +2,8 @@ import React, { useCallback } from 'react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { PhraseMode, ScaleName, Tone, scales, tones } from '@/constants';
+import { PhraseMode, ScaleName, KeyName, scales, KEYS } from '@/constants';
+import { parseKey, formatNote } from '@/theory/spelling';
 import { ucFirst } from '@/lib/utils';
 import { setFormState, useFormStore, type FormState } from '@/store';
 import FormToggle from './FormToggle';
@@ -50,11 +51,11 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Key</label>
-            <Select value={tone} onValueChange={(v) => apply({ tone: v as Tone })}>
+            <Select value={tone} onValueChange={(v) => apply({ tone: v as KeyName })}>
               <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
               <SelectContent className={selectContentCls}>
-                {tones.map((t) => (
-                  <SelectItem key={t} value={t} className="text-xs focus:bg-white/[0.08] focus:text-white">{t.toUpperCase()}</SelectItem>
+                {KEYS.map((k) => (
+                  <SelectItem key={k} value={k} className="text-xs focus:bg-white/[0.08] focus:text-white">{formatNote(parseKey(k))}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
-import { keyToOffset, getScalePitchClasses, getNote } from '@/music';
+import { keyToOffset, getScalePitchClasses } from '@/music';
+import { getScaleSpelling, formatNote } from '@/theory/spelling';
 import { ScaleName, PhraseMode, scales } from '@/constants';
 import { Play } from 'lucide-react';
 import { SoundType, ensureAudioInitialized } from '@/audio';
@@ -47,6 +48,10 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
 }) => {
   const keyOffset = useMemo(() => keyToOffset(keyy), [keyy]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
+  const degreeLabels = useMemo(
+    () => getScaleSpelling(keyy, pitchClasses).map(formatNote),
+    [keyy, pitchClasses]
+  );
 
   const { events, loopDuration } = usePhraseEvents({
     pitchClasses,
@@ -93,7 +98,7 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
       <div className="flex flex-wrap items-center gap-2">
         {pitchClasses.map((pc, index) => {
           const abs = keyOffset + pc;
-          const noteLabel = getNote(abs);
+          const noteLabel = degreeLabels[index];
           const isTonic = index === 0;
           // Tone-based animation handles highlighting — disable React state highlight to prevent doubling
           const isActive = false;

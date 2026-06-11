@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, Tone, PhraseMode, scales } from './constants';
+import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, KEYS } from './constants';
 import { SoundType } from './audio';
 
 export type FormState = {
@@ -8,7 +8,7 @@ export type FormState = {
   strings: number;
   frets: number;
   tuningName: TuningName;
-  tone: Tone;
+  tone: KeyName;
   lowAtBottom: boolean;
   highlightEnabled: boolean;
   legendOnly: boolean;
@@ -53,12 +53,26 @@ const initial: FormState = {
   oncePerTone: false,
 };
 
+// v1 keys were spelled with sharps only; flat keys now use their conventional names
+const LEGACY_KEY_NAMES: Record<string, KeyName> = {
+  'a#': 'bb',
+  'c#': 'db',
+  'd#': 'eb',
+  'g#': 'ab',
+};
+
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
 export const migrateFormState = (persisted: unknown): FormState => {
   const state = { ...initial, ...(persisted as Partial<FormState>) };
   if (!(state.scale in scales)) {
     state.scale = DEFAULTS.SCALE;
+  }
+  const tone = state.tone as string;
+  if (tone in LEGACY_KEY_NAMES) {
+    state.tone = LEGACY_KEY_NAMES[tone];
+  } else if (!(KEYS as readonly string[]).includes(tone)) {
+    state.tone = DEFAULTS.KEY;
   }
   return state;
 };
@@ -70,7 +84,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 1,
+      version: 2,
       migrate: (persisted) => migrateFormState(persisted),
     }
   )

@@ -1,6 +1,5 @@
 import React, { useCallback } from "react";
 import cx from "classnames";
-import { getNoteWithOctave } from "@/music";
 import { SoundType, ensureAudioInitialized } from "@/audio";
 import { scheduler } from "@/scheduler";
 import { scales as baseScales, type ScaleName } from "@/constants";
@@ -63,7 +62,7 @@ const StringFret: React.FC<StringFretProps> = ({ descriptor, onClick, reduceAnim
       )}
       onClick={() => onClick(descriptor.actualNote)}
     >
-      {getNoteWithOctave(descriptor.actualNote)}
+      {descriptor.label}
       {descriptor.showScaleHighlight && descriptor.degree && !minimalHighlight && (
         <span
           className={cx(

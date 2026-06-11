@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getScalePitchClasses, keyToOffset } from "@/music";
+import { getSpellingMap, formatNoteWithOctave } from "@/theory/spelling";
 import { scales } from "@/constants";
 import { pitchClass as asPitchClass } from "@/types";
 import type { ScaleName } from "@/constants";
@@ -19,6 +20,7 @@ type UseStringNotesArgs = {
 type FretDescriptor = {
   fret: number;
   actualNote: number;
+  label: string;
   isSelected: boolean;
   isBase: boolean;
   showScaleHighlight: boolean;
@@ -38,6 +40,7 @@ export const useStringNotes = ({
     const descriptors: FretDescriptor[] = [];
     const pitchClasses = getScalePitchClasses(scaleMap[scale]);
     const keyOffset = keyToOffset(keyy);
+    const spellingMap = getSpellingMap(keyy, pitchClasses);
 
     for (let fret = 0; fret <= frets; fret += 1) {
       const actualNote = note + fret;
@@ -46,8 +49,9 @@ export const useStringNotes = ({
       const isBase = relativePc === 0;
       const showScaleHighlight = isSelected && (!scaleHighlightBottomOnly || isBottom);
       const degree = isSelected ? pitchClasses.indexOf(relativePc) + 1 : null;
+      const label = formatNoteWithOctave(actualNote, spellingMap);
 
-      descriptors.push({ fret, actualNote, isSelected, isBase, showScaleHighlight, degree });
+      descriptors.push({ fret, actualNote, label, isSelected, isBase, showScaleHighlight, degree });
     }
 
     return descriptors;

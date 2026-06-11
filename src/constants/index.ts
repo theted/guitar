@@ -1,5 +1,5 @@
 export { scales, type ScaleName } from "./scales";
-export { tones, type Tone } from "./tones";
+export { tones, KEYS, type Tone, type KeyName } from "./tones";
 export { tunings, type TuningName, type Tuning } from "./tunings";
 export { type PhraseMode } from "./phrases";
 export { DEFAULTS } from "./defaults";

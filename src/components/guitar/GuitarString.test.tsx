@@ -27,3 +27,36 @@ describe('GuitarString highlighting', () => {
     expect(overlay).toBeInTheDocument(); // tone-overlay is always present, animations are controlled via CSS classes
   });
 });
+
+describe('GuitarString enharmonic spelling', () => {
+  it('spells the fourth of F major as Bb, not A#', () => {
+    // Open A string (A4 = abs 5), fret 1 sounds Bb4
+    render(
+      <GuitarString
+        idx={0}
+        note={5}
+        frets={1}
+        scales={scales}
+        scale="major"
+        keyy="f"
+      />
+    );
+    expect(screen.getByText('Bb4')).toBeInTheDocument();
+    expect(screen.queryByText('A#4')).not.toBeInTheDocument();
+  });
+
+  it('spells non-scale chromatic notes plainly in sharp keys', () => {
+    // Fret 1 on the open E string sounds F natural — outside E major, spelled F
+    render(
+      <GuitarString
+        idx={0}
+        note={0}
+        frets={1}
+        scales={scales}
+        scale="major"
+        keyy="e"
+      />
+    );
+    expect(screen.getByText('F4')).toBeInTheDocument();
+  });
+});
