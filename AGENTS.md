@@ -391,9 +391,9 @@ scheduleHorizon: number;      // Lower = less lookahead, less memory
 
 **Run Tests:**
 ```bash
-yarn test           # Watch mode
-yarn test:ui        # UI mode
-yarn coverage       # Coverage report
+npm test           # Watch mode
+npm run test:ui        # UI mode
+npm run coverage       # Coverage report
 ```
 
 ## Common Pitfalls

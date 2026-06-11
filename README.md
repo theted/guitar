@@ -56,10 +56,10 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 
 ```bash
 # Install dependencies
-yarn install
+npm install
 
 # Start development server
-yarn start
+npm start
 ```
 
 The app will open at [http://localhost:3000](http://localhost:3000)
@@ -68,10 +68,10 @@ The app will open at [http://localhost:3000](http://localhost:3000)
 
 ```bash
 # Run tests
-yarn test
+npm test
 
 # Create production build
-yarn build
+npm run build
 ```
 
 ## Usage
@@ -110,13 +110,13 @@ yarn build
 
 ### Available Scripts
 
-- `yarn start` - Run development server
-- `yarn dev` - Alternative dev server command
-- `yarn build` - Build for production (includes TypeScript checking)
-- `yarn preview` - Preview production build
-- `yarn test` - Run tests in watch mode
-- `yarn test:ui` - Run tests with UI
-- `yarn coverage` - Generate test coverage report
+- `npm start` - Run development server
+- `npm run dev` - Alternative dev server command
+- `npm run build` - Build for production (includes TypeScript checking)
+- `npm run preview` - Preview production build
+- `npm test` - Run tests in watch mode
+- `npm run test:ui` - Run tests with UI
+- `npm run coverage` - Generate test coverage report
 
 ### Technology Stack
 

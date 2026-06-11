@@ -131,3 +131,32 @@ describe('phrase builder', () => {
     expect(seq6).toEqual(seq5);
   });
 });
+
+describe('exact phrase sequences', () => {
+  it('thirds over one octave of C major', () => {
+    // Degree pairs (1,3)(2,4)(3,5)(4,6)(5,7) over [0,2,4,5,7,9,11]
+    expect(buildRelSequence(majorPcs(), 'thirds', 1, false)).toEqual([
+      0, 4, 2, 5, 4, 7, 5, 9, 7, 11,
+    ]);
+  });
+
+  it('full-scale ascent over one octave of C major', () => {
+    expect(buildRelSequence(majorPcs(), 'full-scale', 1, false)).toEqual([
+      0, 2, 4, 5, 7, 9, 11,
+    ]);
+  });
+
+  it('chord-arp ascends the supplied tones like full-scale', () => {
+    const chordPcs = [0, 4, 7] as ReturnType<typeof majorPcs>;
+    expect(buildRelSequence(chordPcs, 'chord-arp', 2, false)).toEqual(
+      buildRelSequence(chordPcs, 'full-scale', 2, false)
+    );
+  });
+
+  it('octave expansion lifts each pass by 12 semitones', () => {
+    const one = buildRelSequence(majorPcs(), 'full-scale', 1, false);
+    const two = buildRelSequence(majorPcs(), 'full-scale', 2, false);
+    expect(two.slice(0, one.length)).toEqual(one);
+    expect(two.slice(one.length)).toEqual(one.map((v) => v + 12));
+  });
+});
