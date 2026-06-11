@@ -1,16 +1,13 @@
 import React, { useCallback } from 'react';
 import { DarkSelect } from '@/components/ui/dark-select';
 import FieldLabel from '@/components/ui/field-label';
-import { PhraseMode, ScaleName, KeyName, scales, KEYS, PHRASE_MODE_GROUPS } from '@/constants';
-import { parseKey, formatNote } from '@/theory/spelling';
-import { ucFirst } from '@/lib/utils';
+import { PhraseMode, ScaleName, KeyName, PHRASE_MODE_GROUPS } from '@/constants';
 import { setFormState, useFormStore, type FormState } from '@/store';
+import { SCALE_OPTIONS, KEY_OPTIONS } from './options';
 import FormToggle from './FormToggle';
 
 type ScaleControlsProps = { stopAllPlayback: () => void };
 
-const SCALE_OPTIONS = Object.keys(scales).map((s) => ({ value: s, label: ucFirst(s) }));
-const KEY_OPTIONS = KEYS.map((k) => ({ value: k, label: formatNote(parseKey(k)) }));
 const OCTAVE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => ({
   value: String(o),
   label: String(o),

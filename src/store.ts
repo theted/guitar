@@ -28,6 +28,11 @@ export type FormState = {
   oncePerTone: boolean;
 };
 
+const prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const initial: FormState = {
   scale: DEFAULTS.SCALE,
   strings: DEFAULTS.STRINGS,
@@ -44,7 +49,7 @@ const initial: FormState = {
   phraseOctaves: 2,
   phraseDescend: true,
   phraseLoop: false,
-  reduceAnimations: false,
+  reduceAnimations: prefersReducedMotion,
   trailLength: 1200,
   minimalHighlight: false,
   scheduleHorizon: 800,

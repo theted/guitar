@@ -122,7 +122,10 @@ const GuitarString: React.FC<Props> = React.memo(({
   const handleFretClick = useFretClick({ soundType, onPlayNote });
 
   return (
-    <div className="relative grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 guitar-string">
+    <div
+      className="relative grid gap-1 guitar-string"
+      style={{ gridTemplateColumns: `repeat(${frets + 1}, minmax(44px, 1fr))` }}
+    >
       {fretDescriptors.map((descriptor) => (
         <StringFret
           key={descriptor.fret}

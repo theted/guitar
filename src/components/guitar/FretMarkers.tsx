@@ -6,7 +6,10 @@ type FretMarkersProps = {
 
 const FretMarkers: React.FC<FretMarkersProps> = ({ markers }) => {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1 mt-3 text-sm opacity-60 select-none">
+    <div
+      className="grid gap-1 mt-3 text-sm opacity-60 select-none"
+      style={{ gridTemplateColumns: `repeat(${markers.length}, minmax(44px, 1fr))` }}
+    >
       {markers.map((fret) => (
         <div key={fret} className="text-center">
           {fret}

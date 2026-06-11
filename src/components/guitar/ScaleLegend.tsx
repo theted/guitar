@@ -1,51 +1,23 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { keyToOffset, getScalePitchClasses } from '@/music';
 import { getScaleSpelling, formatNote } from '@/theory/spelling';
-import { ScaleName, PhraseMode, scales } from '@/constants';
-import { Play } from 'lucide-react';
-import { SoundType, ensureAudioInitialized } from '@/audio';
-import { usePhraseEvents } from './hooks/usePhraseEvents';
-import { usePhrasePlayer } from './hooks/usePhrasePlayer';
+import { scales } from '@/constants';
+import { useFormStore } from '@/store';
 import ScaleDegree from './ScaleDegree';
 
-interface ScaleLegendProps {
-  scale: ScaleName;
-  keyy: string;
-  playingAbs?: number | null;
-  highlightEnabled?: boolean;
-  mode: PhraseMode;
-  stepMs: number;
-  swing: boolean;
-  octaves?: number;
-  scheduleHorizon?: number;
-  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
-  stopAllPlayback?: () => void;
-  stopSignal?: number;
-  soundType?: SoundType;
-  reduceAnimations?: boolean;
-  minimalHighlight?: boolean;
-  trailLength?: number;
-  descend?: boolean;
-  loop?: boolean;
-}
+// Pure display of the scale's degrees; playback lives in usePlayback/TopBar.
+const ScaleLegend: React.FC = () => {
+  const { scale, keyy, reduceAnimations, minimalHighlight, trailLength } = useFormStore(
+    useShallow((state) => ({
+      scale: state.scale,
+      keyy: state.tone,
+      reduceAnimations: state.reduceAnimations,
+      minimalHighlight: state.minimalHighlight,
+      trailLength: state.trailLength,
+    }))
+  );
 
-const ScaleLegend: React.FC<ScaleLegendProps> = ({
-  scale,
-  keyy,
-  mode,
-  stepMs,
-  swing,
-  octaves = 2,
-  onPlayNote,
-  stopAllPlayback,
-  stopSignal,
-  soundType = "marimba",
-  reduceAnimations = false,
-  minimalHighlight = false,
-  trailLength = 1200,
-  descend = false,
-  loop = false,
-}) => {
   const keyOffset = useMemo(() => keyToOffset(keyy), [keyy]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
   const degreeLabels = useMemo(
@@ -53,82 +25,21 @@ const ScaleLegend: React.FC<ScaleLegendProps> = ({
     [keyy, pitchClasses]
   );
 
-  const { events, loopDuration } = usePhraseEvents({
-    pitchClasses,
-    mode,
-    octaves,
-    descend,
-    stepMs,
-    swing,
-    keyOffset,
-  });
-
-  const phrasePlayNote = useCallback(
-    (abs: number, durationMs?: number) => onPlayNote?.(abs, durationMs, 'phrase'),
-    [onPlayNote]
-  );
-
-  const { isPlaying, onTogglePlay: togglePlay } = usePhrasePlayer({
-    events,
-    loopDuration,
-    loop,
-    onPlayNote: phrasePlayNote,
-    soundType,
-    trailLength,
-    reduceAnimations,
-    minimalHighlight,
-    stopAllPlayback,
-    stopSignal,
-  });
-
-  const onTogglePlay = useCallback(async () => {
-    if (!isPlaying) {
-      try {
-        await ensureAudioInitialized();
-      } catch (error) {
-        console.error('Failed to initialize audio:', error);
-        return;
-      }
-    }
-    togglePlay();
-  }, [isPlaying, togglePlay]);
-
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {pitchClasses.map((pc, index) => {
-          const abs = keyOffset + pc;
-          const noteLabel = degreeLabels[index];
-          const isTonic = index === 0;
-          // Tone-based animation handles highlighting — disable React state highlight to prevent doubling
-          const isActive = false;
-
-          return (
-            <ScaleDegree
-              key={pc}
-              index={index}
-              label={noteLabel}
-              abs={abs}
-              isTonic={isTonic}
-              isActive={isActive}
-              reduceAnimations={reduceAnimations}
-              minimalHighlight={minimalHighlight}
-              trailLength={trailLength}
-            />
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onTogglePlay}
-          className="inline-flex items-center gap-2.5 rounded-lg border border-white/20 bg-white/8 px-5 py-2.5 text-sm font-medium text-zinc-100 hover:bg-white/14 hover:border-white/35 active:scale-95 transition-all duration-150 shadow-sm"
-          title={isPlaying ? "Pause phrase" : "Play phrase"}
-          aria-keyshortcuts="Control+Enter Meta+Enter"
-        >
-          <Play className="h-4.5 w-4.5" /> {isPlaying ? "Pause" : "Play"}
-        </button>
-      </div>
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {pitchClasses.map((pc, index) => (
+        <ScaleDegree
+          key={pc}
+          index={index}
+          label={degreeLabels[index]}
+          abs={keyOffset + pc}
+          isTonic={index === 0}
+          isActive={false}
+          reduceAnimations={reduceAnimations}
+          minimalHighlight={minimalHighlight}
+          trailLength={trailLength}
+        />
+      ))}
     </div>
   );
 };

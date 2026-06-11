@@ -10,9 +10,6 @@ type UsePhrasePlayerArgs = {
   loop: boolean;
   onPlayNote?: (absSemitone: number, durationMs?: number) => void;
   soundType?: SoundType;
-  trailLength?: number;
-  reduceAnimations?: boolean;
-  minimalHighlight?: boolean;
   stopAllPlayback?: () => void;
   stopSignal?: number;
 };
@@ -23,9 +20,6 @@ export const usePhrasePlayer = ({
   loop,
   onPlayNote,
   soundType = "marimba",
-  trailLength = 1200,
-  reduceAnimations = false,
-  minimalHighlight = false,
   stopAllPlayback,
   stopSignal,
 }: UsePhrasePlayerArgs) => {
@@ -112,9 +106,6 @@ export const usePhrasePlayer = ({
     loopDuration,
     onPlayNote,
     soundType,
-    trailLength,
-    reduceAnimations,
-    minimalHighlight,
   ]);
 
   const onTogglePlay = useCallback(() => {

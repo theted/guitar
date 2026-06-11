@@ -5,62 +5,22 @@ import GuitarNeck from "./GuitarNeck";
 import FretMarkers from "@/components/guitar/FretMarkers";
 import { useRenderedStrings } from "@/components/guitar/hooks/useRenderedStrings";
 import { useFormStore } from "@/store";
+import type { PlayNoteFn } from "@/hooks/usePlayback";
 
 type Props = {
-  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
-  stopAllPlayback?: () => void;
-  stopSignal?: number;
+  onPlayNote?: PlayNoteFn;
 };
 
-const Guitar: React.FC<Props> = ({ onPlayNote, stopAllPlayback, stopSignal }) => {
-  const {
-    strings,
-    frets,
-    scale,
-    tuningName,
-    tone: keyy,
-    lowAtBottom,
-    highlightEnabled,
-    legendOnly,
-    octaveHighlight,
-    phraseMode,
-    bpm,
-    swing,
-    phraseOctaves,
-    startOctave,
-    oncePerTone,
-    phraseDescend,
-    phraseLoop,
-    reduceAnimations,
-    trailLength,
-    minimalHighlight,
-    soundType,
-  } = useFormStore(useShallow((state) => ({
-    strings: state.strings,
-    frets: state.frets,
-    scale: state.scale,
-    tuningName: state.tuningName,
-    tone: state.tone,
-    lowAtBottom: state.lowAtBottom,
-    highlightEnabled: state.highlightEnabled,
-    legendOnly: state.legendOnly,
-    octaveHighlight: state.octaveHighlight,
-    phraseMode: state.phraseMode,
-    bpm: state.bpm,
-    swing: state.swing,
-    phraseOctaves: state.phraseOctaves,
-    startOctave: state.startOctave,
-    oncePerTone: state.oncePerTone,
-    phraseDescend: state.phraseDescend,
-    phraseLoop: state.phraseLoop,
-    reduceAnimations: state.reduceAnimations,
-    trailLength: state.trailLength,
-    minimalHighlight: state.minimalHighlight,
-    soundType: state.soundType,
-  })));
-
-  const stepMs = Math.round(60000 / Math.max(1, bpm));
-  const enableHighlight = highlightEnabled && !legendOnly;
+const Guitar: React.FC<Props> = ({ onPlayNote }) => {
+  const { strings, frets, tuningName, startOctave, lowAtBottom } = useFormStore(
+    useShallow((state) => ({
+      strings: state.strings,
+      frets: state.frets,
+      tuningName: state.tuningName,
+      startOctave: state.startOctave,
+      lowAtBottom: state.lowAtBottom,
+    }))
+  );
 
   const { descriptors, fretMarkers } = useRenderedStrings({
     strings,
@@ -72,37 +32,12 @@ const Guitar: React.FC<Props> = ({ onPlayNote, stopAllPlayback, stopSignal }) =>
 
   return (
     <div className="w-[92vw] max-w-[1600px] guitar-container">
-      <ScaleLegend
-        scale={scale}
-        keyy={keyy}
-        highlightEnabled={enableHighlight}
-        mode={phraseMode}
-        stepMs={stepMs}
-        swing={swing}
-        octaves={phraseOctaves}
-        onPlayNote={onPlayNote}
-        stopAllPlayback={stopAllPlayback}
-        stopSignal={stopSignal}
-        soundType={soundType}
-        reduceAnimations={reduceAnimations}
-        minimalHighlight={minimalHighlight}
-        trailLength={trailLength}
-        descend={phraseDescend}
-        loop={phraseLoop}
-      />
-      <GuitarNeck
-        descriptors={descriptors}
-        frets={frets}
-        scale={scale}
-        keyy={keyy}
-        scaleHighlightBottomOnly={oncePerTone}
-        reduceAnimations={reduceAnimations}
-        trailLength={trailLength}
-        minimalHighlight={minimalHighlight}
-        soundType={soundType}
-        onPlayNote={onPlayNote}
-      />
-      <FretMarkers markers={fretMarkers} />
+      <ScaleLegend />
+      {/* Frets keep a minimum width; the neck scrolls horizontally when they don't fit */}
+      <div className="overflow-x-auto pb-1">
+        <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} />
+        <FretMarkers markers={fretMarkers} />
+      </div>
     </div>
   );
 };
