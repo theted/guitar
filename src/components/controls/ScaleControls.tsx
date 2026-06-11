@@ -1,8 +1,7 @@
 import React, { useCallback } from 'react';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { PhraseMode, ScaleName, KeyName, scales, KEYS } from '@/constants';
+import { DarkSelect } from '@/components/ui/dark-select';
+import FieldLabel from '@/components/ui/field-label';
+import { PhraseMode, ScaleName, KeyName, scales, KEYS, PHRASE_MODE_GROUPS } from '@/constants';
 import { parseKey, formatNote } from '@/theory/spelling';
 import { ucFirst } from '@/lib/utils';
 import { setFormState, useFormStore, type FormState } from '@/store';
@@ -10,9 +9,20 @@ import FormToggle from './FormToggle';
 
 type ScaleControlsProps = { stopAllPlayback: () => void };
 
-// Dark select classes reused across controls
-const selectTriggerCls = "h-8 border-white/[0.08] bg-white/[0.05] text-white/80 text-xs focus:ring-cyan-500/50 hover:bg-white/[0.08] transition-colors";
-const selectContentCls = "bg-[#0f0f1a] border border-white/[0.08] text-white/80";
+const SCALE_OPTIONS = Object.keys(scales).map((s) => ({ value: s, label: ucFirst(s) }));
+const KEY_OPTIONS = KEYS.map((k) => ({ value: k, label: formatNote(parseKey(k)) }));
+const OCTAVE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => ({
+  value: String(o),
+  label: String(o),
+}));
+const PHRASE_OCTAVE_OPTIONS = [1, 2, 3, 4, 5].map((o) => ({
+  value: String(o),
+  label: `${o} octave${o > 1 ? 's' : ''}`,
+}));
+const PHRASE_GROUPS = PHRASE_MODE_GROUPS.map((group) => ({
+  label: group.label,
+  options: group.modes.map((mode) => ({ value: mode.value, label: mode.label })),
+}));
 
 const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
   const {
@@ -37,85 +47,55 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
       {/* Scale + Key */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Scale</label>
-          <Select value={scale} onValueChange={(v) => apply({ scale: v as ScaleName })}>
-            <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-            <SelectContent className={selectContentCls}>
-              {Object.keys(scales).map((s) => (
-                <SelectItem key={s} value={s} className="text-xs focus:bg-white/[0.08] focus:text-white">{ucFirst(s)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FieldLabel>Scale</FieldLabel>
+          <DarkSelect
+            value={scale}
+            onValueChange={(v) => apply({ scale: v as ScaleName })}
+            options={SCALE_OPTIONS}
+            aria-label="Scale"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Key</label>
-            <Select value={tone} onValueChange={(v) => apply({ tone: v as KeyName })}>
-              <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-              <SelectContent className={selectContentCls}>
-                {KEYS.map((k) => (
-                  <SelectItem key={k} value={k} className="text-xs focus:bg-white/[0.08] focus:text-white">{formatNote(parseKey(k))}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FieldLabel>Key</FieldLabel>
+            <DarkSelect
+              value={tone}
+              onValueChange={(v) => apply({ tone: v as KeyName })}
+              options={KEY_OPTIONS}
+              aria-label="Key"
+            />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Octave</label>
-            <Select value={String(startOctave)} onValueChange={(v) => apply({ startOctave: parseInt(v, 10) })}>
-              <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-              <SelectContent className={selectContentCls}>
-                {[0,1,2,3,4,5,6,7,8,9].map((o) => (
-                  <SelectItem key={o} value={String(o)} className="text-xs focus:bg-white/[0.08] focus:text-white">{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FieldLabel>Octave</FieldLabel>
+            <DarkSelect
+              value={String(startOctave)}
+              onValueChange={(v) => apply({ startOctave: parseInt(v, 10) })}
+              options={OCTAVE_OPTIONS}
+              aria-label="Octave"
+            />
           </div>
         </div>
       </div>
 
       {/* Phrase */}
       <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
-        <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Phrase</label>
-        <Select value={phraseMode} onValueChange={(v) => apply({ phraseMode: v as PhraseMode })}>
-          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-          <SelectContent className={selectContentCls}>
-            <SelectItem value="full-scale" className="text-xs focus:bg-white/[0.08] focus:text-white">📈 Full Scale</SelectItem>
-            <SelectItem value="snake" className="text-xs focus:bg-white/[0.08] focus:text-white">🐍 Snake Pattern</SelectItem>
-            <SelectItem value="snake-complex" className="text-xs focus:bg-white/[0.08] focus:text-white">🐍 Snake Complex</SelectItem>
-            <SelectItem value="motif-1232" className="text-xs focus:bg-white/[0.08] focus:text-white">🎵 1-2-3-2 Motif</SelectItem>
-            <SelectItem value="thirds" className="text-xs focus:bg-white/[0.08] focus:text-white">🎼 Thirds</SelectItem>
-            <SelectItem value="fourths" className="text-xs focus:bg-white/[0.08] focus:text-white">🎼 Fourths</SelectItem>
-            <SelectItem value="sixths" className="text-xs focus:bg-white/[0.08] focus:text-white">🎼 Sixths</SelectItem>
-            <SelectItem value="four-note-groups" className="text-xs focus:bg-white/[0.08] focus:text-white">🎼 Four Note Groups</SelectItem>
-            <SelectItem value="triads" className="text-xs focus:bg-white/[0.08] focus:text-white">🎹 Triads</SelectItem>
-            <SelectItem value="sevenths" className="text-xs focus:bg-white/[0.08] focus:text-white">🎹 Sevenths</SelectItem>
-            <SelectItem value="alternate-picking" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Alternate Picking</SelectItem>
-            <SelectItem value="pedal-tone" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Pedal Tone</SelectItem>
-            <SelectItem value="sequence-asc" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Sequence Up</SelectItem>
-            <SelectItem value="sequence-desc" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Sequence Down</SelectItem>
-            <SelectItem value="skip-pattern" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Skip Pattern</SelectItem>
-            <SelectItem value="sweep-arp" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Sweep Arpeggio</SelectItem>
-            <SelectItem value="neo-classical" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Neo-Classical</SelectItem>
-            <SelectItem value="power-chord" className="text-xs focus:bg-white/[0.08] focus:text-white">🎸 Power Chord</SelectItem>
-            <SelectItem value="djent-palm" className="text-xs focus:bg-white/[0.08] focus:text-white">🤘 Djent Palm Mute</SelectItem>
-            <SelectItem value="polyrhythm" className="text-xs focus:bg-white/[0.08] focus:text-white">🤘 Polyrhythm 7/4</SelectItem>
-            <SelectItem value="breakdown-chug" className="text-xs focus:bg-white/[0.08] focus:text-white">🤘 Breakdown Chug</SelectItem>
-            <SelectItem value="tremolo" className="text-xs focus:bg-white/[0.08] focus:text-white">🤘 Tremolo Picking</SelectItem>
-            <SelectItem value="legato-cascade" className="text-xs focus:bg-white/[0.08] focus:text-white">🤘 Legato Cascade</SelectItem>
-          </SelectContent>
-        </Select>
+        <FieldLabel>Phrase</FieldLabel>
+        <DarkSelect
+          value={phraseMode}
+          onValueChange={(v) => apply({ phraseMode: v as PhraseMode })}
+          groups={PHRASE_GROUPS}
+          aria-label="Phrase mode"
+        />
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Octaves</label>
-          <Select value={String(phraseOctaves)} onValueChange={(v) => apply({ phraseOctaves: parseInt(v, 10) })}>
-            <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
-            <SelectContent className={selectContentCls}>
-              {[1,2,3,4,5].map((o) => (
-                <SelectItem key={o} value={String(o)} className="text-xs focus:bg-white/[0.08] focus:text-white">{o} octave{o > 1 ? 's' : ''}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FieldLabel>Octaves</FieldLabel>
+          <DarkSelect
+            value={String(phraseOctaves)}
+            onValueChange={(v) => apply({ phraseOctaves: parseInt(v, 10) })}
+            options={PHRASE_OCTAVE_OPTIONS}
+            aria-label="Phrase octaves"
+          />
         </div>
 
         <div className="flex flex-col gap-2.5">
@@ -127,7 +107,7 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
 
       {/* Highlights */}
       <div className="flex flex-col gap-2.5 border-t border-white/[0.06] pt-4">
-        <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">Highlights</label>
+        <FieldLabel>Highlights</FieldLabel>
         <FormToggle id="highlightEnabled" label="Highlight notes" checked={highlightEnabled} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ highlightEnabled: v })} />
         <FormToggle id="legendOnly" label="Legend only" checked={legendOnly} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ legendOnly: v })} />
         <FormToggle id="octaveHighlight" label="Octave highlight" checked={octaveHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ octaveHighlight: v })} />

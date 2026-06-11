@@ -1,4 +1,5 @@
 import React from 'react';
+import FieldLabel from '@/components/ui/field-label';
 
 type FormNumberProps = {
   id: string;
@@ -24,9 +25,7 @@ const FormNumber: React.FC<FormNumberProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[11px] font-medium uppercase tracking-wider text-white/40">
-        {label}
-      </label>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <input
         id={id}
         type="number"

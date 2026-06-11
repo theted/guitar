@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Slider } from '@/components/ui/slider';
+import FieldLabel from '@/components/ui/field-label';
 import { setFormState, useFormStore, type FormState } from '@/store';
 import FormNumber from './FormNumber';
 import FormToggle from './FormToggle';
@@ -22,7 +23,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({ stopAllPlayback }) 
       {/* BPM */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label htmlFor="bpm" className="text-[11px] font-medium uppercase tracking-wider text-white/40">BPM</label>
+          <FieldLabel htmlFor="bpm">BPM</FieldLabel>
           <span className="text-xs font-mono text-white/60">{bpm}</span>
         </div>
         <Slider id="bpm" min={30} max={700} step={5} value={bpm} onChange={(v) => apply({ bpm: v })} />
@@ -31,7 +32,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({ stopAllPlayback }) 
       {/* Trail */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label htmlFor="trailLength" className="text-[11px] font-medium uppercase tracking-wider text-white/40">Trail</label>
+          <FieldLabel htmlFor="trailLength">Trail</FieldLabel>
           <span className="text-xs font-mono text-white/60">{trailLength}ms</span>
         </div>
         <Slider id="trailLength" min={100} max={4000} step={50} value={trailLength} onChange={(v) => apply({ trailLength: v })} />
