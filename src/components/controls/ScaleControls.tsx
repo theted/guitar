@@ -107,7 +107,7 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
         <FieldLabel>Highlights</FieldLabel>
         <FormToggle id="highlightEnabled" label="Highlight notes" checked={highlightEnabled} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ highlightEnabled: v })} />
         <FormToggle id="legendOnly" label="Legend only" checked={legendOnly} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ legendOnly: v })} />
-        <FormToggle id="octaveHighlight" label="Octave highlight" checked={octaveHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ octaveHighlight: v })} />
+        <FormToggle id="octaveHighlight" label="Flash played octave only" title="When playing a note, flash only the frets in the same octave instead of every octave of that note" checked={octaveHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ octaveHighlight: v })} />
         <FormToggle id="minimalHighlight" label="Minimal highlight" checked={minimalHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ minimalHighlight: v })} />
       </div>
     </div>

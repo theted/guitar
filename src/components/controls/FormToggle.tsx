@@ -3,14 +3,16 @@ import React from 'react';
 type FormToggleProps = {
   id: string;
   label: string;
+  /** Optional hover tooltip explaining what the toggle does */
+  title?: string;
   checked: boolean;
   stopAllPlayback: () => void;
   onChange: (checked: boolean) => void;
 };
 
-const FormToggle: React.FC<FormToggleProps> = ({ id, label, checked, stopAllPlayback, onChange }) => {
+const FormToggle: React.FC<FormToggleProps> = ({ id, label, title, checked, stopAllPlayback, onChange }) => {
   return (
-    <div className="flex items-center justify-between py-0.5">
+    <div className="flex items-center justify-between py-0.5" title={title}>
       <label htmlFor={id} className="text-xs text-white/60 cursor-pointer select-none leading-none">
         {label}
       </label>
