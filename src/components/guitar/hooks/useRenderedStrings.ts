@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { keyToOffset } from "@/music";
+import { getStringBaseNotes } from "@/theory/positions";
 import { tunings, type TuningName } from "@/constants";
 
 type UseRenderedStringsArgs = {
@@ -13,6 +13,8 @@ type UseRenderedStringsArgs = {
 type RenderedString = {
   originalIndex: number;
   renderIndex: number;
+  /** Index into the low→high string order (0 = lowest string) */
+  lowIndex: number;
   baseNote: number;
   isBottom: boolean;
 };
@@ -34,37 +36,16 @@ export const useRenderedStrings = ({
     const ordered = lowAtBottom ? stringIndices : stringIndices.slice().reverse();
     const fretMarkers = Array.from({ length: frets + 1 }, (_, index) => index);
 
-    const tuning = tunings[tuningName];
-    const tuningPitchClasses = tuning.map((tone) => keyToOffset(tone));
-    const absBaseByTuningIndex: number[] = new Array(tuningPitchClasses.length);
-
-    if (tuningPitchClasses.length > 0) {
-      const lastIndex = tuningPitchClasses.length - 1;
-      const highestPitchClass = tuningPitchClasses[lastIndex];
-      const anchorEAbs = 12 * (startOctave - 4);
-      absBaseByTuningIndex[lastIndex] = anchorEAbs + highestPitchClass;
-
-      for (let s = lastIndex - 1; s >= 0; s -= 1) {
-        const pitchClass = tuningPitchClasses[s];
-        const above = absBaseByTuningIndex[s + 1];
-        let candidate: number = pitchClass;
-
-        while (candidate >= above) candidate -= 12;
-        while (candidate + 12 < above) candidate += 12;
-
-        absBaseByTuningIndex[s] = candidate;
-      }
-    }
+    // Low→high base pitches; originalIndex 0 is the highest string
+    const baseNotesLowToHigh = getStringBaseNotes(tunings[tuningName], strings, startOctave);
 
     const descriptors: RenderedString[] = ordered.map((originalIndex, renderIndex) => {
-      const tuningIndex = tuning.length - 1 - (originalIndex % tuning.length);
-      const cycle = Math.floor(originalIndex / tuning.length);
-      const baseNote = absBaseByTuningIndex[tuningIndex] - cycle * 12;
-
+      const lowIndex = strings - 1 - originalIndex;
       return {
         originalIndex,
         renderIndex,
-        baseNote,
+        lowIndex,
+        baseNote: baseNotesLowToHigh[lowIndex],
         isBottom: renderIndex === ordered.length - 1,
       };
     });

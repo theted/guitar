@@ -25,13 +25,16 @@ import {
  */
 const STALE_THRESHOLD_SEC = 0.5;
 
-type UiCallback = (absSemitone: number, durationMs: number) => void;
-
 export type PlaybackEvent = {
   abs: number;
   startTimeSec: number; // absolute AudioContext time
   durSec: number;
+  /** Set when the event targets one specific fretboard location */
+  stringIndex?: number;
+  fret?: number;
 };
+
+type UiCallback = (absSemitone: number, durationMs: number, event?: PlaybackEvent) => void;
 
 /** Phrase session — lookahead audio scheduling + rAF UI sync */
 type PhraseSession = {
@@ -162,7 +165,7 @@ class AudioScheduler {
       const startTimeSec =
         evt.startTimeSec + session.uiCycle * (session.loopDurationSec ?? 0);
       if (startTimeSec > now + RAF_EPSILON_SEC) break;
-      try { session.onUiNote(evt.abs, Math.round(evt.durSec * 1000)); } catch { /* noop */ }
+      try { session.onUiNote(evt.abs, Math.round(evt.durSec * 1000), evt); } catch { /* noop */ }
       session.nextUiIdx++;
     }
 

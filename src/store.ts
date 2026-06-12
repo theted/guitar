@@ -28,6 +28,10 @@ export type FormState = {
   oncePerTone: boolean;
   /** 1-based degree of the highlighted diatonic chord, or null for none */
   selectedChordDegree: number | null;
+  /** 1-based scale position being practiced, or null for off */
+  selectedPosition: number | null;
+  /** Hand-span window width in frets for position boxes */
+  positionSpan: number;
 };
 
 const prefersReducedMotion =
@@ -59,6 +63,8 @@ const initial: FormState = {
   startOctave: 6,
   oncePerTone: false,
   selectedChordDegree: null,
+  selectedPosition: null,
+  positionSpan: 5,
 };
 
 // v1 keys were spelled with sharps only; flat keys now use their conventional names

@@ -20,11 +20,16 @@ const PHRASE_GROUPS = PHRASE_MODE_GROUPS.map((group) => ({
   label: group.label,
   options: group.modes.map((mode) => ({ value: mode.value, label: mode.label })),
 }));
+const POSITION_SPAN_OPTIONS = [4, 5, 6].map((s) => ({
+  value: String(s),
+  label: `${s} frets`,
+}));
 
 const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
   const {
     scale, tone, startOctave, phraseMode, phraseOctaves, phraseDescend, phraseLoop,
     oncePerTone, highlightEnabled, legendOnly, octaveHighlight, minimalHighlight,
+    selectedPosition, positionSpan,
   } = useFormStore((state) => ({
     scale: state.scale, tone: state.tone, startOctave: state.startOctave,
     phraseMode: state.phraseMode, phraseOctaves: state.phraseOctaves,
@@ -32,7 +37,10 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
     oncePerTone: state.oncePerTone, highlightEnabled: state.highlightEnabled,
     legendOnly: state.legendOnly, octaveHighlight: state.octaveHighlight,
     minimalHighlight: state.minimalHighlight,
+    selectedPosition: state.selectedPosition, positionSpan: state.positionSpan,
   }));
+
+  const positionActive = selectedPosition != null;
 
   const apply = useCallback((partial: Partial<FormState>) => {
     stopAllPlayback();
@@ -78,12 +86,19 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
       {/* Phrase */}
       <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
         <FieldLabel>Phrase</FieldLabel>
-        <DarkSelect
-          value={phraseMode}
-          onValueChange={(v) => apply({ phraseMode: v as PhraseMode })}
-          groups={PHRASE_GROUPS}
-          aria-label="Phrase mode"
-        />
+        {/* Position practice plays the box path directly; phrase shape doesn't apply */}
+        <div
+          className={positionActive ? 'opacity-40 pointer-events-none' : undefined}
+          title={positionActive ? 'Phrase patterns are paused while practicing a position — deselect the position to use them' : undefined}
+          aria-disabled={positionActive || undefined}
+        >
+          <DarkSelect
+            value={phraseMode}
+            onValueChange={(v) => apply({ phraseMode: v as PhraseMode })}
+            groups={PHRASE_GROUPS}
+            aria-label="Phrase mode"
+          />
+        </div>
 
         <div className="flex flex-col gap-1">
           <FieldLabel>Octaves</FieldLabel>
@@ -100,6 +115,17 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
           <FormToggle id="phraseLoop" label="Loop" checked={phraseLoop} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ phraseLoop: v })} />
           <FormToggle id="oncePerTone" label="Once per tone" checked={oncePerTone} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ oncePerTone: v })} />
         </div>
+      </div>
+
+      {/* Positions */}
+      <div className="flex flex-col gap-1 border-t border-white/[0.06] pt-4">
+        <FieldLabel>Position span</FieldLabel>
+        <DarkSelect
+          value={String(positionSpan)}
+          onValueChange={(v) => apply({ positionSpan: parseInt(v, 10), selectedPosition: null })}
+          options={POSITION_SPAN_OPTIONS}
+          aria-label="Position span"
+        />
       </div>
 
       {/* Highlights */}

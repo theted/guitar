@@ -30,6 +30,8 @@ const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
 
 type StringFretProps = {
   descriptor: FretDescriptor;
+  /** Low-based string index (0 = lowest string), for positional flashes */
+  stringIndex: number;
   onClick: (note: number) => void;
   reduceAnimations: boolean;
   minimalHighlight: boolean;
@@ -37,18 +39,26 @@ type StringFretProps = {
 
 // Memoized: ~150 instances render per fretboard; descriptor identity is stable
 // (useStringNotes memo) so unrelated store changes skip all of them.
-const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, onClick, reduceAnimations, minimalHighlight }) => {
+const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIndex, onClick, reduceAnimations, minimalHighlight }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    toneAnimationManager.applyToneClass(element, descriptor.actualNote);
+    toneAnimationManager.applyToneClass(element, descriptor.actualNote, {
+      stringIndex,
+      fret: descriptor.fret,
+    });
     return () => { toneAnimationManager.clearToneClass(element); };
-  }, [descriptor.actualNote]);
+  }, [descriptor.actualNote, descriptor.fret, stringIndex]);
 
   const chordActive = descriptor.chordTone !== null;
-  const colorClasses = chordActive && descriptor.chordTone
+  const positionActive = descriptor.inPosition !== null;
+  // While practicing a position, everything outside the box recedes
+  const outsidePosition = positionActive && !descriptor.inPosition;
+  const colorClasses = outsidePosition
+    ? "bg-zinc-900/40 text-zinc-600 border-white/[0.04]"
+    : chordActive && descriptor.chordTone
     ? descriptor.isChordRoot
       ? "bg-cyan-950/80 text-white border-cyan-400/60"
       : "bg-zinc-600/70 text-white border-cyan-400/30"
@@ -92,6 +102,8 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, onClick,
 
 type Props = {
   idx: number;
+  /** Low-based string index (0 = lowest string) */
+  stringIndex: number;
   note: number;
   frets: number;
   scales?: ScaleDefinition;
@@ -103,11 +115,14 @@ type Props = {
   minimalHighlight?: boolean;
   soundType?: SoundType;
   selectedChordDegree?: number | null;
+  /** Frets of the active practice position on this string, null when off */
+  positionFrets?: Set<number> | null;
   onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
 }
 
 const GuitarString: React.FC<Props> = React.memo(({
   idx: _idx,
+  stringIndex,
   note,
   frets,
   scales = baseScales,
@@ -119,6 +134,7 @@ const GuitarString: React.FC<Props> = React.memo(({
   minimalHighlight = false,
   soundType = "marimba",
   selectedChordDegree = null,
+  positionFrets = null,
   onPlayNote,
 }) => {
   const fretDescriptors = useStringNotes({
@@ -130,6 +146,7 @@ const GuitarString: React.FC<Props> = React.memo(({
     scaleHighlightBottomOnly,
     isBottom,
     selectedChordDegree,
+    positionFrets,
   });
 
   const handleFretClick = useFretClick({ soundType, onPlayNote });
@@ -143,6 +160,7 @@ const GuitarString: React.FC<Props> = React.memo(({
         <StringFret
           key={descriptor.fret}
           descriptor={descriptor}
+          stringIndex={stringIndex}
           onClick={handleFretClick}
           reduceAnimations={reduceAnimations}
           minimalHighlight={minimalHighlight}

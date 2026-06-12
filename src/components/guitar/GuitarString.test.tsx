@@ -6,6 +6,7 @@ import { scales } from '@/constants';
 describe('GuitarString highlighting', () => {
   const baseProps = {
     idx: 0,
+    stringIndex: 0,
     note: 0, // E4
     frets: 1,
     scales,
@@ -34,6 +35,7 @@ describe('GuitarString enharmonic spelling', () => {
     render(
       <GuitarString
         idx={0}
+        stringIndex={0}
         note={5}
         frets={1}
         scales={scales}
@@ -50,6 +52,7 @@ describe('GuitarString enharmonic spelling', () => {
     render(
       <GuitarString
         idx={0}
+        stringIndex={0}
         note={0}
         frets={1}
         scales={scales}

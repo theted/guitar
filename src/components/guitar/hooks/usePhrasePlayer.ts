@@ -8,7 +8,7 @@ type UsePhrasePlayerArgs = {
   events: PhraseEvent[];
   loopDuration: number;
   loop: boolean;
-  onPlayNote?: (absSemitone: number, durationMs?: number) => void;
+  onPlayNote?: (absSemitone: number, durationMs?: number, event?: PhraseEvent) => void;
   soundType?: SoundType;
   stopAllPlayback?: () => void;
   stopSignal?: number;
@@ -68,9 +68,9 @@ export const usePhrasePlayer = ({
     // pre-generation, and it runs until stopped instead of for a fixed window.
     const sessionId = scheduler.startPhraseSession(
       absoluteEvents,
-      (abs, durationMs) => {
+      (abs, durationMs, event) => {
         if (playSessionRef.current !== session) return;
-        onPlayNote?.(abs, durationMs);
+        onPlayNote?.(abs, durationMs, event);
       },
       soundType,
       loop ? loopDuration : undefined,

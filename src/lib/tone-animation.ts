@@ -26,6 +26,8 @@ class ToneAnimationManager {
   private byExactPitch = new Map<string, Set<HTMLElement>>();
   // pitch class (0-11) → elements in any octave
   private byPitchClass = new Map<number, Set<HTMLElement>>();
+  // "s{stringIndex}f{fret}" → the single element at that fretboard location
+  private byFret = new Map<string, HTMLElement>();
   // element → its overlay child, resolved once at registration
   private overlays = new WeakMap<HTMLElement, HTMLElement>();
   // overlay → running animation, so retriggers replace instead of stacking
@@ -43,12 +45,24 @@ class ToneAnimationManager {
     return Math.floor(absSemitone / 12);
   }
 
+  private fretKey(stringIndex: number, fret: number): string {
+    return `s${stringIndex}f${fret}`;
+  }
+
   /**
-   * Register an element as representing a semitone. Idempotent per semitone;
-   * call again with a new value to move it, `clearToneClass` to remove.
+   * Register an element as representing a semitone, optionally at a specific
+   * fretboard location. Idempotent per semitone; call again with a new value
+   * to move it, `clearToneClass` to remove.
    */
-  applyToneClass(element: HTMLElement, absSemitone: number): void {
-    if (element.dataset.toneAbs === String(absSemitone)) return;
+  applyToneClass(
+    element: HTMLElement,
+    absSemitone: number,
+    fretId?: { stringIndex: number; fret: number }
+  ): void {
+    if (element.dataset.toneAbs === String(absSemitone)) {
+      if (fretId) this.registerFret(element, fretId);
+      return;
+    }
     this.detach(element);
 
     const pitchClass = ((absSemitone % 12) + 12) % 12;
@@ -69,6 +83,15 @@ class ToneAnimationManager {
     element.dataset.toneAbs = String(absSemitone);
     element.dataset.toneKey = key;
     element.dataset.tonePc = String(pitchClass);
+    if (fretId) this.registerFret(element, fretId);
+  }
+
+  private registerFret(element: HTMLElement, fretId: { stringIndex: number; fret: number }): void {
+    const key = this.fretKey(fretId.stringIndex, fretId.fret);
+    if (element.dataset.toneFret === key) return;
+    if (element.dataset.toneFret) this.byFret.delete(element.dataset.toneFret);
+    this.byFret.set(key, element);
+    element.dataset.toneFret = key;
   }
 
   /** Remove an element from the registry (call on unmount). */
@@ -84,6 +107,18 @@ class ToneAnimationManager {
     if (key) this.byExactPitch.get(key)?.delete(element);
     const pc = element.dataset.tonePc;
     if (pc !== undefined) this.byPitchClass.get(parseInt(pc, 10))?.delete(element);
+    const fretKey = element.dataset.toneFret;
+    if (fretKey && this.byFret.get(fretKey) === element) {
+      this.byFret.delete(fretKey);
+    }
+    delete element.dataset.toneFret;
+  }
+
+  /** Flash exactly one fretboard location (guided position practice). */
+  flashAt(stringIndex: number, fret: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS): void {
+    const element = this.byFret.get(this.fretKey(stringIndex, fret));
+    if (!element) return;
+    this.flashElement(element, durationMs);
   }
 
   flashTone(
@@ -98,21 +133,23 @@ class ToneAnimationManager {
       : this.byExactPitch.get(this.registryKey(pitchClass, this.getOctave(absSemitone)));
     if (!elements) return;
 
-    elements.forEach((el) => {
-      const overlay = this.overlays.get(el);
-      if (!overlay) return;
-      this.running.get(overlay)?.cancel();
-      try {
-        const animation = overlay.animate(FLASH_KEYFRAMES, {
-          duration: durationMs,
-          easing: 'ease-out',
-        });
-        this.running.set(overlay, animation);
-        animation.onfinish = () => {
-          if (this.running.get(overlay) === animation) this.running.delete(overlay);
-        };
-      } catch { /* Web Animations API unavailable */ }
-    });
+    elements.forEach((el) => this.flashElement(el, durationMs));
+  }
+
+  private flashElement(element: HTMLElement, durationMs: number): void {
+    const overlay = this.overlays.get(element);
+    if (!overlay) return;
+    this.running.get(overlay)?.cancel();
+    try {
+      const animation = overlay.animate(FLASH_KEYFRAMES, {
+        duration: durationMs,
+        easing: 'ease-out',
+      });
+      this.running.set(overlay, animation);
+      animation.onfinish = () => {
+        if (this.running.get(overlay) === animation) this.running.delete(overlay);
+      };
+    } catch { /* Web Animations API unavailable */ }
   }
 
   stopAll(): void {

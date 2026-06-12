@@ -7,13 +7,15 @@ import { scales } from "@/constants";
 import { scheduler } from "@/scheduler";
 import { stopAllAudio, ensureAudioInitialized } from "@/audio";
 import { toneAnimationManager } from "@/lib/tone-animation";
-import { usePhraseEvents } from "@/components/guitar/hooks/usePhraseEvents";
+import { usePhraseEvents, type PhraseEvent } from "@/components/guitar/hooks/usePhraseEvents";
 import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
+import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 
 export type PlayNoteFn = (
   absSemitone: number,
   durationMs?: number,
-  source?: "fretboard" | "phrase"
+  source?: "fretboard" | "phrase",
+  event?: PhraseEvent
 ) => void;
 
 // Owns all playback orchestration: phrase event generation, the phrase
@@ -55,7 +57,7 @@ export const usePlayback = () => {
 
   // Flash settings are read at call time so this callback stays stable —
   // dragging the trail slider must not re-render the fretboard.
-  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200) => {
+  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, _source, event) => {
     const { trailLength, minimalHighlight, reduceAnimations } = useFormStore.getState();
     // Long visual trails are an animation; honor both opt-outs
     const flashMs = minimalHighlight || reduceAnimations
@@ -63,7 +65,12 @@ export const usePlayback = () => {
       : Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
-    toneAnimationManager.flashTone(absSemitone, flashMs);
+    if (event?.stringIndex !== undefined && event.fret !== undefined) {
+      // Guided position practice: light up exactly the fret to play
+      toneAnimationManager.flashAt(event.stringIndex, event.fret, flashMs);
+    } else {
+      toneAnimationManager.flashTone(absSemitone, flashMs);
+    }
     const tid = window.setTimeout(() => {
       delete playingTimersRef.current[absSemitone];
     }, flashMs);
@@ -84,6 +91,9 @@ export const usePlayback = () => {
     return [...chord.pcs].sort((a, b) => a - b);
   }, [phraseMode, tone, pitchClasses, selectedChordDegree]);
 
+  // Position practice replaces the abstract phrase with the box's fret path
+  const { activePosition } = useScalePositions();
+
   const { events, loopDuration } = usePhraseEvents({
     pitchClasses: phrasePitchClasses,
     mode: phraseMode,
@@ -92,10 +102,12 @@ export const usePlayback = () => {
     stepMs,
     swing,
     keyOffset,
+    path: activePosition?.notes ?? null,
   });
 
   const phrasePlayNote = useCallback(
-    (abs: number, durationMs?: number) => playNote(abs, durationMs, "phrase"),
+    (abs: number, durationMs?: number, event?: PhraseEvent) =>
+      playNote(abs, durationMs, "phrase", event),
     [playNote]
   );
 

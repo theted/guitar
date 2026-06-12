@@ -18,6 +18,8 @@ type UseStringNotesArgs = {
   isBottom: boolean;
   /** 1-based diatonic chord degree to emphasize, or null */
   selectedChordDegree?: number | null;
+  /** Frets of the active practice position on this string, null when off */
+  positionFrets?: Set<number> | null;
 };
 
 type FretDescriptor = {
@@ -33,6 +35,8 @@ type FretDescriptor = {
   /** null when no chord is selected; otherwise membership in the chord */
   chordTone: boolean | null;
   isChordRoot: boolean;
+  /** null when no position is selected; otherwise membership in the box */
+  inPosition: boolean | null;
 };
 
 export const useStringNotes = ({
@@ -44,6 +48,7 @@ export const useStringNotes = ({
   scaleHighlightBottomOnly,
   isBottom,
   selectedChordDegree = null,
+  positionFrets = null,
 }: UseStringNotesArgs): FretDescriptor[] => {
   return useMemo(() => {
     const descriptors: FretDescriptor[] = [];
@@ -65,6 +70,7 @@ export const useStringNotes = ({
       const label = formatNoteWithOctave(actualNote, spellingMap);
       const chordTone = chordPcs ? chordPcs.has(relativePc) : null;
       const isChordRoot = chord != null && relativePc === chord.pcs[0];
+      const inPosition = positionFrets ? positionFrets.has(fret) : null;
 
       descriptors.push({
         fret,
@@ -77,11 +83,12 @@ export const useStringNotes = ({
         degree,
         chordTone,
         isChordRoot,
+        inPosition,
       });
     }
 
     return descriptors;
-  }, [note, frets, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom, selectedChordDegree]);
+  }, [note, frets, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom, selectedChordDegree, positionFrets]);
 };
 
 export type { FretDescriptor };

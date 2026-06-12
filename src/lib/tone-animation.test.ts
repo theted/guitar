@@ -70,4 +70,24 @@ describe("toneAnimationManager", () => {
     toneAnimationManager.flashTone(0, 500); // E in any octave
     expect(animateMock).toHaveBeenCalledTimes(1);
   });
+
+  it("flashAt flashes exactly one registered fret location", () => {
+    const makeFretAt = (abs: number, stringIndex: number, fret: number) => {
+      const el = document.createElement("div");
+      const overlay = document.createElement("span");
+      overlay.className = "tone-overlay";
+      el.appendChild(overlay);
+      document.body.appendChild(el);
+      toneAnimationManager.applyToneClass(el, abs, { stringIndex, fret });
+      registered.push(el);
+      return el;
+    };
+    // Same pitch (E3) reachable on two strings — only the targeted one flashes
+    makeFretAt(-12, 0, 12);
+    makeFretAt(-12, 1, 7);
+    toneAnimationManager.flashAt(1, 7, 500);
+    expect(animateMock).toHaveBeenCalledTimes(1);
+    toneAnimationManager.flashAt(3, 3, 500); // unregistered location: no-op
+    expect(animateMock).toHaveBeenCalledTimes(1);
+  });
 });
