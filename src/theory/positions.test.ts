@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { getScalePositions, type PositionNote } from "./positions";
+import { getScalePositions, getStringBaseNotes, type PositionNote } from "./positions";
 import { getScalePitchClasses, keyToOffset } from "@/music";
-import { scales } from "@/constants";
+import { scales, tunings } from "@/constants";
 
 // Standard tuning E2 A2 D3 G3 B3 E4, abs semitones relative to E4 = 0
 const STANDARD = [-24, -19, -14, -9, -5, 0];
@@ -119,5 +119,43 @@ describe("getScalePositions — other scales and tunings", () => {
     for (const position of positions) {
       expect(position.highFret - position.lowFret).toBeLessThanOrEqual(3);
     }
+  });
+});
+
+describe("getStringBaseNotes — base-tone layout", () => {
+  it("matches the canonical standard tuning (E2..E4 relative to E4=0)", () => {
+    expect(getStringBaseNotes(tunings.Standard, 6, 4)).toEqual(STANDARD);
+  });
+
+  it("places drop D's low string a whole step below standard", () => {
+    expect(getStringBaseNotes(tunings["Drop D"], 6, 4)).toEqual(DROP_D);
+  });
+
+  it("shifts the whole array by an octave when startOctave changes", () => {
+    const up = getStringBaseNotes(tunings.Standard, 6, 5);
+    expect(up).toEqual(STANDARD.map((n) => n + 12));
+  });
+
+  // Regression: the UI lets the string count exceed the tuning length
+  // (FormNumber min=1 max=12, independent of tuning). Extra strings must keep
+  // extending downward — the array stays sorted low→high with no duplicates,
+  // the contract getScalePositions' unison logic and the renderer depend on.
+  it("stays monotonic and unique when strings exceed the tuning length", () => {
+    for (const tuningName of Object.keys(tunings) as (keyof typeof tunings)[]) {
+      for (let strings = 1; strings <= 12; strings += 1) {
+        const base = getStringBaseNotes(tunings[tuningName], strings, 4);
+        expect(base).toHaveLength(strings);
+        for (let i = 1; i < base.length; i += 1) {
+          expect(base[i]).toBeGreaterThan(base[i - 1]);
+        }
+      }
+    }
+  });
+
+  it("extends an 8-string standard below the low E (no scrambling)", () => {
+    // The two added strings sit below E2, not above it.
+    expect(getStringBaseNotes(tunings.Standard, 8, 4)).toEqual([
+      -41, -36, -24, -19, -14, -9, -5, 0,
+    ]);
   });
 });

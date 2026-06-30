@@ -35,28 +35,27 @@ export const getStringBaseNotes = (
   startOctave: number
 ): number[] => {
   const pitchClasses = tuning.map((t) => keyToOffset(t) as number);
-  if (pitchClasses.length === 0) return [];
+  const tuningLength = pitchClasses.length;
+  if (tuningLength === 0) return [];
 
-  const absBaseByTuningIndex: number[] = new Array(pitchClasses.length);
-  const lastIndex = pitchClasses.length - 1;
+  // Build from the highest string downward, snapping each next string into the
+  // octave directly below the previous one. Strings beyond the tuning cycle its
+  // pitch classes again, an octave lower — and because every string is placed
+  // strictly below the one above it, the result is always sorted low→high
+  // (the monotonic contract getScalePositions and the renderer rely on).
   const anchorEAbs = 12 * (startOctave - 4);
-  absBaseByTuningIndex[lastIndex] = anchorEAbs + pitchClasses[lastIndex];
+  const highToLow: number[] = [anchorEAbs + pitchClasses[tuningLength - 1]];
 
-  for (let s = lastIndex - 1; s >= 0; s -= 1) {
-    const above = absBaseByTuningIndex[s + 1];
-    let candidate: number = pitchClasses[s];
+  for (let stringFromTop = 1; stringFromTop < strings; stringFromTop += 1) {
+    const above = highToLow[stringFromTop - 1];
+    const tuningIndex = ((tuningLength - 1 - stringFromTop) % tuningLength + tuningLength) % tuningLength;
+    let candidate: number = pitchClasses[tuningIndex];
     while (candidate >= above) candidate -= 12;
     while (candidate + 12 < above) candidate += 12;
-    absBaseByTuningIndex[s] = candidate;
+    highToLow.push(candidate);
   }
 
-  const byOriginalIndex: number[] = [];
-  for (let originalIndex = 0; originalIndex < strings; originalIndex += 1) {
-    const tuningIndex = pitchClasses.length - 1 - (originalIndex % pitchClasses.length);
-    const cycle = Math.floor(originalIndex / pitchClasses.length);
-    byOriginalIndex.push(absBaseByTuningIndex[tuningIndex] - cycle * 12);
-  }
-  return byOriginalIndex.reverse();
+  return highToLow.reverse();
 };
 
 type GetScalePositionsArgs = {
