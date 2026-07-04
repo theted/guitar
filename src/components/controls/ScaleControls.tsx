@@ -29,14 +29,13 @@ const POSITION_SPAN_OPTIONS = [4, 5, 6].map((s) => ({
 const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
   const {
     scale, tone, startOctave, phraseMode, phraseOctaves, phraseDescend, phraseLoop,
-    oncePerTone, highlightEnabled, legendOnly, octaveHighlight, minimalHighlight,
+    oncePerTone, octaveHighlight, minimalHighlight,
     selectedPosition, positionSpan,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale, tone: state.tone, startOctave: state.startOctave,
     phraseMode: state.phraseMode, phraseOctaves: state.phraseOctaves,
     phraseDescend: state.phraseDescend, phraseLoop: state.phraseLoop,
-    oncePerTone: state.oncePerTone, highlightEnabled: state.highlightEnabled,
-    legendOnly: state.legendOnly, octaveHighlight: state.octaveHighlight,
+    oncePerTone: state.oncePerTone, octaveHighlight: state.octaveHighlight,
     minimalHighlight: state.minimalHighlight,
     selectedPosition: state.selectedPosition, positionSpan: state.positionSpan,
   })));
@@ -132,10 +131,8 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
       {/* Highlights */}
       <div className="flex flex-col gap-2.5 border-t border-white/[0.06] pt-4">
         <FieldLabel>Highlights</FieldLabel>
-        <FormToggle id="highlightEnabled" label="Highlight notes" checked={highlightEnabled} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ highlightEnabled: v })} />
-        <FormToggle id="legendOnly" label="Legend only" checked={legendOnly} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ legendOnly: v })} />
         <FormToggle id="octaveHighlight" label="Flash played octave only" title="When playing a note, flash only the frets in the same octave instead of every octave of that note" checked={octaveHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ octaveHighlight: v })} />
-        <FormToggle id="minimalHighlight" label="Minimal highlight" checked={minimalHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ minimalHighlight: v })} />
+        <FormToggle id="minimalHighlight" label="Minimal highlight" title="Hide degree badges and keep note flashes short" checked={minimalHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ minimalHighlight: v })} />
       </div>
     </div>
   );

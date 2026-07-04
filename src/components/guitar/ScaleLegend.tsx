@@ -6,6 +6,7 @@ import { intervalName } from '@/theory/intervals';
 import { scales } from '@/constants';
 import { useFormStore } from '@/store';
 import ScaleDegree from './ScaleDegree';
+import Eyebrow from '@/components/ui/eyebrow';
 
 // Pure display of the scale's degrees; playback lives in usePlayback/TopBar.
 const ScaleLegend: React.FC = () => {
@@ -24,17 +25,20 @@ const ScaleLegend: React.FC = () => {
   );
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      {pitchClasses.map((pc, index) => (
-        <ScaleDegree
-          key={pc}
-          index={index}
-          label={degreeLabels[index]}
-          interval={intervalName(pc)}
-          abs={keyOffset + pc}
-          isTonic={index === 0}
-        />
-      ))}
+    <div className="mb-3 flex items-start gap-2">
+      <Eyebrow>Scale</Eyebrow>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {pitchClasses.map((pc, index) => (
+          <ScaleDegree
+            key={pc}
+            index={index}
+            label={degreeLabels[index]}
+            interval={intervalName(pc)}
+            abs={keyOffset + pc}
+            isTonic={index === 0}
+          />
+        ))}
+      </div>
     </div>
   );
 };

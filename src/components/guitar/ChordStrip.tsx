@@ -5,6 +5,7 @@ import { getScalePitchClasses } from '@/music';
 import { getDiatonicChords } from '@/theory/chords';
 import { scales } from '@/constants';
 import { setFormState, useFormStore } from '@/store';
+import Eyebrow from '@/components/ui/eyebrow';
 
 // Diatonic chord buttons (I ii iii …). Selecting one highlights its chord
 // tones on the fretboard; only rendered for heptatonic scales.
@@ -23,8 +24,10 @@ const ChordStrip: React.FC = () => {
   if (chords.length === 0) return null;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-1.5" role="group" aria-label="Diatonic chords">
-      {chords.map((chord) => {
+    <div className="mb-3 flex items-start gap-2">
+      <Eyebrow>Chords</Eyebrow>
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Diatonic chords">
+        {chords.map((chord) => {
         const active = selectedChordDegree === chord.degree;
         return (
           <button
@@ -46,7 +49,8 @@ const ChordStrip: React.FC = () => {
             </span>
           </button>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 };

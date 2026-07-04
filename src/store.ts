@@ -10,8 +10,6 @@ export type FormState = {
   tuningName: TuningName;
   tone: KeyName;
   lowAtBottom: boolean;
-  highlightEnabled: boolean;
-  legendOnly: boolean;
   octaveHighlight: boolean;
   phraseMode: PhraseMode;
   bpm: number;
@@ -46,8 +44,6 @@ const initial: FormState = {
   tuningName: DEFAULTS.TUNING,
   tone: DEFAULTS.KEY,
   lowAtBottom: true,
-  highlightEnabled: true,
-  legendOnly: false,
   octaveHighlight: false,
   phraseMode: 'full-scale',
   bpm: 300,

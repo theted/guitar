@@ -17,13 +17,12 @@ const EMPTY_FRETS: Set<number> = new Set();
 
 const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote }) => {
   const {
-    scale, keyy, oncePerTone, reduceAnimations, minimalHighlight,
+    scale, keyy, oncePerTone, minimalHighlight,
     soundType, selectedChordDegree,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     keyy: state.tone,
     oncePerTone: state.oncePerTone,
-    reduceAnimations: state.reduceAnimations,
     minimalHighlight: state.minimalHighlight,
     soundType: state.soundType,
     selectedChordDegree: state.selectedChordDegree,
@@ -43,8 +42,15 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
     return byString;
   }, [activePosition]);
 
+  // String gauge: the lowest string renders as the thickest wire
+  const wireHeightFor = (lowIndex: number): number => {
+    const count = descriptors.length;
+    const t = count > 1 ? lowIndex / (count - 1) : 1; // 0 = lowest string
+    return Math.round((3.5 - t * 2.25) * 4) / 4;
+  };
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       {descriptors.map((descriptor) => (
         <GuitarString
           key={descriptor.originalIndex}
@@ -61,10 +67,10 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           keyy={keyy}
           scaleHighlightBottomOnly={oncePerTone}
           isBottom={descriptor.isBottom}
-          reduceAnimations={reduceAnimations}
           minimalHighlight={minimalHighlight}
           soundType={soundType}
           selectedChordDegree={selectedChordDegree}
+          wireHeight={wireHeightFor(descriptor.lowIndex)}
           onPlayNote={onPlayNote}
         />
       ))}

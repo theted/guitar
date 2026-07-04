@@ -39,8 +39,10 @@ const Guitar: React.FC<Props> = ({ onPlayNote }) => {
       <PositionStrip />
       {/* Frets keep a minimum width; the neck scrolls horizontally when they don't fit */}
       <div className="overflow-x-auto pb-1">
-        <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} />
-        <FretMarkers markers={fretMarkers} />
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} />
+          <FretMarkers markers={fretMarkers} />
+        </div>
       </div>
     </div>
   );

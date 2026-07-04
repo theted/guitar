@@ -3,6 +3,7 @@ import cx from 'classnames';
 import { useShallow } from 'zustand/react/shallow';
 import { setFormState, useFormStore } from '@/store';
 import { useScalePositions } from './hooks/useScalePositions';
+import Eyebrow from '@/components/ui/eyebrow';
 
 // Scale position (box) selector. Selecting a position dims everything outside
 // the box and makes Play step through it one fret at a time.
@@ -15,8 +16,10 @@ const PositionStrip: React.FC = () => {
   if (positions.length === 0) return null;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-1.5" role="group" aria-label="Scale positions">
-      {positions.map((position) => {
+    <div className="mb-3 flex items-start gap-2">
+      <Eyebrow>Positions</Eyebrow>
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Scale positions">
+        {positions.map((position) => {
         const active = selectedPosition === position.index;
         return (
           <button
@@ -38,7 +41,8 @@ const PositionStrip: React.FC = () => {
             </span>
           </button>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 };

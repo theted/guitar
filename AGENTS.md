@@ -201,8 +201,6 @@ type FormState = {
   scheduleHorizon: number;    // Audio schedule lookahead (ms)
 
   // Visual settings
-  highlightEnabled: boolean;
-  legendOnly: boolean;
   octaveHighlight: boolean;
   minimalHighlight: boolean;
   reduceAnimations: boolean;

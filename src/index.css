@@ -142,8 +142,8 @@
     margin: 0;
     overflow: hidden;
     overscroll-behavior: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    font-family: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+      "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -187,16 +187,49 @@
 
 /* ─── Tone-based animation system ───────────────────────────────────────── */
 /* Flashes are driven by the Web Animations API (see lib/tone-animation.ts);
-   the overlay only needs its resting style here. */
+   the overlay only needs its resting style here. A radial glow (rather than
+   a flat fill) makes the flash read as the string lighting up around the dot. */
 .tone-overlay {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  /* Cyan note-flash — OKLCH equivalent of the original rgba(8,145,178,0.6) */
-  background: oklch(0.62 0.17 200 / 0.65);
+  background: radial-gradient(
+    circle at center,
+    oklch(0.72 0.15 200 / 0.90) 0%,
+    oklch(0.65 0.16 200 / 0.45) 42%,
+    transparent 72%
+  );
   opacity: 0;
   contain: layout style paint;
+}
+
+/* ─── Fretboard as instrument ───────────────────────────────────────────── */
+/* The board is a continuous surface: fret wires are cell borders (they align
+   across rows because string rows have no gap), strings are horizontal wires
+   whose thickness is set inline per string (gauge), and the nut is the
+   heavier wire after the open-string column. */
+.string-wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    to bottom,
+    oklch(0.80 0.010 264 / 0.28),
+    oklch(0.55 0.010 264 / 0.16)
+  );
+  pointer-events: none;
+}
+
+.fret-cell {
+  border-right: 1px solid oklch(1 0 0 / 0.10);
+}
+
+.fret-cell--open {
+  background: oklch(0 0 0 / 0.22);
+  border-right: 2px solid oklch(0.92 0.005 264 / 0.32); /* the nut */
 }
 
 /* ─── Guitar performance optimizations ──────────────────────────────────── */

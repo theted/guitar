@@ -35,7 +35,9 @@ const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-12 flex items-center gap-3 px-4 border-b border-white/[0.06] bg-black/60 backdrop-blur-md">
-      <span className="hidden lg:block text-white/90 text-sm font-semibold tracking-wide whitespace-nowrap">
+      <span
+        className="hidden lg:block text-white/80 text-[11px] font-bold uppercase tracking-[0.22em] whitespace-nowrap [font-stretch:125%]"
+      >
         Guitar Scale Finder
       </span>
 
@@ -60,7 +62,7 @@ const TopBar: React.FC<TopBarProps> = ({
         <button
           type="button"
           onClick={onTogglePlay}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/8 px-4 h-8 text-xs font-medium text-zinc-100 hover:bg-white/14 hover:border-white/35 active:scale-95 transition-all duration-150 shrink-0"
+          className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 h-8 text-xs font-semibold text-cyan-950 hover:bg-cyan-300 active:scale-95 transition-all duration-150 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
           title={isPlaying ? 'Pause phrase (Space)' : 'Play phrase (Space)'}
           aria-keyshortcuts="Space"
         >
@@ -78,13 +80,13 @@ const TopBar: React.FC<TopBarProps> = ({
             onChange={(v) => apply({ bpm: v })}
             className="flex-1"
           />
-          <span className="text-xs font-mono text-white/60 w-14 whitespace-nowrap">{bpm} bpm</span>
+          <span className="text-xs text-white/60 w-14 whitespace-nowrap tabular-nums">{bpm} bpm</span>
         </div>
       </div>
 
       <button
         onClick={onOpenSettings}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/50 hover:text-white/90 hover:bg-white/[0.06] transition-all text-xs uppercase tracking-widest font-medium shrink-0"
+        className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-white/[0.08] bg-white/[0.05] text-white/60 hover:text-white/90 hover:bg-white/[0.09] transition-all text-xs uppercase tracking-widest font-medium shrink-0"
         aria-label="Open settings"
       >
         <Settings className="w-3.5 h-3.5" />

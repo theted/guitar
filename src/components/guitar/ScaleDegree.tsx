@@ -31,7 +31,7 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
     "relative overflow-hidden px-2 py-1 rounded-md text-sm uppercase tracking-wide transition-colors border",
     isTonic
       ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/70"
-      : "bg-amber-500/15 text-amber-200 border-amber-400/50"
+      : "bg-white/[0.06] text-white/80 border-white/[0.10]"
   );
 
   return (
