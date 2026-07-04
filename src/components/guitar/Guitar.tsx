@@ -1,6 +1,7 @@
 import React from "react";
 import { useShallow } from "zustand/react/shallow";
 import ScaleLegend from "./ScaleLegend";
+import RiffStrip from "./RiffStrip";
 import ChordStrip from "./ChordStrip";
 import PositionStrip from "./PositionStrip";
 import GuitarNeck from "./GuitarNeck";
@@ -35,6 +36,7 @@ const Guitar: React.FC<Props> = ({ onPlayNote }) => {
   return (
     <div className="w-[92vw] max-w-[1600px] guitar-container">
       <ScaleLegend />
+      <RiffStrip />
       <ChordStrip />
       <PositionStrip />
       {/* Frets keep a minimum width; the neck scrolls horizontally when they don't fit */}

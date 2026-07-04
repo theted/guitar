@@ -26,7 +26,12 @@ const PositionStrip: React.FC = () => {
             key={position.index}
             type="button"
             aria-pressed={active}
-            onClick={() => setFormState({ selectedPosition: active ? null : position.index })}
+            onClick={() =>
+              setFormState({
+                selectedPosition: active ? null : position.index,
+                selectedRiffId: null,
+              })
+            }
             title={`Position ${position.index}: frets ${position.lowFret}–${position.highFret}. Select to practice this box one note at a time.`}
             className={cx(
               'px-2 py-1 rounded-md border text-xs transition-colors select-none',

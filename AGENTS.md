@@ -140,6 +140,17 @@ buildRelSequence(
 // Output: [0,4, 2,5, 4,7, 5,9, 7,11, ...] (C-E, D-F, E-G, F-A, G-B, ...)
 ```
 
+**Demo Riffs (`constants/riffs.ts`):**
+
+Alongside the generic patterns, `RIFFS` holds short authored lines per scale
+with real rhythm: each step is `{ rel, beats }` (semitones above the tonic /
+duration in tempo steps; `rel: null` is a rest). Selecting one in the
+RiffStrip (store field `selectedRiffId`) makes Play perform it instead of the
+phrase — `usePhraseEvents` builds the timed events, so looping and fretboard
+highlighting work unchanged. Riff selection and position practice are
+mutually exclusive. `riffs.test.ts` enforces that every sounded note is a
+scale tone; scales without riffs simply hide the strip.
+
 ### 4. Scheduler System (`scheduler.ts`)
 
 Manages synchronized audio playback and UI animations.

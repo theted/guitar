@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { PhraseMode } from "@/constants";
+import type { PhraseMode, Riff } from "@/constants";
 import { buildRelSequence } from "@/phrases";
 import type { PositionNote } from "@/theory/positions";
 import type { PitchClass } from "@/types";
@@ -27,6 +27,12 @@ interface UsePhraseEventsArgs {
    * when `descend` is on, and every event carries its fret location.
    */
   path?: PositionNote[] | null;
+  /**
+   * Authored demo riff. Bypasses the phrase machinery with its own rhythm
+   * (per-step beats and rests); swing and descend don't apply. A set `path`
+   * takes precedence, though the UI keeps the two selections exclusive.
+   */
+  riff?: Riff | null;
 }
 
 type SequenceNote = { abs: number; stringIndex?: number; fret?: number };
@@ -40,10 +46,12 @@ export const usePhraseEvents = ({
   swing,
   keyOffset,
   path = null,
+  riff = null,
 }: UsePhraseEventsArgs) => {
   const relSequence = useMemo(
-    () => (path ? [] : buildRelSequence(pitchClasses as PitchClass[], mode, octaves, descend)),
-    [path, pitchClasses, mode, octaves, descend]
+    () =>
+      path || riff ? [] : buildRelSequence(pitchClasses as PitchClass[], mode, octaves, descend),
+    [path, riff, pitchClasses, mode, octaves, descend]
   );
 
   const sequence = useMemo<SequenceNote[]>(() => {
@@ -60,6 +68,27 @@ export const usePhraseEvents = ({
   }, [path, descend, relSequence, keyOffset]);
 
   const { events, loopDuration } = useMemo(() => {
+    // Riffs carry their own rhythm: each step lasts `beats` steps of the
+    // global tempo, rests advance time silently, and trailing rests keep
+    // their space in the loop so it breathes between repeats.
+    if (!path && riff) {
+      const stepSec = Math.max(20, Math.round(stepMs)) / 1000;
+      const generated: PhraseEvent[] = [];
+      let currentTime = 0;
+      for (const step of riff.steps) {
+        const durationSeconds = step.beats * stepSec;
+        if (step.rel != null) {
+          generated.push({
+            abs: keyOffset + step.rel,
+            startTimeSec: currentTime,
+            durSec: Math.max(0.2, durationSeconds + 0.04),
+          });
+        }
+        currentTime += durationSeconds;
+      }
+      return { events: generated, loopDuration: currentTime };
+    }
+
     if (sequence.length === 0) {
       return { events: [] as PhraseEvent[], loopDuration: 0 };
     }
@@ -91,7 +120,7 @@ export const usePhraseEvents = ({
         : 0;
 
     return { events: generated, loopDuration: totalDuration };
-  }, [sequence, stepMs, swing]);
+  }, [path, riff, keyOffset, sequence, stepMs, swing]);
 
   return { relSequence, events, loopDuration };
 };

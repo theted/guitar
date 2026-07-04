@@ -30,6 +30,8 @@ export type FormState = {
   selectedPosition: number | null;
   /** Hand-span window width in frets for position boxes */
   positionSpan: number;
+  /** Id of the demo riff to play instead of the phrase, or null for off */
+  selectedRiffId: string | null;
 };
 
 const prefersReducedMotion =
@@ -61,6 +63,7 @@ const initial: FormState = {
   selectedChordDegree: null,
   selectedPosition: null,
   positionSpan: 5,
+  selectedRiffId: null,
 };
 
 // v1 keys were spelled with sharps only; flat keys now use their conventional names

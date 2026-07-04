@@ -5,6 +5,7 @@ import FieldLabel from '@/components/ui/field-label';
 import { PhraseMode, ScaleName, KeyName, PHRASE_MODE_GROUPS } from '@/constants';
 import { setFormState, useFormStore, type FormState } from '@/store';
 import { SCALE_GROUP_OPTIONS, KEY_OPTIONS } from './options';
+import { useRiffs } from '@/components/guitar/hooks/useRiffs';
 import FormToggle from './FormToggle';
 
 type ScaleControlsProps = { stopAllPlayback: () => void };
@@ -40,7 +41,10 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
     selectedPosition: state.selectedPosition, positionSpan: state.positionSpan,
   })));
 
-  const positionActive = selectedPosition != null;
+  const { activeRiff } = useRiffs();
+  // Position practice and demo riffs both replace the phrase pattern
+  const phraseBypassed = selectedPosition != null || activeRiff != null;
+  const bypassReason = selectedPosition != null ? 'a position' : 'a riff';
 
   const apply = useCallback((partial: Partial<FormState>) => {
     stopAllPlayback();
@@ -86,11 +90,11 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
       {/* Phrase */}
       <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
         <FieldLabel>Phrase</FieldLabel>
-        {/* Position practice plays the box path directly; phrase shape doesn't apply */}
+        {/* Position practice and riffs play their own line; phrase shape doesn't apply */}
         <div
-          className={positionActive ? 'opacity-40 pointer-events-none' : undefined}
-          title={positionActive ? 'Phrase patterns are paused while practicing a position — deselect the position to use them' : undefined}
-          aria-disabled={positionActive || undefined}
+          className={phraseBypassed ? 'opacity-40 pointer-events-none' : undefined}
+          title={phraseBypassed ? `Phrase patterns are paused while ${bypassReason} is selected — deselect it above the fretboard to use them` : undefined}
+          aria-disabled={phraseBypassed || undefined}
         >
           <DarkSelect
             value={phraseMode}

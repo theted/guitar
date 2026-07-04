@@ -10,6 +10,7 @@ import { toneAnimationManager } from "@/lib/tone-animation";
 import { usePhraseEvents, type PhraseEvent } from "@/components/guitar/hooks/usePhraseEvents";
 import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
+import { useRiffs } from "@/components/guitar/hooks/useRiffs";
 
 export type PlayNoteFn = (
   absSemitone: number,
@@ -91,8 +92,11 @@ export const usePlayback = () => {
     return [...chord.pcs].sort((a, b) => a - b);
   }, [phraseMode, tone, pitchClasses, selectedChordDegree]);
 
-  // Position practice replaces the abstract phrase with the box's fret path
+  // Position practice replaces the abstract phrase with the box's fret path;
+  // a selected demo riff replaces it with an authored line (UI keeps the two
+  // selections mutually exclusive)
   const { activePosition } = useScalePositions();
+  const { activeRiff } = useRiffs();
 
   const { events, loopDuration } = usePhraseEvents({
     pitchClasses: phrasePitchClasses,
@@ -103,6 +107,7 @@ export const usePlayback = () => {
     swing,
     keyOffset,
     path: activePosition?.notes ?? null,
+    riff: activeRiff,
   });
 
   const phrasePlayNote = useCallback(

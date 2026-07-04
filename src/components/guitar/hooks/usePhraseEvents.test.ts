@@ -49,3 +49,38 @@ describe("usePhraseEvents timing", () => {
     expect(events.every((e) => e.abs >= 5)).toBe(true);
   });
 });
+
+describe("usePhraseEvents riff mode", () => {
+  const riff = {
+    id: "test-riff",
+    name: "Test riff",
+    steps: [
+      { rel: 0, beats: 1 },
+      { rel: null, beats: 0.5 }, // rest
+      { rel: 7, beats: 2 },
+      { rel: null, beats: 1 }, // trailing rest
+    ],
+  };
+
+  it("plays the riff's own rhythm, skipping rests", () => {
+    const { events } = renderEvents({ riff, keyOffset: 3, stepMs: 200 });
+    expect(events).toHaveLength(2);
+    expect(events[0].abs).toBe(3);
+    expect(events[0].startTimeSec).toBeCloseTo(0, 6);
+    // The 7-semitone note starts after 1 beat of sound + 0.5 beats of rest
+    expect(events[1].abs).toBe(10);
+    expect(events[1].startTimeSec).toBeCloseTo(0.3, 6);
+    expect(events[1].durSec).toBeCloseTo(0.44, 6);
+  });
+
+  it("includes trailing rests in the loop duration", () => {
+    const { loopDuration } = renderEvents({ riff, stepMs: 200 });
+    expect(loopDuration).toBeCloseTo(0.9, 6); // (1 + 0.5 + 2 + 1) × 0.2s
+  });
+
+  it("ignores swing so the authored rhythm is preserved", () => {
+    const straight = renderEvents({ riff, stepMs: 200, swing: false });
+    const swung = renderEvents({ riff, stepMs: 200, swing: true });
+    expect(swung.events).toEqual(straight.events);
+  });
+});
