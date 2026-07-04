@@ -1,39 +1,59 @@
 import React, { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import FieldLabel from '@/components/ui/field-label';
 import { SoundType } from '@/audio';
-import { TuningName, tunings } from '@/constants';
+import { TuningName } from '@/constants';
 import { setFormState, useFormStore, type FormState } from '@/store';
+import { TUNING_GROUP_OPTIONS } from './options';
 import FormNumber from './FormNumber';
 import FormToggle from './FormToggle';
 
 type InstrumentControlsProps = { stopAllPlayback: () => void };
 
-const TUNING_OPTIONS = Object.keys(tunings).map((t) => ({ value: t, label: t }));
-
-const SOUND_OPTIONS: Array<{ value: SoundType; label: string }> = [
-  { value: 'marimba', label: 'Marimba' },
-  { value: 'sine', label: 'Sine' },
-  { value: 'organ', label: 'Organ' },
-  { value: 'piano', label: 'Piano' },
-  { value: 'square', label: 'Square' },
-  { value: 'saw', label: 'Saw' },
-  { value: 'guitar-clean', label: 'Guitar Clean' },
-  { value: 'guitar-distorted', label: 'Guitar Distorted' },
-  { value: 'bass', label: 'Bass' },
-  { value: 'synth-lead', label: 'Synth Lead' },
-  { value: 'synth-pad', label: 'Synth Pad' },
-  { value: 'bells', label: 'Bells' },
-  { value: 'strings', label: 'Strings' },
-  { value: 'flute', label: 'Flute' },
-  { value: 'brass', label: 'Brass' },
+const SOUND_GROUPS: Array<{ label: string; options: Array<{ value: SoundType; label: string }> }> = [
+  {
+    label: 'Guitar & bass',
+    options: [
+      { value: 'guitar-clean', label: 'Guitar Clean' },
+      { value: 'guitar-distorted', label: 'Guitar Distorted' },
+      { value: 'bass', label: 'Bass' },
+    ],
+  },
+  {
+    label: 'Keys & percussion',
+    options: [
+      { value: 'marimba', label: 'Marimba' },
+      { value: 'piano', label: 'Piano' },
+      { value: 'organ', label: 'Organ' },
+      { value: 'bells', label: 'Bells' },
+    ],
+  },
+  {
+    label: 'Orchestral',
+    options: [
+      { value: 'strings', label: 'Strings' },
+      { value: 'flute', label: 'Flute' },
+      { value: 'brass', label: 'Brass' },
+    ],
+  },
+  {
+    label: 'Synth',
+    options: [
+      { value: 'sine', label: 'Sine' },
+      { value: 'square', label: 'Square' },
+      { value: 'saw', label: 'Saw' },
+      { value: 'synth-lead', label: 'Synth Lead' },
+      { value: 'synth-pad', label: 'Synth Pad' },
+    ],
+  },
 ];
 
 const InstrumentControls: React.FC<InstrumentControlsProps> = ({ stopAllPlayback }) => {
-  const { tuningName, strings, frets, soundType, lowAtBottom } = useFormStore((state) => ({
+  const { tuningName, strings, frets, soundType, lowAtBottom } = useFormStore(useShallow((state) => ({
     tuningName: state.tuningName, strings: state.strings, frets: state.frets,
     soundType: state.soundType, lowAtBottom: state.lowAtBottom,
-  }));
+  })));
 
   const apply = useCallback((partial: Partial<FormState>) => {
     stopAllPlayback();
@@ -49,7 +69,7 @@ const InstrumentControls: React.FC<InstrumentControlsProps> = ({ stopAllPlayback
           <DarkSelect
             value={tuningName}
             onValueChange={(v) => apply({ tuningName: v as TuningName })}
-            options={TUNING_OPTIONS}
+            groups={TUNING_GROUP_OPTIONS}
             aria-label="Tuning"
           />
         </div>
@@ -59,7 +79,7 @@ const InstrumentControls: React.FC<InstrumentControlsProps> = ({ stopAllPlayback
           <DarkSelect
             value={soundType}
             onValueChange={(v) => apply({ soundType: v as SoundType })}
-            options={SOUND_OPTIONS}
+            groups={SOUND_GROUPS}
             aria-label="Sound"
           />
         </div>

@@ -4,8 +4,7 @@ import { getScalePitchClasses } from '@/music';
 import { getScaleSpelling, formatNote, parseKey } from '@/theory/spelling';
 import { intervalName } from '@/theory/intervals';
 import { getDiatonicChords } from '@/theory/chords';
-import { scales } from '@/constants';
-import { ucFirst } from '@/lib/utils';
+import { scales, SCALE_LABELS } from '@/constants';
 import { useFormStore } from '@/store';
 import FieldLabel from '@/components/ui/field-label';
 
@@ -24,7 +23,7 @@ const ScaleInfo: React.FC = () => {
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="text-white/90 font-semibold">
-        {formatNote(parseKey(keyy))} {ucFirst(scale)}
+        {formatNote(parseKey(keyy))} {SCALE_LABELS[scale]}
       </div>
 
       <div className="flex flex-col gap-1.5">

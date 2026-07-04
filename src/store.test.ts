@@ -28,6 +28,23 @@ describe("migrateFormState", () => {
     expect(migrateFormState({ tone: "x" }).tone).toBe(DEFAULTS.KEY);
   });
 
+  it("maps removed duplicate scales to their canonical names", () => {
+    expect(migrateFormState({ scale: "gypsy" }).scale).toBe("double harmonic");
+    expect(migrateFormState({ scale: "whole steps" }).scale).toBe("whole tone");
+  });
+
+  it("maps removed duplicate tunings to their canonical names", () => {
+    expect(migrateFormState({ tuningName: "DADGBE" }).tuningName).toBe("Drop D");
+    expect(migrateFormState({ tuningName: "DGDGBD" }).tuningName).toBe("Open G");
+    expect(migrateFormState({ tuningName: "Nashville" }).tuningName).toBe("Standard");
+    expect(migrateFormState({ tuningName: "Baritone B" }).tuningName).toBe("B Standard");
+    expect(migrateFormState({ tuningName: "Baritone A" }).tuningName).toBe("A Standard");
+  });
+
+  it("falls back to the default tuning for unknown values", () => {
+    expect(migrateFormState({ tuningName: "nonsense" }).tuningName).toBe(DEFAULTS.TUNING);
+  });
+
   it("fills missing fields with defaults", () => {
     const migrated = migrateFormState({});
     expect(migrated.scale).toBe(DEFAULTS.SCALE);

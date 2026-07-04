@@ -3,7 +3,7 @@ import { Play, Pause, Settings } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import { Slider } from '@/components/ui/slider';
-import { SCALE_OPTIONS, KEY_OPTIONS } from '@/components/controls/options';
+import { SCALE_GROUP_OPTIONS, KEY_OPTIONS } from '@/components/controls/options';
 import { setFormState, useFormStore, type FormState } from '@/store';
 import type { ScaleName, KeyName } from '@/constants';
 
@@ -52,7 +52,7 @@ const TopBar: React.FC<TopBarProps> = ({
           <DarkSelect
             value={scale}
             onValueChange={(v) => apply({ scale: v as ScaleName })}
-            options={SCALE_OPTIONS}
+            groups={SCALE_GROUP_OPTIONS}
             aria-label="Scale"
           />
         </div>

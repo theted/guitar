@@ -1,9 +1,10 @@
 import React, { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import FieldLabel from '@/components/ui/field-label';
 import { PhraseMode, ScaleName, KeyName, PHRASE_MODE_GROUPS } from '@/constants';
 import { setFormState, useFormStore, type FormState } from '@/store';
-import { SCALE_OPTIONS, KEY_OPTIONS } from './options';
+import { SCALE_GROUP_OPTIONS, KEY_OPTIONS } from './options';
 import FormToggle from './FormToggle';
 
 type ScaleControlsProps = { stopAllPlayback: () => void };
@@ -30,7 +31,7 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
     scale, tone, startOctave, phraseMode, phraseOctaves, phraseDescend, phraseLoop,
     oncePerTone, highlightEnabled, legendOnly, octaveHighlight, minimalHighlight,
     selectedPosition, positionSpan,
-  } = useFormStore((state) => ({
+  } = useFormStore(useShallow((state) => ({
     scale: state.scale, tone: state.tone, startOctave: state.startOctave,
     phraseMode: state.phraseMode, phraseOctaves: state.phraseOctaves,
     phraseDescend: state.phraseDescend, phraseLoop: state.phraseLoop,
@@ -38,7 +39,7 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
     legendOnly: state.legendOnly, octaveHighlight: state.octaveHighlight,
     minimalHighlight: state.minimalHighlight,
     selectedPosition: state.selectedPosition, positionSpan: state.positionSpan,
-  }));
+  })));
 
   const positionActive = selectedPosition != null;
 
@@ -56,7 +57,7 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
           <DarkSelect
             value={scale}
             onValueChange={(v) => apply({ scale: v as ScaleName })}
-            options={SCALE_OPTIONS}
+            groups={SCALE_GROUP_OPTIONS}
             aria-label="Scale"
           />
         </div>

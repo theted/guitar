@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Slider } from '@/components/ui/slider';
 import FieldLabel from '@/components/ui/field-label';
 import { setFormState, useFormStore, type FormState } from '@/store';
@@ -8,10 +9,10 @@ import FormToggle from './FormToggle';
 type PlaybackControlsProps = { stopAllPlayback: () => void };
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({ stopAllPlayback }) => {
-  const { bpm, trailLength, scheduleHorizon, swing, reduceAnimations } = useFormStore((state) => ({
+  const { bpm, trailLength, scheduleHorizon, swing, reduceAnimations } = useFormStore(useShallow((state) => ({
     bpm: state.bpm, trailLength: state.trailLength, scheduleHorizon: state.scheduleHorizon,
     swing: state.swing, reduceAnimations: state.reduceAnimations,
-  }));
+  })));
 
   const apply = useCallback((partial: Partial<FormState>) => {
     stopAllPlayback();

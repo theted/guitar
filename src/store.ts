@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, KEYS } from './constants';
+import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS } from './constants';
 import { SoundType } from './audio';
 
 export type FormState = {
@@ -75,12 +75,34 @@ const LEGACY_KEY_NAMES: Record<string, KeyName> = {
   'g#': 'ab',
 };
 
+// v3 removed catalog entries that were exact duplicates of another entry
+const LEGACY_SCALE_NAMES: Record<string, ScaleName> = {
+  gypsy: 'double harmonic',
+  'whole steps': 'whole tone',
+};
+const LEGACY_TUNING_NAMES: Record<string, TuningName> = {
+  DADGBE: 'Drop D',
+  DGDGBD: 'Open G',
+  Nashville: 'Standard',
+  'Baritone B': 'B Standard',
+  'Baritone A': 'A Standard',
+};
+
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
 export const migrateFormState = (persisted: unknown): FormState => {
   const state = { ...initial, ...(persisted as Partial<FormState>) };
-  if (!(state.scale in scales)) {
+  const scale = state.scale as string;
+  if (scale in LEGACY_SCALE_NAMES) {
+    state.scale = LEGACY_SCALE_NAMES[scale];
+  } else if (!(scale in scales)) {
     state.scale = DEFAULTS.SCALE;
+  }
+  const tuningName = state.tuningName as string;
+  if (tuningName in LEGACY_TUNING_NAMES) {
+    state.tuningName = LEGACY_TUNING_NAMES[tuningName];
+  } else if (!(tuningName in tunings)) {
+    state.tuningName = DEFAULTS.TUNING;
   }
   const tone = state.tone as string;
   if (tone in LEGACY_KEY_NAMES) {
@@ -98,7 +120,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 2,
+      version: 3,
       migrate: (persisted) => migrateFormState(persisted),
     }
   )

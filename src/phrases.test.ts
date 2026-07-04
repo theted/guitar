@@ -111,6 +111,21 @@ describe('phrase builder', () => {
     expect(seq).toEqual([pcs[0], pcs[2], pcs[4], pcs[6], pcs[4], pcs[2], pcs[0]]);
   });
 
+  it('sixths pairs each degree with the sixth above it, never below', () => {
+    const pcs = majorPcs();
+    const seq = buildRelSequence(pcs, 'sixths', 1);
+    expect(seq.length).toBe(pcs.length * 2);
+    for (let i = 0; i < seq.length; i += 2) {
+      const interval = (seq[i + 1] as number) - (seq[i] as number);
+      // Major scale sixths are 8 or 9 semitones up (minor/major sixth)
+      expect(interval).toBeGreaterThanOrEqual(8);
+      expect(interval).toBeLessThanOrEqual(9);
+    }
+    // The wrapped pairs continue into the next octave: last pair is B + G(+12)
+    expect(seq[seq.length - 2]).toBe(pcs[6]);
+    expect(seq[seq.length - 1]).toBe(pcs[4] + 12);
+  });
+
   it('withDesc appends apex and reversed sequence', () => {
     const pcs = majorPcs();
     const asc = buildRelSequence(pcs, 'full-scale', 1, false);
