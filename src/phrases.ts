@@ -74,13 +74,19 @@ const modeBuilders: Record<PhraseMode, OctBuilder> = {
 
   'sixths': (pcs) => {
     const n = pcs.length;
-    const degs: number[] = [];
     if (n >= 6) {
-      for (let s = 1; s <= n; s += 1) degs.push(s, ((s + 4) % n) + 1);
-    } else {
-      for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
-      if (degs.length === 0) degs.push(...ascDegSeq(n));
+      // Each degree with the sixth above it; when the upper note wraps past
+      // the octave it must sound an octave up to keep the line ascending.
+      const out: number[] = [];
+      for (let s = 0; s < n; s += 1) {
+        const upper = s + 5;
+        out.push(pcs[s], upper < n ? pcs[upper] : pcs[upper - n] + 12);
+      }
+      return out;
     }
+    const degs: number[] = [];
+    for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
+    if (degs.length === 0) degs.push(...ascDegSeq(n));
     return degs.map((d) => pcs[d - 1]);
   },
 

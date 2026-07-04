@@ -74,7 +74,7 @@ describe("getDiatonicChords — other keys and scales", () => {
   });
 
   it("never crashes on exotic heptatonic scales", () => {
-    const exotics = ["arabian", "persian", "hungarian", "gypsy", "spanish"] as const;
+    const exotics = ["arabian", "persian", "hungarian", "double harmonic", "spanish"] as const;
     for (const scale of exotics) {
       const chords = chordsFor("c", scale);
       expect(chords).toHaveLength(7);
