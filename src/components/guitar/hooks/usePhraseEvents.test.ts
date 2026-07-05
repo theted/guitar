@@ -54,6 +54,7 @@ describe("usePhraseEvents riff mode", () => {
   const riff = {
     id: "test-riff",
     name: "Test riff",
+    bpm: 300,
     steps: [
       { rel: 0, beats: 1 },
       { rel: null, beats: 0.5 }, // rest

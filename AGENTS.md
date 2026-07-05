@@ -144,9 +144,11 @@ buildRelSequence(
 
 Alongside the generic patterns, `RIFFS` holds short authored lines per scale
 with real rhythm: each step is `{ rel, beats }` (semitones above the tonic /
-duration in tempo steps; `rel: null` is a rest). Selecting one in the
-RiffStrip (store field `selectedRiffId`) makes Play perform it instead of the
-phrase — `usePhraseEvents` builds the timed events, so looping and fretboard
+duration in tempo steps; `rel: null` is a rest), and each riff carries a
+suggested `bpm`. Clicking one in the RiffStrip (store field `selectedRiffId`)
+adopts that tempo and starts playback immediately (a usePlayback effect;
+persisted selections never autoplay on load); clicking again stops.
+`usePhraseEvents` builds the timed events, so looping and fretboard
 highlighting work unchanged. Riff selection and position practice are
 mutually exclusive. `riffs.test.ts` enforces that every sounded note is a
 scale tone; scales without riffs simply hide the strip.

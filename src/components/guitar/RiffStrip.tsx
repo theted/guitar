@@ -5,9 +5,10 @@ import { setFormState } from '@/store';
 import { useRiffs } from './hooks/useRiffs';
 import Eyebrow from '@/components/ui/eyebrow';
 
-// Demo riffs for the current scale. Selecting one makes Play perform that
-// line (with the usual fretboard highlighting) instead of the phrase pattern;
-// only rendered for scales that have authored riffs.
+// Demo riffs for the current scale. Clicking one plays it right away at its
+// own tempo (the BPM slider adopts it and stays in control), with the usual
+// fretboard highlighting; clicking again stops. Only rendered for scales
+// that have authored riffs.
 const RiffStrip: React.FC = () => {
   const { riffs, activeRiff } = useRiffs();
 
@@ -25,12 +26,13 @@ const RiffStrip: React.FC = () => {
               type="button"
               aria-pressed={active}
               onClick={() =>
-                setFormState({
-                  selectedRiffId: active ? null : riff.id,
-                  selectedPosition: null,
-                })
+                setFormState(
+                  active
+                    ? { selectedRiffId: null }
+                    : { selectedRiffId: riff.id, selectedPosition: null, bpm: riff.bpm }
+                )
               }
-              title={`${riff.name} — a short line that shows off this scale. Select it, then press Play.`}
+              title={`${riff.name} — a short line that shows off this scale. Click to hear it; click again to stop.`}
               className={cx(
                 'inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs transition-colors select-none',
                 active
@@ -40,6 +42,9 @@ const RiffStrip: React.FC = () => {
             >
               <Music className={cx('w-3 h-3', active ? 'text-white/80' : 'text-white/30')} />
               <span className="font-semibold">{riff.name}</span>
+              <span className={cx('tabular-nums', active ? 'text-white/60' : 'text-white/30')}>
+                {riff.bpm}
+              </span>
             </button>
           );
         })}

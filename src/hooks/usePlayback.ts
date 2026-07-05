@@ -116,7 +116,7 @@ export const usePlayback = () => {
     [playNote]
   );
 
-  const { isPlaying, onTogglePlay } = usePhrasePlayer({
+  const { isPlaying, onTogglePlay, play } = usePhrasePlayer({
     events,
     loopDuration,
     loop: phraseLoop,
@@ -129,6 +129,32 @@ export const usePlayback = () => {
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
+
+  // Clicking a riff is a request to hear it now: selection starts playback
+  // immediately, deselection stops it. The undefined sentinel skips the
+  // initial render so a persisted selection never autoplays on page load
+  // (where no user gesture has unlocked the AudioContext yet).
+  const lastRiffIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const riffId = activeRiff?.id ?? null;
+    if (lastRiffIdRef.current === undefined) {
+      lastRiffIdRef.current = riffId;
+      return;
+    }
+    if (riffId === lastRiffIdRef.current) return;
+    lastRiffIdRef.current = riffId;
+
+    if (riffId != null) {
+      ensureAudioInitialized()
+        .then(() => play())
+        .catch((error) => console.error("Failed to initialize audio:", error));
+    } else {
+      // Stopping bumps stopSignal at most once (guarded in stopAllPlayback),
+      // so this can't cascade — same justified pattern as usePhrasePlayer.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      stopAllPlayback();
+    }
+  }, [activeRiff, play, stopAllPlayback]);
 
   const togglePlay = useCallback(async () => {
     if (!isPlaying) {

@@ -36,6 +36,15 @@ describe("riff catalog", () => {
     }
   });
 
+  it("suggests a tempo within the BPM slider's range", () => {
+    for (const [, riffs] of entries) {
+      for (const riff of riffs) {
+        expect(riff.bpm).toBeGreaterThanOrEqual(30);
+        expect(riff.bpm).toBeLessThanOrEqual(700);
+      }
+    }
+  });
+
   it("has globally unique ids and non-empty names", () => {
     const ids = entries.flatMap(([, riffs]) => riffs.map((riff) => riff.id));
     expect(new Set(ids).size).toBe(ids.length);

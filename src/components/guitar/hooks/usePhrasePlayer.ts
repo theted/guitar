@@ -124,5 +124,5 @@ export const usePhrasePlayer = ({
     clearPlayTimers();
   }, [stopSignal, clearPlayTimers]);
 
-  return { isPlaying, onTogglePlay };
+  return { isPlaying, onTogglePlay, play: playArpeggio };
 };
