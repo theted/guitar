@@ -6,7 +6,8 @@ type FormToggleProps = {
   /** Optional hover tooltip explaining what the toggle does */
   title?: string;
   checked: boolean;
-  stopAllPlayback: () => void;
+  /** Interrupt playback when flipped — omit for settings that apply live */
+  stopAllPlayback?: () => void;
   onChange: (checked: boolean) => void;
 };
 
@@ -22,7 +23,7 @@ const FormToggle: React.FC<FormToggleProps> = ({ id, label, title, checked, stop
         role="switch"
         aria-checked={checked}
         onClick={() => {
-          stopAllPlayback();
+          stopAllPlayback?.();
           onChange(!checked);
         }}
         className={`relative inline-flex h-[18px] w-8 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 ${

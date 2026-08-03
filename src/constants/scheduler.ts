@@ -22,3 +22,6 @@ export const VOICE_CLEANUP_EXTRA_MS = 200;
 
 /** Minimum stop time (seconds) after current time to avoid scheduling glitches */
 export const VOICE_MIN_STOP_SEC = 0.01;
+
+/** Ramp time (seconds) for master volume changes, so dragging the slider doesn't click */
+export const MASTER_VOLUME_RAMP_SEC = 0.02;

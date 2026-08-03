@@ -1,5 +1,3 @@
-import type { Tone } from "./tones";
-
 // Tunings are pitch classes only; the renderer stacks each string in the
 // octave below its neighbor, so tunings that differ from another one purely
 // by octave (Nashville, baritone) are not representable and are not listed.
@@ -48,7 +46,6 @@ export const tunings = {
 } as const;
 
 export type TuningName = keyof typeof tunings;
-export type Tuning = readonly Tone[];
 
 // Display metadata for the tuning picker (same shape as PHRASE_MODE_GROUPS).
 // Every tuning in the catalog must appear exactly once.

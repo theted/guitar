@@ -32,17 +32,5 @@ export default tseslint.config(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
     },
-  },
-
-  // Web Worker file — runs in worker context (has self, setInterval, etc.)
-  {
-    files: ["src/schedulerWorker.js"],
-    languageOptions: {
-      globals: {
-        self: "readonly",
-        setInterval: "readonly",
-        clearInterval: "readonly",
-      },
-    },
   }
 );

@@ -11,6 +11,7 @@ const renderStringNotes = (
       frets: 3,
       scale: "major",
       keyy: "e",
+      highlightEnabled: true,
       scaleHighlightBottomOnly: false,
       isBottom: true,
       ...overrides,
@@ -57,6 +58,15 @@ describe("useStringNotes", () => {
 
     expect(notes[0].isSelected).toBe(true);
     expect(notes[0].showScaleHighlight).toBe(false);
+  });
+
+  it("drops every scale highlight when highlighting is off", () => {
+    const notes = renderStringNotes({ frets: 4, highlightEnabled: false });
+
+    // The theory is unchanged — only the marking on the neck goes away
+    expect(notes.map((note) => note.showScaleHighlight)).toEqual([false, false, false, false, false]);
+    expect(notes[0].isSelected).toBe(true);
+    expect(notes[0].degree).toBe(1);
   });
 
   it("marks selected chord tones and the chord root", () => {

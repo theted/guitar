@@ -23,7 +23,9 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
   React.useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    toneAnimationManager.applyToneClass(element, abs);
+    // The legend shows degrees, not pitches — it lights up for its tone in
+    // whichever octave the phrase happens to be playing.
+    toneAnimationManager.applyToneClass(element, abs, { anyOctave: true });
     return () => { toneAnimationManager.clearToneClass(element); };
   }, [abs]);
 

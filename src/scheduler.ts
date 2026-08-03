@@ -29,6 +29,8 @@ export type PlaybackEvent = {
   abs: number;
   startTimeSec: number; // absolute AudioContext time
   durSec: number;
+  /** Position in the sequence, so the UI can follow along */
+  index: number;
   /** Set when the event targets one specific fretboard location */
   stringIndex?: number;
   fret?: number;
@@ -180,7 +182,7 @@ class AudioScheduler {
 
   // ─── Single-note (legacy) ─────────────────────────────────────────────────
 
-  startSession(onUiNote: UiCallback): number {
+  private startSession(onUiNote: UiCallback): number {
     const id = this.nextId++;
     const session: Session = { id, onUiNote, uiEvents: [], rafId: null };
     this.sessions.set(id, session);
@@ -188,7 +190,7 @@ class AudioScheduler {
   }
 
   /** Schedule a note at an absolute AudioContext time and register a UI event. */
-  scheduleNoteAt(
+  private scheduleNoteAt(
     sessionId: number,
     absSemitone: number,
     whenSec: number,

@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
-import { Play, Pause, Settings } from 'lucide-react';
+import React from 'react';
+import { Play, Pause, Settings, Volume2, VolumeX } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import { Slider } from '@/components/ui/slider';
 import { SCALE_GROUP_OPTIONS, KEY_OPTIONS } from '@/components/controls/options';
-import { setFormState, useFormStore, type FormState } from '@/store';
+import { setFormState, useFormStore } from '@/store';
+import { useApplySetting } from '@/hooks/useApplySetting';
 import type { ScaleName, KeyName } from '@/constants';
 
 type TopBarProps = {
@@ -22,16 +23,14 @@ const TopBar: React.FC<TopBarProps> = ({
   stopAllPlayback,
   onOpenSettings,
 }) => {
-  const { scale, tone, bpm } = useFormStore(useShallow((state) => ({
+  const { scale, tone, bpm, muted } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
     bpm: state.bpm,
+    muted: state.muted,
   })));
 
-  const apply = useCallback((partial: Partial<FormState>) => {
-    stopAllPlayback();
-    setFormState(partial);
-  }, [stopAllPlayback]);
+  const apply = useApplySetting(stopAllPlayback);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-12 flex items-center gap-3 px-4 border-b border-white/[0.06] bg-black/60 backdrop-blur-md">
@@ -81,6 +80,17 @@ const TopBar: React.FC<TopBarProps> = ({
           <span className="text-xs font-mono text-white/60 w-14 whitespace-nowrap">{bpm} bpm</span>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setFormState({ muted: !muted })}
+        className="flex items-center justify-center w-8 h-8 rounded-lg text-white/50 hover:text-white/90 hover:bg-white/[0.06] transition-all shrink-0"
+        title={muted ? 'Unmute' : 'Mute'}
+        aria-label={muted ? 'Unmute' : 'Mute'}
+        aria-pressed={muted}
+      >
+        {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+      </button>
 
       <button
         onClick={onOpenSettings}

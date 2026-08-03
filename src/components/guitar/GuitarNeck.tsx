@@ -17,12 +17,13 @@ const EMPTY_FRETS: Set<number> = new Set();
 
 const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote }) => {
   const {
-    scale, keyy, oncePerTone, reduceAnimations, minimalHighlight,
+    scale, keyy, highlightEnabled, singleStringScale, reduceAnimations, minimalHighlight,
     soundType, selectedChordDegree,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     keyy: state.tone,
-    oncePerTone: state.oncePerTone,
+    highlightEnabled: state.highlightEnabled,
+    singleStringScale: state.singleStringScale,
     reduceAnimations: state.reduceAnimations,
     minimalHighlight: state.minimalHighlight,
     soundType: state.soundType,
@@ -48,7 +49,6 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
       {descriptors.map((descriptor) => (
         <GuitarString
           key={descriptor.originalIndex}
-          idx={descriptor.renderIndex}
           stringIndex={descriptor.lowIndex}
           positionFrets={
             positionFretsByString
@@ -59,7 +59,8 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           note={descriptor.baseNote}
           scale={scale}
           keyy={keyy}
-          scaleHighlightBottomOnly={oncePerTone}
+          highlightEnabled={highlightEnabled}
+          scaleHighlightBottomOnly={singleStringScale}
           isBottom={descriptor.isBottom}
           reduceAnimations={reduceAnimations}
           minimalHighlight={minimalHighlight}

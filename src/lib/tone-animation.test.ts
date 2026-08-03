@@ -71,6 +71,58 @@ describe("toneAnimationManager", () => {
     expect(animateMock).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps flashing anyOctave elements in octave-specific mode", () => {
+    // The scale legend stands for a degree, not a pitch: it must light up for
+    // its tone whatever octave the phrase is playing in.
+    const makeLegendChip = (abs: number) => {
+      const el = document.createElement("div");
+      const overlay = document.createElement("span");
+      overlay.className = "tone-overlay";
+      el.appendChild(overlay);
+      document.body.appendChild(el);
+      toneAnimationManager.applyToneClass(el, abs, { anyOctave: true });
+      registered.push(el);
+      return el;
+    };
+
+    toneAnimationManager.setMode("octave-specific");
+    makeLegendChip(0); // legend chip for E, registered at the E4 origin
+    makeFret(24); // E6 on the neck
+
+    toneAnimationManager.flashTone(24, 500);
+    expect(animateMock).toHaveBeenCalledTimes(2); // the fret and the legend chip
+
+    // …and it still flashes only once when both live in the same octave
+    animateMock.mockClear();
+    toneAnimationManager.flashTone(0, 500);
+    expect(animateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("flashes phrase steps by position, not by pitch", () => {
+    const makeStep = (index: number) => {
+      const el = document.createElement("div");
+      const overlay = document.createElement("span");
+      overlay.className = "tone-overlay";
+      el.appendChild(overlay);
+      document.body.appendChild(el);
+      toneAnimationManager.registerStep(el, index);
+      return el;
+    };
+
+    const first = makeStep(0);
+    makeStep(1);
+
+    toneAnimationManager.flashStep(1, 500);
+    expect(animateMock).toHaveBeenCalledTimes(1);
+
+    toneAnimationManager.flashStep(7, 500); // no such step: no-op
+    expect(animateMock).toHaveBeenCalledTimes(1);
+
+    toneAnimationManager.clearStep(first);
+    toneAnimationManager.flashStep(0, 500);
+    expect(animateMock).toHaveBeenCalledTimes(1);
+  });
+
   it("flashAt flashes exactly one registered fret location", () => {
     const makeFretAt = (abs: number, stringIndex: number, fret: number) => {
       const el = document.createElement("div");
@@ -78,7 +130,7 @@ describe("toneAnimationManager", () => {
       overlay.className = "tone-overlay";
       el.appendChild(overlay);
       document.body.appendChild(el);
-      toneAnimationManager.applyToneClass(el, abs, { stringIndex, fret });
+      toneAnimationManager.applyToneClass(el, abs, { fret: { stringIndex, fret } });
       registered.push(el);
       return el;
     };

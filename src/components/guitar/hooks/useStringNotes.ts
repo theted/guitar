@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { getScalePitchClasses, keyToOffset } from "@/music";
+import { relativeTo } from "@/theory/pitch";
 import { getSpellingMap, formatNoteWithOctave } from "@/theory/spelling";
 import { getDiatonicChords } from "@/theory/chords";
 import { scales } from "@/constants";
-import { pitchClass as asPitchClass } from "@/types";
 import type { ScaleName } from "@/constants";
 
 type ScaleMap = typeof scales;
@@ -14,6 +14,8 @@ type UseStringNotesArgs = {
   scale: ScaleName;
   keyy: string;
   scaleMap?: ScaleMap;
+  /** Master switch for marking scale notes at all */
+  highlightEnabled: boolean;
   scaleHighlightBottomOnly: boolean;
   isBottom: boolean;
   /** 1-based diatonic chord degree to emphasize, or null */
@@ -45,6 +47,7 @@ export const useStringNotes = ({
   scale,
   keyy,
   scaleMap = scales,
+  highlightEnabled,
   scaleHighlightBottomOnly,
   isBottom,
   selectedChordDegree = null,
@@ -62,10 +65,11 @@ export const useStringNotes = ({
 
     for (let fret = 0; fret <= frets; fret += 1) {
       const actualNote = note + fret;
-      const relativePc = asPitchClass((((actualNote - keyOffset) % 12) + 12) % 12);
+      const relativePc = relativeTo(actualNote, keyOffset);
       const isSelected = pitchClasses.includes(relativePc);
       const isBase = relativePc === 0;
-      const showScaleHighlight = isSelected && (!scaleHighlightBottomOnly || isBottom);
+      const showScaleHighlight =
+        highlightEnabled && isSelected && (!scaleHighlightBottomOnly || isBottom);
       const degree = isSelected ? pitchClasses.indexOf(relativePc) + 1 : null;
       const label = formatNoteWithOctave(actualNote, spellingMap);
       const chordTone = chordPcs ? chordPcs.has(relativePc) : null;
@@ -88,7 +92,7 @@ export const useStringNotes = ({
     }
 
     return descriptors;
-  }, [note, frets, scale, keyy, scaleMap, scaleHighlightBottomOnly, isBottom, selectedChordDegree, positionFrets]);
+  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, scaleHighlightBottomOnly, isBottom, selectedChordDegree, positionFrets]);
 };
 
 export type { FretDescriptor };

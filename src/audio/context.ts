@@ -1,3 +1,5 @@
+import { MASTER_VOLUME_RAMP_SEC } from "../constants";
+
 export type ActiveVoice = {
   stop: (time?: number) => void;
 };
@@ -15,7 +17,10 @@ export const voicesByNote = new Map<number, ActiveVoice>();
 export const MAX_POLYPHONY = 16;
 
 let audioCtx: AudioContext | null = null;
+let masterGain: GainNode | null = null;
 let primed = false;
+/** 0–1, applied to the master bus. Kept outside the node so it survives a context restart. */
+let masterVolume = 1;
 
 /**
  * Get or create the AudioContext. Safe to call synchronously from a user-gesture
@@ -27,6 +32,32 @@ export const getAudioContext = (): AudioContext => {
   }
   return audioCtx;
 };
+
+/**
+ * The bus every voice connects to. Routing through one gain node means volume
+ * changes apply to notes that are already sounding, and cost nothing per note.
+ */
+export const getMasterBus = (): GainNode => {
+  const ctx = getAudioContext();
+  if (!masterGain) {
+    masterGain = ctx.createGain();
+    masterGain.gain.value = masterVolume;
+    masterGain.connect(ctx.destination);
+  }
+  return masterGain;
+};
+
+/** Set the master volume (0–1). Ramped, so it never clicks. */
+export const setMasterVolume = (volume: number): void => {
+  masterVolume = Math.min(1, Math.max(0, volume));
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(masterVolume, now + MASTER_VOLUME_RAMP_SEC);
+};
+
+export const getMasterVolume = (): number => masterVolume;
 
 /**
  * Play a zero-gain oscillator for 10ms to flush the OS audio pipeline.

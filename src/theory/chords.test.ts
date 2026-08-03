@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDiatonicChords } from "./chords";
+import { getDiatonicChords, getChordArpOffsets } from "./chords";
 import { intervalName } from "./intervals";
 import { getScalePitchClasses } from "@/music";
 import { scales } from "@/constants";
@@ -83,5 +83,34 @@ describe("getDiatonicChords — other keys and scales", () => {
         expect(chord.pcs).toHaveLength(3);
       }
     }
+  });
+});
+
+describe('getChordArpOffsets', () => {
+  const cMajor = () => getDiatonicChords('c', getScalePitchClasses(scales.major));
+
+  it('stacks the tonic triad from its root', () => {
+    // C major: C E G, 0 / +4 / +7 above the tonic
+    expect(getChordArpOffsets(cMajor()[0])).toEqual([0, 4, 7]);
+  });
+
+  it('keeps the root first when the chord crosses the octave', () => {
+    // G major in C is G B D — D wraps below G as a pitch class, so a numeric
+    // sort would arpeggiate D-G-B and start on the fifth
+    const five = cMajor()[4];
+    expect(five.name).toBe('G');
+    const offsets = getChordArpOffsets(five);
+    expect(offsets[0]).toBe(five.pcs[0]);
+    expect(offsets).toEqual([...offsets].sort((a, b) => a - b));
+    // Still a major triad: root, major third, perfect fifth
+    expect(offsets.map((o) => o - offsets[0])).toEqual([0, 4, 7]);
+  });
+
+  it('ascends for every diatonic chord', () => {
+    cMajor().forEach((chord) => {
+      const offsets = getChordArpOffsets(chord);
+      expect(offsets[0]).toBe(chord.pcs[0]);
+      offsets.slice(1).forEach((value, i) => expect(value).toBeGreaterThan(offsets[i]));
+    });
   });
 });

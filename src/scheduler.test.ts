@@ -37,9 +37,9 @@ describe("AudioScheduler", () => {
 
     scheduler.startPhraseSession(
       events(
-        { abs: 0, startTimeSec: 10.0, durSec: 0.1 },
-        { abs: 2, startTimeSec: 10.1, durSec: 0.1 },
-        { abs: 4, startTimeSec: 10.2, durSec: 0.1 }
+        { abs: 0, startTimeSec: 10.0, durSec: 0.1, index: 0 },
+        { abs: 2, startTimeSec: 10.1, durSec: 0.1, index: 1 },
+        { abs: 4, startTimeSec: 10.2, durSec: 0.1, index: 2 }
       ),
       vi.fn(),
       "sine"
@@ -70,9 +70,9 @@ describe("AudioScheduler", () => {
 
     scheduler.startPhraseSession(
       events(
-        { abs: 0, startTimeSec: 9.4, durSec: 0.2 },
-        { abs: 2, startTimeSec: 9.6, durSec: 0.2 },
-        { abs: 4, startTimeSec: 10.1, durSec: 0.2 }
+        { abs: 0, startTimeSec: 9.4, durSec: 0.2, index: 0 },
+        { abs: 2, startTimeSec: 9.6, durSec: 0.2, index: 1 },
+        { abs: 4, startTimeSec: 10.1, durSec: 0.2, index: 2 }
       ),
       vi.fn(),
       "sine"
@@ -85,7 +85,7 @@ describe("AudioScheduler", () => {
   it("fires phrase UI callbacks when events enter the rAF timing window", () => {
     audio.currentTime = 5;
     const onUiNote = vi.fn();
-    const event = { abs: 7, startTimeSec: 5.003, durSec: 0.25, stringIndex: 2, fret: 4 };
+    const event = { abs: 7, startTimeSec: 5.003, durSec: 0.25, index: 0, stringIndex: 2, fret: 4 };
 
     scheduler.startPhraseSession(events(event), onUiNote, "sine");
 

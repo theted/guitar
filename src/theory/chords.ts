@@ -1,5 +1,6 @@
 import type { PitchClass } from "@/types/music";
 import { getScaleSpelling, formatNote } from "./spelling";
+import { mod12 } from "./pitch";
 
 // Diatonic chords: stack alternate scale degrees (root, 3rd, 5th, 7th) and
 // match the resulting interval structure against known chord qualities.
@@ -45,6 +46,20 @@ export type DiatonicChord = {
 };
 
 /**
+ * A chord's tones stacked upward from its own root, for arpeggiating.
+ *
+ * `pcs` are pitch classes, so a chord whose third or fifth crosses the octave
+ * (any chord rooted near the top of the key) wraps below its root; sorting
+ * those numerically would start the arpeggio on the wrong tone. The offsets
+ * returned here can exceed 11 — they are positions above the tonic, not pitch
+ * classes.
+ */
+export const getChordArpOffsets = (chord: DiatonicChord): number[] => {
+  const root = chord.pcs[0];
+  return chord.pcs.map((pc) => root + mod12(pc - root));
+};
+
+/**
  * Diatonic triads (with 7th names) for a heptatonic scale; empty for scales
  * where stacked-thirds harmony doesn't apply.
  */
@@ -56,8 +71,7 @@ export const getDiatonicChords = (
   const spelled = getScaleSpelling(keyName, relativePcs);
 
   return relativePcs.map((rootRel, index) => {
-    const step = (offset: number) =>
-      (((relativePcs[(index + offset) % 7] - rootRel) % 12) + 12) % 12;
+    const step = (offset: number) => mod12(relativePcs[(index + offset) % 7] - rootRel);
     const third = step(2);
     const fifth = step(4);
     const seventh = step(6);
@@ -84,7 +98,7 @@ export const getDiatonicChords = (
       roman,
       name,
       seventhName: seventhSymbol ? rootName + seventhSymbol : null,
-      pcs: [rootRel, ((rootRel + third) % 12) as PitchClass, ((rootRel + fifth) % 12) as PitchClass],
+      pcs: [rootRel, mod12(rootRel + third), mod12(rootRel + fifth)],
     };
   });
 };

@@ -4,7 +4,14 @@ import { SOUND_PRESETS } from "./presets";
 import type { SoundType } from "./presets";
 
 export type { SoundType };
-export { getAudioContext, ensureAudioInitialized, getCurrentTime, stopAllAudio } from "./context";
+export {
+  getAudioContext,
+  ensureAudioInitialized,
+  getCurrentTime,
+  stopAllAudio,
+  setMasterVolume,
+  getMasterVolume,
+} from "./context";
 
 export const playSemitoneAt = (
   semitoneFromE0: number,
@@ -24,12 +31,4 @@ export const playSemitoneAt = (
   }
 
   synthesizeSound(ctx, semitoneFromE0, frequency, startAtTime, duration, config);
-};
-
-export const playSemitone = (
-  semitoneFromE0: number,
-  opts?: { duration?: number; type?: SoundType },
-): void => {
-  const ctx = getAudioContext();
-  playSemitoneAt(semitoneFromE0, ctx.currentTime, opts);
 };
