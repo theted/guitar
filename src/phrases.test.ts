@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { scales } from './constants';
+import { scales, KEYS, PHRASE_MODE_GROUPS } from './constants';
 import type { PhraseMode } from './constants';
-import { getScalePitchClasses } from './music';
-import { buildRelSequence } from './phrases';
+import { getScalePitchClasses, keyToOffset } from './music';
+import { buildRelSequence, getPhraseRootAbs, getPlayableOctaves } from './phrases';
 
 const majorPcs = () => getScalePitchClasses(scales.major);      // 7 notes
 const pentaPcs = () => getScalePitchClasses(scales.pentatonic);  // 5 notes
+const PHRASE_MODES = PHRASE_MODE_GROUPS.flatMap((g) => g.modes.map((m) => m.value));
 
 describe('phrase builder', () => {
   it('full-scale includes all degrees across octaves', () => {
@@ -173,5 +174,77 @@ describe('exact phrase sequences', () => {
     const two = buildRelSequence(majorPcs(), 'full-scale', 2, false);
     expect(two.slice(0, one.length)).toEqual(one);
     expect(two.slice(one.length)).toEqual(one.map((v) => v + 12));
+  });
+});
+
+describe('getPhraseRootAbs', () => {
+  // Standard tuning at start octave 4 puts the low E string at abs -24
+  const LOW_E = -24;
+
+  it('starts on the lowest string when the key matches it', () => {
+    expect(getPhraseRootAbs(keyToOffset('e'), LOW_E)).toBe(-24);
+  });
+
+  it('picks the first tonic above the lowest string', () => {
+    // A is 5 semitones above E — 5th fret of the low string
+    expect(getPhraseRootAbs(keyToOffset('a'), LOW_E)).toBe(-19);
+    // C is 8 semitones above E — 8th fret
+    expect(getPhraseRootAbs(keyToOffset('c'), LOW_E)).toBe(-16);
+  });
+
+  it('never lands below the lowest string, and never a full octave above', () => {
+    KEYS.forEach((key) => {
+      const root = getPhraseRootAbs(keyToOffset(key), LOW_E);
+      expect(root).toBeGreaterThanOrEqual(LOW_E);
+      expect(root).toBeLessThan(LOW_E + 12);
+    });
+  });
+
+  it('follows the fretboard when the start octave changes', () => {
+    const low = getPhraseRootAbs(keyToOffset('c'), -24);
+    const high = getPhraseRootAbs(keyToOffset('c'), 0); // two octaves up
+    expect(high - low).toBe(24);
+  });
+
+  it('handles a lowest string below the E4 origin', () => {
+    expect(getPhraseRootAbs(keyToOffset('d'), -31)).toBe(-26);
+  });
+});
+
+describe('getPlayableOctaves', () => {
+  const major = () => majorPcs();
+
+  it('keeps the requested span when the neck is long enough', () => {
+    // Root on the low string, top fret two octaves up
+    expect(getPlayableOctaves(major(), 'full-scale', 2, true, -24, 0)).toBe(2);
+  });
+
+  it('clamps to what fits below the top fret', () => {
+    expect(getPlayableOctaves(major(), 'full-scale', 5, true, -24, -12)).toBe(1);
+    expect(getPlayableOctaves(major(), 'full-scale', 5, true, 0, 30)).toBe(2);
+  });
+
+  it('always yields at least one octave', () => {
+    expect(getPlayableOctaves(major(), 'full-scale', 3, true, 0, 4)).toBe(1);
+  });
+
+  it('accounts for modes that reach above their octave', () => {
+    // sixths lifts the wrapped upper note an octave, so its top note sits
+    // higher than octaves x 12 — a naive clamp would let it run off the neck
+    const pcs = major();
+    const room = getPlayableOctaves(pcs, 'sixths', 3, false, 0, 36);
+    const top = Math.max(...buildRelSequence(pcs, 'sixths', room, false));
+    expect(top).toBeLessThanOrEqual(36);
+    expect(getPlayableOctaves(pcs, 'sixths', 3, false, 0, 36))
+      .toBeLessThan(getPlayableOctaves(pcs, 'full-scale', 3, false, 0, 36));
+  });
+
+  it('never exceeds the neck for any mode', () => {
+    const pcs = major();
+    PHRASE_MODES.forEach((mode) => {
+      const octaves = getPlayableOctaves(pcs, mode, 5, true, 0, 30);
+      const sequence = buildRelSequence(pcs, mode, octaves, true);
+      if (octaves > 1) expect(Math.max(...sequence)).toBeLessThanOrEqual(30);
+    });
   });
 });

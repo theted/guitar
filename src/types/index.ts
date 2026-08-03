@@ -1,2 +1,2 @@
-export type { AbsSemitone, PitchClass, Degree, KeyOffset } from './music';
-export { absSemitone, pitchClass, degree, keyOffset } from './music';
+export type { AbsSemitone, PitchClass, KeyOffset } from './music';
+export { pitchClass } from './music';

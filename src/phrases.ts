@@ -1,5 +1,6 @@
 import { PhraseMode } from './constants';
 import type { PitchClass, AbsSemitone } from './types/music';
+import { mod12 } from './theory/pitch';
 
 // Shared helper: degree sequence for the snake/motif-1232 overlapping-triplet pattern.
 // Pattern: 1-2-3-2-3-4-3-4-5-...
@@ -210,13 +211,52 @@ const modeBuilders: Record<PhraseMode, OctBuilder> = {
   },
 };
 
+/** The UI offers 1–5 octaves; anything else is out of contract */
+const clampOctaves = (octaves: number): number =>
+  Math.max(1, Math.min(5, Math.floor(octaves)));
+
 export const buildRelSequence = (
   pcs: PitchClass[],
   mode: PhraseMode,
   octaves: number,
   withDesc = false,
 ): AbsSemitone[] => {
-  const clampOct = Math.max(1, Math.min(5, Math.floor(octaves)));
   const oneOct = modeBuilders[mode]?.(pcs) ?? [];
-  return expandAcrossOctaves(oneOct, clampOct, withDesc);
+  return expandAcrossOctaves(oneOct, clampOctaves(octaves), withDesc);
+};
+
+/**
+ * Absolute semitone the phrase starts from: the lowest tonic that actually
+ * exists on the neck. Phrases are built as offsets from this root, so they
+ * follow the fretboard when the tuning or start octave changes instead of
+ * staying pinned to the E4 origin.
+ */
+export const getPhraseRootAbs = (keyOffset: number, lowestAbs: number): number =>
+  lowestAbs + mod12(keyOffset - lowestAbs);
+
+/**
+ * Largest octave span, up to `requested`, whose highest note still sits under
+ * the top fret. A phrase reaching past the neck can be heard but not seen.
+ *
+ * The span is measured from the sequence itself rather than as octaves × 12,
+ * because some modes reach above their octave — `sixths` lifts a wrapped upper
+ * note by twelve to keep the line ascending.
+ *
+ * Always at least one octave: a neck too short for even that still gets a
+ * phrase, just one that runs off the end.
+ */
+export const getPlayableOctaves = (
+  pcs: PitchClass[],
+  mode: PhraseMode,
+  requested: number,
+  withDesc: boolean,
+  rootAbs: number,
+  highestAbs: number,
+): number => {
+  for (let octaves = clampOctaves(requested); octaves > 1; octaves -= 1) {
+    const sequence = buildRelSequence(pcs, mode, octaves, withDesc);
+    if (sequence.length === 0) continue;
+    if (rootAbs + Math.max(...sequence) <= highestAbs) return octaves;
+  }
+  return 1;
 };

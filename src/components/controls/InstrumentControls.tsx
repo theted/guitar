@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import FieldLabel from '@/components/ui/field-label';
 import { SoundType } from '@/audio';
 import { TuningName } from '@/constants';
-import { setFormState, useFormStore, type FormState } from '@/store';
+import { setFormState, useFormStore } from '@/store';
+import { useApplySetting } from '@/hooks/useApplySetting';
 import { TUNING_GROUP_OPTIONS } from './options';
 import FormNumber from './FormNumber';
 import FormToggle from './FormToggle';
@@ -55,10 +56,7 @@ const InstrumentControls: React.FC<InstrumentControlsProps> = ({ stopAllPlayback
     soundType: state.soundType, lowAtBottom: state.lowAtBottom,
   })));
 
-  const apply = useCallback((partial: Partial<FormState>) => {
-    stopAllPlayback();
-    setFormState(partial);
-  }, [stopAllPlayback]);
+  const apply = useApplySetting(stopAllPlayback);
 
   return (
     <div className="flex flex-col gap-4">

@@ -10,7 +10,6 @@ type FormNumberProps = {
   min?: number;
   max?: number;
   step?: number;
-  className?: string;
 };
 
 const FormNumber: React.FC<FormNumberProps> = ({

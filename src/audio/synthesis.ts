@@ -1,4 +1,4 @@
-import { activeVoices, voicesByNote, MAX_POLYPHONY, type ActiveVoice } from "./context";
+import { activeVoices, voicesByNote, getMasterBus, MAX_POLYPHONY, type ActiveVoice } from "./context";
 import { VOICE_STOP_RAMP_SEC, VOICE_CLEANUP_EXTRA_MS, VOICE_MIN_STOP_SEC } from "../constants";
 import { createReverb, createDistortion, createDelay } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
@@ -91,7 +91,7 @@ export const synthesizeSound = (
     activeVoices.values().next().value?.stop();
   }
   const master = createGainNode(ctx, startTime, duration, config.masterEnvelope);
-  master.connect(ctx.destination);
+  master.connect(getMasterBus());
 
   const nodesToDisconnect: AudioNode[] = [master];
   const oscillators: OscillatorNode[] = [];

@@ -52,3 +52,32 @@ describe("migrateFormState", () => {
     expect(migrated.bpm).toBeGreaterThan(0);
   });
 });
+
+describe("migrateFormState — v4", () => {
+  it("carries 'once per tone' over to its clearer name", () => {
+    expect(migrateFormState({ oncePerTone: true }).singleStringScale).toBe(true);
+    expect(migrateFormState({ oncePerTone: false }).singleStringScale).toBe(false);
+  });
+
+  it("prefers an explicit new value over the old one", () => {
+    const migrated = migrateFormState({ oncePerTone: true, singleStringScale: false });
+    expect(migrated.singleStringScale).toBe(false);
+  });
+
+  it("drops settings that no longer exist", () => {
+    const migrated = migrateFormState({ legendOnly: true, scheduleHorizon: 800 });
+    expect(migrated).not.toHaveProperty("legendOnly");
+    expect(migrated).not.toHaveProperty("scheduleHorizon");
+  });
+
+  it("defaults the master volume to audible and unmuted", () => {
+    const migrated = migrateFormState({});
+    expect(migrated.volume).toBeGreaterThan(0);
+    expect(migrated.muted).toBe(false);
+  });
+
+  it("keeps a stored volume", () => {
+    expect(migrateFormState({ volume: 25, muted: true }).volume).toBe(25);
+    expect(migrateFormState({ volume: 25, muted: true }).muted).toBe(true);
+  });
+});

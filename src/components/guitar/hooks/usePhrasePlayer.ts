@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { scheduler } from "@/scheduler";
 import { getCurrentTime, SoundType, stopAllAudio } from "@/audio";
 import { AUDIO_LOOKAHEAD_SEC } from "@/constants";
+import type { PlayNoteFn } from "@/hooks/usePlayback";
 import type { PhraseEvent } from "./usePhraseEvents";
 
 type UsePhrasePlayerArgs = {
   events: PhraseEvent[];
   loopDuration: number;
   loop: boolean;
-  onPlayNote?: (absSemitone: number, durationMs?: number, event?: PhraseEvent) => void;
+  onPlayNote?: PlayNoteFn;
   soundType?: SoundType;
   stopAllPlayback?: () => void;
   stopSignal?: number;

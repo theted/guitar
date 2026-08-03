@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DarkSelect } from '@/components/ui/dark-select';
 import FieldLabel from '@/components/ui/field-label';
 import { PhraseMode, ScaleName, KeyName, PHRASE_MODE_GROUPS } from '@/constants';
-import { setFormState, useFormStore, type FormState } from '@/store';
+import { setFormState, useFormStore } from '@/store';
+import { useApplySetting } from '@/hooks/useApplySetting';
 import { SCALE_GROUP_OPTIONS, KEY_OPTIONS } from './options';
 import FormToggle from './FormToggle';
 
@@ -29,24 +30,21 @@ const POSITION_SPAN_OPTIONS = [4, 5, 6].map((s) => ({
 const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
   const {
     scale, tone, startOctave, phraseMode, phraseOctaves, phraseDescend, phraseLoop,
-    oncePerTone, highlightEnabled, legendOnly, octaveHighlight, minimalHighlight,
+    singleStringScale, highlightEnabled, octaveHighlight, minimalHighlight,
     selectedPosition, positionSpan,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale, tone: state.tone, startOctave: state.startOctave,
     phraseMode: state.phraseMode, phraseOctaves: state.phraseOctaves,
     phraseDescend: state.phraseDescend, phraseLoop: state.phraseLoop,
-    oncePerTone: state.oncePerTone, highlightEnabled: state.highlightEnabled,
-    legendOnly: state.legendOnly, octaveHighlight: state.octaveHighlight,
+    singleStringScale: state.singleStringScale, highlightEnabled: state.highlightEnabled,
+    octaveHighlight: state.octaveHighlight,
     minimalHighlight: state.minimalHighlight,
     selectedPosition: state.selectedPosition, positionSpan: state.positionSpan,
   })));
 
   const positionActive = selectedPosition != null;
 
-  const apply = useCallback((partial: Partial<FormState>) => {
-    stopAllPlayback();
-    setFormState(partial);
-  }, [stopAllPlayback]);
+  const apply = useApplySetting(stopAllPlayback);
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,7 +112,6 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
         <div className="flex flex-col gap-2.5">
           <FormToggle id="phraseDescend" label="Descend" checked={phraseDescend} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ phraseDescend: v })} />
           <FormToggle id="phraseLoop" label="Loop" checked={phraseLoop} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ phraseLoop: v })} />
-          <FormToggle id="oncePerTone" label="Once per tone" checked={oncePerTone} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ oncePerTone: v })} />
         </div>
       </div>
 
@@ -132,10 +129,22 @@ const ScaleControls: React.FC<ScaleControlsProps> = ({ stopAllPlayback }) => {
       {/* Highlights */}
       <div className="flex flex-col gap-2.5 border-t border-white/[0.06] pt-4">
         <FieldLabel>Highlights</FieldLabel>
-        <FormToggle id="highlightEnabled" label="Highlight notes" checked={highlightEnabled} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ highlightEnabled: v })} />
-        <FormToggle id="legendOnly" label="Legend only" checked={legendOnly} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ legendOnly: v })} />
-        <FormToggle id="octaveHighlight" label="Flash played octave only" title="When playing a note, flash only the frets in the same octave instead of every octave of that note" checked={octaveHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ octaveHighlight: v })} />
-        <FormToggle id="minimalHighlight" label="Minimal highlight" checked={minimalHighlight} stopAllPlayback={stopAllPlayback} onChange={(v) => setFormState({ minimalHighlight: v })} />
+        <FormToggle
+          id="highlightEnabled"
+          label="Show scale on fretboard"
+          title="Mark the notes of the scale on the neck. Turn it off to test yourself against a blank fretboard — played notes still flash."
+          checked={highlightEnabled}
+          onChange={(v) => setFormState({ highlightEnabled: v })}
+        />
+        <FormToggle
+          id="singleStringScale"
+          label="Lowest string only"
+          title="Mark the scale on the lowest string only, so each tone appears once along the neck"
+          checked={singleStringScale}
+          onChange={(v) => setFormState({ singleStringScale: v })}
+        />
+        <FormToggle id="octaveHighlight" label="Flash played octave only" title="When playing a note, flash only the frets in the same octave instead of every octave of that note" checked={octaveHighlight} onChange={(v) => setFormState({ octaveHighlight: v })} />
+        <FormToggle id="minimalHighlight" label="Minimal highlight" title="Hide the scale-degree numbers on the frets" checked={minimalHighlight} onChange={(v) => setFormState({ minimalHighlight: v })} />
       </div>
     </div>
   );

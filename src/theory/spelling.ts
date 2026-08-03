@@ -1,4 +1,5 @@
 import type { PitchClass } from "@/types/music";
+import { mod12 } from "./pitch";
 
 // Enharmonic spelling layer. All pitch math elsewhere in the app stays in
 // E-rooted pitch classes (E = 0, matching the open low-E string); this module
@@ -31,8 +32,7 @@ const LETTER_SEMITONE: Record<NoteLetter, number> = {
 // The app's pitch classes are rooted at E; C-rooted math is converted on the way out
 const E_ROOT = LETTER_SEMITONE.E;
 
-const toAppPc = (cSemitone: number): PitchClass =>
-  ((((cSemitone - E_ROOT) % 12) + 12) % 12) as PitchClass;
+const toAppPc = (cSemitone: number): PitchClass => mod12(cSemitone - E_ROOT);
 
 export const parseKey = (name: string): SpelledNote => {
   const trimmed = name.trim();
@@ -56,7 +56,7 @@ const FLAT_NAMES = ["c", "db", "d", "eb", "e", "f", "gb", "g", "ab", "a", "bb", 
 
 const spellChromatic = (cSemitone: number, useFlats: boolean): SpelledNote => {
   const names = useFlats ? FLAT_NAMES : SHARP_NAMES;
-  return parseKey(names[((cSemitone % 12) + 12) % 12]);
+  return parseKey(names[mod12(cSemitone)]);
 };
 
 // Tier 1: every 7-note scale gets one note per letter, so degree i uses the
@@ -72,7 +72,7 @@ const spellHeptatonic = (
   for (let degree = 0; degree < relativePcs.length; degree += 1) {
     const letter = LETTERS[(tonicLetterIndex + degree) % 7];
     const target = tonicSemitone + relativePcs[degree];
-    let accidental = (((target - LETTER_SEMITONE[letter]) % 12) + 12) % 12;
+    let accidental: number = mod12(target - LETTER_SEMITONE[letter]);
     if (accidental > 6) accidental -= 12;
     if (Math.abs(accidental) > 2) return null;
     spelled.push({ letter, accidental, pc: toAppPc(target) });
@@ -143,8 +143,7 @@ export const formatNoteWithOctave = (
   absFromE4: number,
   spellingMap: readonly SpelledNote[]
 ): string => {
-  const pc = ((absFromE4 % 12) + 12) % 12;
-  const note = spellingMap[pc];
+  const note = spellingMap[mod12(absFromE4)];
   const cAbs = absFromE4 + 52; // E4 sits 52 semitones above C0
   const octave = Math.floor((cAbs - note.accidental) / 12);
   return `${formatNote(note)}${octave}`;

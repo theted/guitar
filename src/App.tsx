@@ -4,7 +4,7 @@ import TopBar from '@/components/TopBar';
 import ControlsPanel from '@/components/controls/ControlsPanel';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
-import { ensureAudioInitialized } from '@/audio';
+import { ensureAudioInitialized, setMasterVolume } from '@/audio';
 import { usePlayback } from '@/hooks/usePlayback';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -25,7 +25,13 @@ const App: React.FC = () => {
     toneAnimationManager.setMode(octaveHighlight ? 'octave-specific' : 'pitch-class');
   }, [octaveHighlight]);
 
-  const { isPlaying, togglePlay, stopAllPlayback, playNote } = usePlayback();
+  const volume = useFormStore((s) => s.volume);
+  const muted = useFormStore((s) => s.muted);
+  React.useEffect(() => {
+    setMasterVolume(muted ? 0 : volume / 100);
+  }, [volume, muted]);
+
+  const { isPlaying, togglePlay, stopAllPlayback, playNote, events } = usePlayback();
 
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
 
@@ -43,7 +49,7 @@ const App: React.FC = () => {
       {/* Guitar — centered when it fits, scrollable when it doesn't */}
       <main className="fixed inset-0 pt-12 overflow-y-auto flex">
         <div className="m-auto w-full flex justify-center px-4 py-6">
-          <Guitar onPlayNote={playNote} />
+          <Guitar onPlayNote={playNote} phraseEvents={events} />
         </div>
       </main>
 

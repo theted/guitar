@@ -215,6 +215,14 @@
   backface-visibility: hidden;
 }
 
+/* ─── Phrase strip ──────────────────────────────────────────────────────── */
+/* Scrolls itself to follow playback; a visible bar would only add noise. */
+.phrase-strip {
+  scrollbar-width: none;
+  contain: layout style;
+}
+.phrase-strip::-webkit-scrollbar { display: none; }
+
 /* ─── Panel scrollbar ───────────────────────────────────────────────────── */
 aside::-webkit-scrollbar         { width: 4px; }
 aside::-webkit-scrollbar-track   { background: transparent; }

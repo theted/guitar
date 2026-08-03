@@ -13,7 +13,7 @@ const renderEvents = (overrides: Partial<Parameters<typeof usePhraseEvents>[0]> 
       descend: true,
       stepMs: 200,
       swing: false,
-      keyOffset: 0,
+      rootAbs: 0,
       ...overrides,
     })
   ).result.current;
@@ -43,9 +43,22 @@ describe("usePhraseEvents timing", () => {
     }
   });
 
-  it("offsets all events by the key", () => {
-    const { events } = renderEvents({ keyOffset: 5, octaves: 1, descend: false });
+  it("starts every event from the phrase root", () => {
+    const { events } = renderEvents({ rootAbs: 5, octaves: 1, descend: false });
     expect(events[0].abs).toBe(5);
     expect(events.every((e) => e.abs >= 5)).toBe(true);
+  });
+
+  it("follows the root wherever the fretboard puts it", () => {
+    // Same phrase, two octaves apart: every note shifts by exactly 24
+    const low = renderEvents({ rootAbs: -12, octaves: 2 }).events;
+    const high = renderEvents({ rootAbs: 12, octaves: 2 }).events;
+    expect(low.length).toBe(high.length);
+    low.forEach((event, i) => expect(high[i].abs - event.abs).toBe(24));
+  });
+
+  it("numbers the events in sequence order", () => {
+    const { events } = renderEvents();
+    events.forEach((event, i) => expect(event.index).toBe(i));
   });
 });

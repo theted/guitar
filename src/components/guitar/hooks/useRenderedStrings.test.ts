@@ -1,15 +1,18 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useRenderedStrings } from "./useRenderedStrings";
+import { getStringBaseNotes } from "@/theory/positions";
+import { tunings } from "@/constants";
+
+const standard = (strings: number) =>
+  getStringBaseNotes(tunings.Standard, strings, 4);
 
 describe("useRenderedStrings", () => {
   it("renders standard tuning high-to-low when the low string is at the bottom", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
-        strings: 6,
+        baseNotes: standard(6),
         frets: 12,
-        tuningName: "Standard",
-        startOctave: 4,
         lowAtBottom: true,
       })
     );
@@ -27,10 +30,8 @@ describe("useRenderedStrings", () => {
   it("flips render order when the low string is placed at the top", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
-        strings: 6,
+        baseNotes: standard(6),
         frets: 3,
-        tuningName: "Standard",
-        startOctave: 4,
         lowAtBottom: false,
       })
     );
@@ -49,10 +50,8 @@ describe("useRenderedStrings", () => {
   it("keeps low-index metadata tied to musical low-to-high order", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
-        strings: 8,
+        baseNotes: standard(8),
         frets: 1,
-        tuningName: "Standard",
-        startOctave: 4,
         lowAtBottom: true,
       })
     );

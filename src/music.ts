@@ -1,15 +1,9 @@
-import { tones, Tone } from "./constants/tones";
 import { parseKey } from "./theory/spelling";
 import type { PitchClass, KeyOffset } from "./types/music";
 
-const getNote = (offset: number): Tone =>
-  tones[((offset % tones.length) + tones.length) % tones.length];
-
 // Accepts any letter+accidental name ("bb", "f#", "e"), including the legacy
 // sharp-only names that may live in persisted state or tuning definitions.
-const keyToOffset = (key: string): KeyOffset => parseKey(key).pc as number as KeyOffset;
-
-export { getNote, keyToOffset };
+export const keyToOffset = (key: string): KeyOffset => parseKey(key).pc as number as KeyOffset;
 
 // Returns cumulative semitone positions within an octave for the given scale
 // e.g., [2,2,1,2,2,2,1] -> [0,2,4,5,7,9,11]
@@ -28,32 +22,4 @@ export const getScalePitchClasses = (scale: readonly number[]): PitchClass[] => 
     steps += 1;
   }
   return pcs;
-};
-
-// Returns 1-based degree index in the scale for a given absolute semitone offset, or null if not in scale
-export const getDegreeInScale = (
-  noteAbs: number,
-  keyOffset: number,
-  scale: readonly number[]
-): number | null => {
-  const pcs = getScalePitchClasses(scale);
-  const pc = (((noteAbs - keyOffset) % 12) + 12) % 12;
-  const idx = pcs.indexOf(pc as PitchClass);
-  return idx >= 0 ? idx + 1 : null;
-};
-
-// Octave helpers relative to E4 anchor (abs=0 -> E4)
-export const getOctaveIndex = (absFromE4: number): number => {
-  // Scientific pitch number base: C5 occurs at abs=8
-  return 5 + Math.floor((absFromE4 - 8) / 12);
-};
-
-// Display octave offset so UI starts at scientific number (E1 -> 1)
-const DISPLAY_OCTAVE_OFFSET = 0;
-
-export const getNoteWithOctave = (absFromE4: number): string => {
-  const pc = ((absFromE4 % 12) + 12) % 12;
-  const name = (tones[pc] as string).toUpperCase();
-  const oct = getOctaveIndex(absFromE4) - DISPLAY_OCTAVE_OFFSET;
-  return `${name}${oct}`;
 };

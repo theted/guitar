@@ -2,19 +2,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
-import { getDiatonicChords } from "@/theory/chords";
+import { getDiatonicChords, getChordArpOffsets } from "@/theory/chords";
+import { getPhraseRootAbs, getPlayableOctaves } from "@/phrases";
 import { scales } from "@/constants";
+import type { PitchClass } from "@/types";
 import { scheduler } from "@/scheduler";
 import { stopAllAudio, ensureAudioInitialized } from "@/audio";
 import { toneAnimationManager } from "@/lib/tone-animation";
 import { usePhraseEvents, type PhraseEvent } from "@/components/guitar/hooks/usePhraseEvents";
 import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
+import { useFretboard } from "@/components/guitar/hooks/useFretboard";
 
 export type PlayNoteFn = (
   absSemitone: number,
   durationMs?: number,
-  source?: "fretboard" | "phrase",
+  /** Present for phrase playback; fret clicks pass nothing */
   event?: PhraseEvent
 ) => void;
 
@@ -57,7 +60,7 @@ export const usePlayback = () => {
 
   // Flash settings are read at call time so this callback stays stable —
   // dragging the trail slider must not re-render the fretboard.
-  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, _source, event) => {
+  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, event) => {
     const { trailLength, minimalHighlight, reduceAnimations } = useFormStore.getState();
     // Long visual trails are an animation; honor both opt-outs
     const flashMs = minimalHighlight || reduceAnimations
@@ -71,6 +74,8 @@ export const usePlayback = () => {
     } else {
       toneAnimationManager.flashTone(absSemitone, flashMs);
     }
+    // Phrase notes also advance the phrase strip
+    if (event) toneAnimationManager.flashStep(event.index, flashMs);
     const tid = window.setTimeout(() => {
       delete playingTimersRef.current[absSemitone];
     }, flashMs);
@@ -88,8 +93,25 @@ export const usePlayback = () => {
     const chords = getDiatonicChords(tone, pitchClasses);
     const chord = (selectedChordDegree != null ? chords[selectedChordDegree - 1] : null) ?? chords[0];
     if (!chord) return pitchClasses;
-    return [...chord.pcs].sort((a, b) => a - b);
+    return getChordArpOffsets(chord);
   }, [phraseMode, tone, pitchClasses, selectedChordDegree]);
+
+  // Phrases are laid out on the neck that is actually on screen: they start at
+  // the lowest tonic available and span no further than the top fret.
+  const { lowest, highest } = useFretboard();
+  const rootAbs = useMemo(() => getPhraseRootAbs(keyOffset, lowest), [keyOffset, lowest]);
+  const playableOctaves = useMemo(
+    () =>
+      getPlayableOctaves(
+        phrasePitchClasses as PitchClass[],
+        phraseMode,
+        phraseOctaves,
+        phraseDescend,
+        rootAbs,
+        highest
+      ),
+    [phrasePitchClasses, phraseMode, phraseOctaves, phraseDescend, rootAbs, highest]
+  );
 
   // Position practice replaces the abstract phrase with the box's fret path
   const { activePosition } = useScalePositions();
@@ -97,25 +119,19 @@ export const usePlayback = () => {
   const { events, loopDuration } = usePhraseEvents({
     pitchClasses: phrasePitchClasses,
     mode: phraseMode,
-    octaves: phraseOctaves,
+    octaves: playableOctaves,
     descend: phraseDescend,
     stepMs,
     swing,
-    keyOffset,
+    rootAbs,
     path: activePosition?.notes ?? null,
   });
-
-  const phrasePlayNote = useCallback(
-    (abs: number, durationMs?: number, event?: PhraseEvent) =>
-      playNote(abs, durationMs, "phrase", event),
-    [playNote]
-  );
 
   const { isPlaying, onTogglePlay } = usePhrasePlayer({
     events,
     loopDuration,
     loop: phraseLoop,
-    onPlayNote: phrasePlayNote,
+    onPlayNote: playNote,
     soundType,
     stopAllPlayback,
     stopSignal,
@@ -137,5 +153,5 @@ export const usePlayback = () => {
     onTogglePlay();
   }, [isPlaying, onTogglePlay]);
 
-  return { isPlaying, togglePlay, stopAllPlayback, playNote, stopSignal };
+  return { isPlaying, togglePlay, stopAllPlayback, playNote, stopSignal, events };
 };

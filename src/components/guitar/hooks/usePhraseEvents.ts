@@ -1,17 +1,15 @@
 import { useMemo } from "react";
 import type { PhraseMode } from "@/constants";
 import { buildRelSequence } from "@/phrases";
+import type { PlaybackEvent } from "@/scheduler";
 import type { PositionNote } from "@/theory/positions";
 import type { PitchClass } from "@/types";
 
-export type PhraseEvent = {
-  abs: number;
-  startTimeSec: number;
-  durSec: number;
-  /** Set when the event targets one specific fretboard location */
-  stringIndex?: number;
-  fret?: number;
-};
+/**
+ * Phrase events are scheduler events with times relative to the start of the
+ * phrase; usePhrasePlayer shifts them onto the AudioContext clock.
+ */
+export type PhraseEvent = PlaybackEvent;
 
 interface UsePhraseEventsArgs {
   pitchClasses: number[];
@@ -20,7 +18,8 @@ interface UsePhraseEventsArgs {
   descend: boolean;
   stepMs: number;
   swing: boolean;
-  keyOffset: number;
+  /** Absolute semitone the phrase starts from (the tonic on the neck) */
+  rootAbs: number;
   /**
    * Concrete fretboard path (position practice). When set, the phrase mode /
    * octave expansion is bypassed: the path plays ascending, plus its mirror
@@ -38,7 +37,7 @@ export const usePhraseEvents = ({
   descend,
   stepMs,
   swing,
-  keyOffset,
+  rootAbs,
   path = null,
 }: UsePhraseEventsArgs) => {
   const relSequence = useMemo(
@@ -56,8 +55,8 @@ export const usePhraseEvents = ({
       if (!descend || ascending.length < 2) return ascending;
       return [...ascending, ...ascending.slice(0, -1).reverse()];
     }
-    return relSequence.map((relative) => ({ abs: keyOffset + relative }));
-  }, [path, descend, relSequence, keyOffset]);
+    return relSequence.map((relative) => ({ abs: rootAbs + relative }));
+  }, [path, descend, relSequence, rootAbs]);
 
   const { events, loopDuration } = useMemo(() => {
     if (sequence.length === 0) {
@@ -79,6 +78,7 @@ export const usePhraseEvents = ({
         abs: note.abs,
         startTimeSec: currentTime,
         durSec: Math.max(0.2, durationSeconds + 0.04),
+        index,
         ...(note.stringIndex !== undefined && { stringIndex: note.stringIndex, fret: note.fret }),
       });
 

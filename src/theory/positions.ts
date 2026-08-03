@@ -1,4 +1,5 @@
 import { keyToOffset } from "@/music";
+import { relativeTo } from "./pitch";
 import type { PitchClass } from "@/types/music";
 
 // Box-position engine: a position is every scale note inside a fixed fret
@@ -58,6 +59,22 @@ export const getStringBaseNotes = (
   return highToLow.reverse();
 };
 
+/**
+ * Lowest and highest absolute semitone reachable on the rendered neck.
+ * `stringBaseNotes` is low→high by construction, so the extremes are the open
+ * lowest string and the top fret of the highest string.
+ */
+export const getFretboardRange = (
+  stringBaseNotes: readonly number[],
+  frets: number
+): { lowest: number; highest: number } => {
+  if (stringBaseNotes.length === 0) return { lowest: 0, highest: frets };
+  return {
+    lowest: stringBaseNotes[0],
+    highest: stringBaseNotes[stringBaseNotes.length - 1] + frets,
+  };
+};
+
 type GetScalePositionsArgs = {
   /** Open-string pitches (abs semitones from E4), low string first */
   stringBaseNotes: number[];
@@ -77,8 +94,7 @@ export const getScalePositions = ({
 }: GetScalePositionsArgs): ScalePosition[] => {
   if (stringBaseNotes.length === 0 || scalePcs.length === 0) return [];
 
-  const inScale = (abs: number) =>
-    scalePcs.includes(((((abs - keyOffset) % 12) + 12) % 12) as PitchClass);
+  const inScale = (abs: number) => scalePcs.includes(relativeTo(abs, keyOffset));
 
   // One anchor per scale tone on the lowest string, within the first octave
   // (positions repeat an octave up from there).

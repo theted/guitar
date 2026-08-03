@@ -6,12 +6,13 @@ import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
 import { intervalName } from "@/theory/intervals";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
+import type { PlayNoteFn } from "@/hooks/usePlayback";
 
 type ScaleDefinition = typeof baseScales;
 
 type UseFretClickArgs = {
   soundType: SoundType;
-  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
+  onPlayNote?: PlayNoteFn;
 };
 
 const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
@@ -19,7 +20,7 @@ const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
     async (note: number) => {
       try {
         await ensureAudioInitialized();
-        scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs, 'fretboard'));
+        scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs));
       } catch (error) {
         console.error('Failed to play note:', error);
       }
@@ -46,8 +47,7 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
     const element = ref.current;
     if (!element) return;
     toneAnimationManager.applyToneClass(element, descriptor.actualNote, {
-      stringIndex,
-      fret: descriptor.fret,
+      fret: { stringIndex, fret: descriptor.fret },
     });
     return () => { toneAnimationManager.clearToneClass(element); };
   }, [descriptor.actualNote, descriptor.fret, stringIndex]);
@@ -101,7 +101,6 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
 });
 
 type Props = {
-  idx: number;
   /** Low-based string index (0 = lowest string) */
   stringIndex: number;
   note: number;
@@ -109,6 +108,7 @@ type Props = {
   scales?: ScaleDefinition;
   scale: ScaleName;
   keyy: string;
+  highlightEnabled?: boolean;
   scaleHighlightBottomOnly?: boolean;
   isBottom?: boolean;
   reduceAnimations?: boolean;
@@ -117,17 +117,17 @@ type Props = {
   selectedChordDegree?: number | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
-  onPlayNote?: (absSemitone: number, durationMs?: number, source?: 'fretboard' | 'phrase') => void;
+  onPlayNote?: PlayNoteFn;
 }
 
 const GuitarString: React.FC<Props> = React.memo(({
-  idx: _idx,
   stringIndex,
   note,
   frets,
   scales = baseScales,
   scale,
   keyy,
+  highlightEnabled = true,
   scaleHighlightBottomOnly = false,
   isBottom = false,
   reduceAnimations = false,
@@ -143,6 +143,7 @@ const GuitarString: React.FC<Props> = React.memo(({
     scale,
     keyy,
     scaleMap: scales,
+    highlightEnabled,
     scaleHighlightBottomOnly,
     isBottom,
     selectedChordDegree,
