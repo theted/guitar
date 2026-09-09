@@ -50,7 +50,7 @@ const initial: FormState = {
   tone: DEFAULTS.KEY,
   lowAtBottom: true,
   highlightEnabled: true,
-  octaveHighlight: false,
+  octaveHighlight: true,
   phraseMode: 'full-scale',
   bpm: 300,
   swing: false,
