@@ -3,33 +3,65 @@ import { render, screen } from '@testing-library/react';
 import GuitarString from '@/components/guitar/GuitarString';
 import { scales } from '@/constants';
 
+// Every fret is titled with its full name and interval, e.g. "B♭4 (P4)"
+const fret = (name: string) => screen.getByTitle(new RegExp(`^${name} `));
+
 describe('GuitarString highlighting', () => {
   const baseProps = {
     stringIndex: 0,
     note: 0, // E4
-    frets: 1,
+    frets: 2,
     scales,
     scale: 'blues' as keyof typeof scales,
     keyy: 'e',
   };
 
-  it('shows tone overlay for highlighting', () => {
+  it('gives every fret a tone overlay for playback flashes', () => {
     render(<GuitarString {...baseProps} />);
-    const e4 = screen.getByText(/E4/i);
-    const overlay = e4.parentElement?.querySelector('.tone-overlay');
-    expect(overlay).toBeInTheDocument();
+    expect(fret('E4').querySelector('.tone-overlay')).toBeInTheDocument();
+    expect(fret('F♯4').querySelector('.tone-overlay')).toBeInTheDocument();
   });
 
-  it('has tone overlay present regardless of highlighting state', () => {
-    render(<GuitarString {...baseProps} />);
-    const e4 = screen.getByText(/E4/i);
-    const overlay = e4.parentElement?.querySelector('.tone-overlay');
-    expect(overlay).toBeInTheDocument(); // tone-overlay is always present, animations are controlled via CSS classes
+  it('marks the tonic, the other scale tones and the rest differently', () => {
+    render(<GuitarString {...baseProps} note={-2} frets={3} />);
+    // D (m7) · D# (off) · E (root) · F (off)
+    expect(fret('D4')).toHaveAttribute('data-state', 'scale');
+    expect(fret('D♯4')).toHaveAttribute('data-state', 'off');
+    expect(fret('E4')).toHaveAttribute('data-state', 'root');
+    expect(fret('F4')).toHaveAttribute('data-state', 'off');
+  });
+
+  it('shows nothing but notes-to-find when the scale is hidden', () => {
+    render(<GuitarString {...baseProps} highlightEnabled={false} />);
+    expect(fret('E4')).toHaveAttribute('data-state', 'off');
+  });
+
+  it('labels scale tones by note, degree or interval', () => {
+    const { rerender } = render(<GuitarString {...baseProps} note={3} frets={0} />); // G4, the m3 of E
+    expect(fret('G4').textContent).toBe('G');
+    rerender(<GuitarString {...baseProps} note={3} frets={0} labelMode="degree" />);
+    expect(fret('G4').textContent).toBe('2');
+    rerender(<GuitarString {...baseProps} note={3} frets={0} labelMode="interval" />);
+    expect(fret('G4').textContent).toBe('m3');
+  });
+
+  it('highlights a selected chord and steps the rest of the scale back', () => {
+    // E major, IV chord = A C# E; open A string: A (root) A# (off) B (scale)
+    render(<GuitarString {...baseProps} scale="major" note={5} frets={2} selectedChordDegree={4} />);
+    expect(fret('A4')).toHaveAttribute('data-state', 'chord-root');
+    expect(fret('A♯4')).toHaveAttribute('data-state', 'off');
+    expect(fret('B4')).toHaveAttribute('data-state', 'muted');
+  });
+
+  it('flags frets outside the practised position', () => {
+    render(<GuitarString {...baseProps} positionFrets={new Set([1, 2])} />);
+    expect(fret('E4')).toHaveAttribute('data-outside');
+    expect(fret('F♯4')).not.toHaveAttribute('data-outside');
   });
 });
 
 describe('GuitarString enharmonic spelling', () => {
-  it('spells the fourth of F major as Bb, not A#', () => {
+  it('spells the fourth of F major as B♭, not A♯', () => {
     // Open A string (A4 = abs 5), fret 1 sounds Bb4
     render(
       <GuitarString
@@ -41,8 +73,8 @@ describe('GuitarString enharmonic spelling', () => {
         keyy="f"
       />
     );
-    expect(screen.getByText('Bb4')).toBeInTheDocument();
-    expect(screen.queryByText('A#4')).not.toBeInTheDocument();
+    expect(fret('B♭4')).toHaveTextContent('B♭');
+    expect(screen.queryByTitle(/^A♯4/)).not.toBeInTheDocument();
   });
 
   it('spells non-scale chromatic notes plainly in sharp keys', () => {
@@ -57,6 +89,6 @@ describe('GuitarString enharmonic spelling', () => {
         keyy="e"
       />
     );
-    expect(screen.getByText('F4')).toBeInTheDocument();
+    expect(fret('F4')).toHaveTextContent('F');
   });
 });

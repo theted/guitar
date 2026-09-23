@@ -1,112 +1,111 @@
-import * as React from "react"
-import * as SelectPrimitive from "@radix-ui/react-select"
-import { Check, ChevronDown, ChevronUp } from "lucide-react"
+import * as React from "react";
+import * as SelectPrimitive from "@radix-ui/react-select";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+export type PickerOption = { value: string; label: string };
+export type PickerGroup = { label?: string; options: PickerOption[] };
 
-const Select = SelectPrimitive.Root
+type PickerProps = {
+  value: string;
+  onValueChange: (value: string) => void;
+  /** Flat list of options; use `groups` instead for sectioned content */
+  options?: PickerOption[];
+  groups?: PickerGroup[];
+  "aria-label"?: string;
+  /** `field` is a boxed control; `title` renders the value as the page title */
+  variant?: "field" | "title";
+  disabled?: boolean;
+  className?: string;
+  title?: string;
+};
 
-const SelectGroup = SelectPrimitive.Group
+const TRIGGER: Record<NonNullable<PickerProps["variant"]>, string> = {
+  field:
+    "h-9 w-full gap-2 rounded-lg border border-line bg-raised px-3 text-sm text-ink hover:border-ink-3 data-[state=open]:border-ink",
+  title:
+    "type-title -mx-1 gap-2 rounded-lg px-1 text-left text-[clamp(2rem,4.6vw,3.4rem)] text-ink hover:bg-surface data-[state=open]:bg-surface",
+};
 
-const SelectValue = SelectPrimitive.Value
+const ICON: Record<NonNullable<PickerProps["variant"]>, string> = {
+  field: "h-4 w-4 shrink-0 text-ink-3",
+  title: "h-[0.5em] w-[0.5em] shrink-0 stroke-[2.5] text-ink-3",
+};
 
-const SelectTrigger = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
-    </SelectPrimitive.Icon>
-  </SelectPrimitive.Trigger>
-))
-SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
-
-const SelectContent = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => (
-  <SelectPrimitive.Portal>
-    <SelectPrimitive.Content
-      ref={ref}
+// The one select used across the app: Radix for keyboard and screen-reader
+// behaviour, styled from the page tokens so it works inside `.inverse` too.
+export const Picker: React.FC<PickerProps> = ({
+  value,
+  onValueChange,
+  options,
+  groups,
+  "aria-label": ariaLabel,
+  variant = "field",
+  disabled,
+  className,
+  title,
+}) => (
+  <SelectPrimitive.Root value={value} onValueChange={onValueChange} disabled={disabled}>
+    <SelectPrimitive.Trigger
+      aria-label={ariaLabel}
+      title={title}
       className={cn(
-        "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
-        position === "popper" && "translate-y-1",
+        "inline-flex min-w-0 items-center justify-between outline-none transition-colors disabled:opacity-40",
+        TRIGGER[variant],
         className
       )}
-      position={position}
-      {...props}
     >
-      <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronUp className="h-4 w-4" />
-      </SelectPrimitive.ScrollUpButton>
-      <SelectPrimitive.Viewport
-        className={cn(
-          "p-1",
-          position === "popper" &&
-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-        )}
+      <span className="truncate">
+        <SelectPrimitive.Value />
+      </span>
+      <SelectPrimitive.Icon asChild>
+        <ChevronDown className={ICON[variant]} aria-hidden />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Content
+        position="popper"
+        sideOffset={6}
+        collisionPadding={12}
+        className="relative z-50 max-h-[min(28rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-line bg-raised text-ink shadow-[0_18px_40px_-12px_rgb(0_0_0/0.35)]"
       >
-        {children}
-      </SelectPrimitive.Viewport>
-      <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronDown className="h-4 w-4" />
-      </SelectPrimitive.ScrollDownButton>
-    </SelectPrimitive.Content>
-  </SelectPrimitive.Portal>
-))
-SelectContent.displayName = SelectPrimitive.Content.displayName
+        <SelectPrimitive.ScrollUpButton className="flex items-center justify-center py-1 text-ink-3">
+          <ChevronUp className="h-4 w-4" />
+        </SelectPrimitive.ScrollUpButton>
+        <SelectPrimitive.Viewport className="p-1.5">
+          {options?.map((option) => (
+            <Item key={option.value} option={option} />
+          ))}
+          {groups?.map((group, index) => (
+            <SelectPrimitive.Group key={group.label ?? index} className="[&+&]:mt-1 [&+&]:border-t [&+&]:border-line [&+&]:pt-1">
+              {group.label && (
+                <SelectPrimitive.Label className="px-2.5 pb-1 pt-2 text-xs font-medium text-ink-3">
+                  {group.label}
+                </SelectPrimitive.Label>
+              )}
+              {group.options.map((option) => (
+                <Item key={option.value} option={option} />
+              ))}
+            </SelectPrimitive.Group>
+          ))}
+        </SelectPrimitive.Viewport>
+        <SelectPrimitive.ScrollDownButton className="flex items-center justify-center py-1 text-ink-3">
+          <ChevronDown className="h-4 w-4" />
+        </SelectPrimitive.ScrollDownButton>
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  </SelectPrimitive.Root>
+);
 
-const SelectLabel = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.Label
-    ref={ref}
-    className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
-    {...props}
-  />
-))
-SelectLabel.displayName = SelectPrimitive.Label.displayName
-
-const SelectItem = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
+const Item: React.FC<{ option: PickerOption }> = ({ option }) => (
   <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground",
-      className
-    )}
-    {...props}
+    value={option.value}
+    className="relative flex cursor-default select-none items-center rounded-md py-1.5 pl-2.5 pr-8 text-sm outline-none data-[highlighted]:bg-surface data-[state=checked]:font-semibold"
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
+    <SelectPrimitive.ItemIndicator className="absolute right-2.5">
+      <Check className="h-3.5 w-3.5" />
+    </SelectPrimitive.ItemIndicator>
   </SelectPrimitive.Item>
-))
-SelectItem.displayName = SelectPrimitive.Item.displayName
-
-export {
-  Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectLabel,
-  SelectItem,
-}
-
+);

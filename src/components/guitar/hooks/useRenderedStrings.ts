@@ -3,7 +3,6 @@ import { useMemo } from "react";
 type UseRenderedStringsArgs = {
   /** Open-string pitches, low string first (see useFretboard) */
   baseNotes: number[];
-  frets: number;
   lowAtBottom: boolean;
 };
 
@@ -18,12 +17,10 @@ type RenderedString = {
 
 type RenderedStringsResult = {
   descriptors: RenderedString[];
-  fretMarkers: number[];
 };
 
 export const useRenderedStrings = ({
   baseNotes,
-  frets,
   lowAtBottom,
 }: UseRenderedStringsArgs): RenderedStringsResult => {
   return useMemo(() => {
@@ -31,7 +28,6 @@ export const useRenderedStrings = ({
     const strings = baseNotes.length;
     const stringIndices = Array.from({ length: strings }, (_, index) => index);
     const ordered = lowAtBottom ? stringIndices : stringIndices.slice().reverse();
-    const fretMarkers = Array.from({ length: frets + 1 }, (_, index) => index);
 
     const descriptors: RenderedString[] = ordered.map((originalIndex, renderIndex) => {
       const lowIndex = strings - 1 - originalIndex;
@@ -44,8 +40,8 @@ export const useRenderedStrings = ({
       };
     });
 
-    return { descriptors, fretMarkers };
-  }, [baseNotes, frets, lowAtBottom]);
+    return { descriptors };
+  }, [baseNotes, lowAtBottom]);
 };
 
 export type { RenderedString };

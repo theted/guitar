@@ -1,191 +1,144 @@
 @import "tailwindcss";
 
-/* ─── Dark-mode variant (class-based) ──────────────────────────────────── */
-@variant dark (&:where(.dark, .dark *));
-
-/* ─── Theme: design tokens mapped to Tailwind's --color-* namespace ─────── */
+/* ─── Tokens ────────────────────────────────────────────────────────────── */
 /*
-  CSS vars hold full OKLCH color values. @theme maps them so Tailwind
-  utilities like bg-background, text-foreground, border-border work.
-  Opacity modifiers (bg-background/50) use color-mix() — works with any
-  CSS color value, no raw-channel trick needed.
-*/
-@theme {
-  --color-background:             var(--background);
-  --color-foreground:             var(--foreground);
-  --color-border:                 var(--border);
-  --color-input:                  var(--input);
-  --color-ring:                   var(--ring);
-
-  --color-card:                   var(--card);
-  --color-card-foreground:        var(--card-foreground);
-
-  --color-popover:                var(--popover);
-  --color-popover-foreground:     var(--popover-foreground);
-
-  --color-primary:                var(--primary);
-  --color-primary-foreground:     var(--primary-foreground);
-
-  --color-secondary:              var(--secondary);
-  --color-secondary-foreground:   var(--secondary-foreground);
-
-  --color-muted:                  var(--muted);
-  --color-muted-foreground:       var(--muted-foreground);
-
-  --color-accent:                 var(--accent);
-  --color-accent-foreground:      var(--accent-foreground);
-
-  --color-destructive:            var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
-  /* Border radius scale */
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-
-  /* Accordion animations */
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up:   accordion-up   0.2s ease-out;
-}
-
-@keyframes accordion-down {
-  from { height: 0; }
-  to   { height: var(--radix-accordion-content-height); }
-}
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to   { height: 0; }
-}
-
-/* ─── OKLCH color palette ───────────────────────────────────────────────── */
-/*
-  All values in OKLCH: oklch(Lightness Chroma Hue)
-  Hue 264° = blue-indigo direction for the blue undertone.
-  The app is always dark, so dark values are the :root defaults.
-  The .dark block is kept for explicit class-based toggling.
-
-  Perceptual notes:
-    L 0.06–0.12 = near-black range (backgrounds)
-    L 0.15–0.22 = dark surface range (cards, borders)
-    L 0.55–0.65 = mid range (muted text)
-    L 0.95–0.98 = near-white range (foreground text)
+  The page is a quiet stone-grey workbench; the neck is the only object with
+  real colour on it. Colour carries meaning everywhere:
+    tonic  amber  — the key's root, wherever it appears
+    chord  teal   — tones of the selected diatonic chord
+    bone          — every other scale tone (the pearl dots on the board)
 */
 :root {
-  --background:             oklch(0.088 0.018 264);
-  --foreground:             oklch(0.962 0.007 264);
+  --bg: #e3e5e1;
+  --surface: #f1f2ef;
+  --raised: #fafaf8;
+  --ink: #1c2024;
+  --ink-2: #50575d;
+  --ink-3: #80878c;
+  --line: #c9cdc8;
+  --focus: #1c2024;
 
-  --card:                   oklch(0.108 0.020 264);
-  --card-foreground:        oklch(0.962 0.007 264);
+  --tonic: #e8961e;
+  --tonic-ink: #1c2024;
+  --chord: #2a9d8f;
+  --chord-ink: #f4fbfa;
+  --bone: #eee8da;
+  --bone-ink: #2b2420;
 
-  --popover:                oklch(0.108 0.020 264);
-  --popover-foreground:     oklch(0.962 0.007 264);
+  --wood: #3a2921;
+  --wood-deep: #2b1d17;
+  --fret-wire: #c3c7cc;
+  --fret-wire-shade: #7d8288;
+  --nut: #e8e1cf;
+  --pearl: #d9d2c2;
+  --string-plain: #d4d8dc;
+  --string-wound: #b7a584;
+  --flash: #fff4c7;
 
-  --primary:                oklch(0.962 0.007 264);
-  --primary-foreground:     oklch(0.138 0.020 264);
-
-  --secondary:              oklch(0.162 0.020 264);
-  --secondary-foreground:   oklch(0.962 0.007 264);
-
-  --muted:                  oklch(0.158 0.016 264);
-  --muted-foreground:       oklch(0.592 0.012 264);
-
-  --accent:                 oklch(0.162 0.020 264);
-  --accent-foreground:      oklch(0.962 0.007 264);
-
-  --destructive:            oklch(0.555 0.225 27);
-  --destructive-foreground: oklch(0.962 0.007 264);
-
-  --border:                 oklch(0.215 0.022 264);
-  --input:                  oklch(0.215 0.022 264);
-  --ring:                   oklch(0.835 0.012 264);
-
-  --radius: 0.5rem;
+  --font: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
 }
 
-/* Light-mode override (explicit .dark toggle) */
-.light {
-  --background:             oklch(0.990 0.003 264);
-  --foreground:             oklch(0.148 0.014 264);
-  --card:                   oklch(0.990 0.003 264);
-  --card-foreground:        oklch(0.148 0.014 264);
-  --popover:                oklch(0.990 0.003 264);
-  --popover-foreground:     oklch(0.148 0.014 264);
-  --primary:                oklch(0.148 0.014 264);
-  --primary-foreground:     oklch(0.990 0.003 264);
-  --secondary:              oklch(0.938 0.009 264);
-  --secondary-foreground:   oklch(0.148 0.014 264);
-  --muted:                  oklch(0.938 0.009 264);
-  --muted-foreground:       oklch(0.475 0.010 264);
-  --accent:                 oklch(0.938 0.009 264);
-  --accent-foreground:      oklch(0.148 0.014 264);
-  --destructive:            oklch(0.577 0.245 27);
-  --destructive-foreground: oklch(0.990 0.003 264);
-  --border:                 oklch(0.882 0.010 264);
-  --input:                  oklch(0.882 0.010 264);
-  --ring:                   oklch(0.148 0.014 264);
-}
-
-/* ─── Base layer — resets that utilities must be able to override ────────── */
-/*
-  CRITICAL: must be inside @layer base so that @layer utilities (Tailwind
-  classes like border-white/10) have higher cascade priority and can override.
-  Unlayered styles always win over any layered style, which was the v4 bug
-  that made border-white/10 show as the full --border color on fret buttons.
-*/
-@layer base {
-  * {
-    border-color: var(--color-border);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f2226;
+    --surface: #282c31;
+    --raised: #30353b;
+    --ink: #eceeea;
+    --ink-2: #aab0b4;
+    --ink-3: #767d83;
+    --line: #3b4046;
+    --focus: #eceeea;
+    --pearl: #cfc7b5;
+    color-scheme: dark;
   }
+}
+
+/* The transport bar is an inverted strip: the same components, swapped ink */
+.inverse {
+  --bg: #1c2024;
+  --surface: #2a2f34;
+  --raised: #343a40;
+  --ink: #f1f2ef;
+  --ink-2: #b4babe;
+  --ink-3: #7f878c;
+  --line: #3d444a;
+  --focus: #f1f2ef;
+  color-scheme: dark;
+  background: var(--bg);
+  color: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  .inverse {
+    --bg: #15171a;
+    --surface: #23272b;
+    --raised: #2d3237;
+    --line: #353a40;
+  }
+}
+
+/* inline: utilities read the tokens where they're used, so `.inverse` can swap them */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-tonic: var(--tonic);
+  --color-tonic-ink: var(--tonic-ink);
+  --color-chord: var(--chord);
+  --color-chord-ink: var(--chord-ink);
+  --font-sans: var(--font);
+}
+
+@layer base {
+  * { border-color: var(--line); }
 
   html, body {
     height: 100%;
     margin: 0;
     overflow: hidden;
     overscroll-behavior: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    font-family: var(--font);
+    font-variation-settings: "wdth" 100;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    color: var(--foreground);
-    /* Base fill behind the gradient — matches the darkest gradient stop */
-    background-color: oklch(0.065 0.012 268);
+    background: var(--bg);
+    color: var(--ink);
   }
 
-  body::-webkit-scrollbar { display: none; }
-
-  code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
   }
+
+  button { cursor: pointer; }
+  button:disabled { cursor: default; }
 }
 
-/* ─── App background gradient ───────────────────────────────────────────── */
-/*
-  Asymmetric bloom: rich blue-indigo at top-left fades to near-black.
-  Using OKLCH gradient interpolation for smooth, hue-consistent transitions.
-*/
-.app-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(
-    ellipse 110% 75% at 12% 0%,
-    oklch(0.185 0.055 252) 0%,
-    oklch(0.118 0.032 260) 30%,
-    oklch(0.082 0.020 265) 60%,
-    oklch(0.065 0.012 268) 100%
-  );
-  will-change: opacity, transform;
-  animation: app-bg-reveal 750ms ease-out both;
+/* ─── Type ──────────────────────────────────────────────────────────────── */
+/* Archivo's width axis does the work a second typeface would: the title runs
+   wide and heavy, labels stay at normal width. */
+.type-title {
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
 }
-
-.app-content {
-  animation: app-fade-in 700ms ease-out 150ms both;
+.type-wide {
+  font-variation-settings: "wdth" 118;
 }
+.type-narrow {
+  font-variation-settings: "wdth" 82;
+}
+.tabular { font-variant-numeric: tabular-nums; }
 
-/* ─── Tone-based animation system ───────────────────────────────────────── */
+/* ─── Flash overlay ─────────────────────────────────────────────────────── */
 /* Flashes are driven by the Web Animations API (see lib/tone-animation.ts);
    the overlay only needs its resting style here. */
 .tone-overlay {
@@ -193,49 +146,262 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  /* Cyan note-flash — OKLCH equivalent of the original rgba(8,145,178,0.6) */
-  background: oklch(0.62 0.17 200 / 0.65);
+  background: var(--tonic);
+  mix-blend-mode: multiply;
   opacity: 0;
   contain: layout style paint;
 }
+@media (prefers-color-scheme: dark) {
+  .tone-overlay { mix-blend-mode: screen; }
+}
 
-/* ─── Guitar performance optimizations ──────────────────────────────────── */
-.guitar-container {
+/* ─── The neck ──────────────────────────────────────────────────────────── */
+.neck {
+  position: relative;
   contain: layout;
   transform: translateZ(0);
+  padding-block: 0.375rem;
 }
 
-.guitar-string {
+/* Board, inlays and fret wires sit behind the strings on the same columns */
+.neck-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  pointer-events: none;
+}
+.neck-wood {
+  grid-row: 1;
+  grid-column: 2 / -1;
+  border-radius: 0 3px 3px 0;
+  background:
+    repeating-linear-gradient(
+      179.3deg,
+      transparent 0 7px,
+      rgb(0 0 0 / 0.07) 7px 9px,
+      transparent 9px 17px
+    ),
+    linear-gradient(180deg, var(--wood) 0%, var(--wood-deep) 100%);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.06),
+    inset 0 -2px 0 rgb(0 0 0 / 0.25),
+    0 1px 0 rgb(255 255 255 / 0.5),
+    0 10px 24px -12px rgb(20 12 8 / 0.55);
+}
+.neck-nut {
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: end;
+  width: 7px;
+  margin-right: -3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #cfc6b0, var(--nut) 45%, #f7f2e6);
+  box-shadow: 1px 0 2px rgb(0 0 0 / 0.35);
+  z-index: 1;
+}
+.neck-fret {
+  grid-row: 1;
+  position: relative;
+}
+.neck-fret::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -1.5px;
+  width: 3px;
+  background: linear-gradient(90deg, var(--fret-wire-shade), var(--fret-wire) 45%, #f4f6f8 60%, var(--fret-wire-shade));
+  border-radius: 1.5px;
+}
+.neck-inlay {
+  position: absolute;
+  left: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  translate: -50% -50%;
+  background: radial-gradient(circle at 35% 30%, #fbf8f0, var(--pearl) 60%, #b9b09c);
+  opacity: 0.8;
+}
+
+.neck-string {
+  position: relative;
+  display: grid;
+  height: 2.75rem;
   contain: layout style;
-  will-change: auto;
+}
+/* The string itself: thicker and bronze-wound towards the bass side */
+.neck-string::before {
+  content: "";
+  position: absolute;
+  left: 22px; /* strings start at the open-string dots, not the page edge */
+  right: 0;
+  top: 50%;
+  height: var(--gauge, 1px);
+  translate: 0 -50%;
+  background: var(--string-color, var(--string-plain));
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.45);
+  pointer-events: none;
 }
 
-.fret-button {
+/* One fret on one string: a click target the full height of the string lane */
+.fret {
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   contain: layout;
-  backface-visibility: hidden;
 }
 
-/* ─── Phrase strip ──────────────────────────────────────────────────────── */
-/* Scrolls itself to follow playback; a visible bar would only add noise. */
-.phrase-strip {
+.fret-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: transform 90ms ease-out;
+}
+.fret[data-state="scale"] .fret-dot {
+  background: var(--bone);
+  color: var(--bone-ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), inset 0 -2px 0 rgb(0 0 0 / 0.12);
+}
+.fret[data-state="root"] .fret-dot {
+  background: var(--tonic);
+  color: var(--tonic-ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), inset 0 -2px 0 rgb(0 0 0 / 0.15);
+}
+.fret[data-state="chord"] .fret-dot {
+  background: var(--chord);
+  color: var(--chord-ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), inset 0 -2px 0 rgb(0 0 0 / 0.18);
+}
+.fret[data-state="chord-root"] .fret-dot {
+  background: var(--chord);
+  color: var(--chord-ink);
+  box-shadow: 0 0 0 2px var(--wood-deep), 0 0 0 4px var(--chord), 0 1px 3px 4px rgb(0 0 0 / 0.35);
+}
+/* Scale tones outside the selected chord stay visible but step back: hollow
+   rings, so they can't be mistaken for the (filled) inlays */
+.fret[data-state="muted"] .fret-dot,
+.fret[data-outside]:not([data-state="off"]) .fret-dot {
+  background: none;
+  box-shadow: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 2px solid var(--bone);
+  opacity: 0.55;
+  color: transparent;
+  font-size: 0;
+}
+/* Outside the practised position, keep the tonic findable */
+.fret[data-outside][data-state="root"] .fret-dot { border-color: var(--tonic); opacity: 0.8; }
+.fret[data-outside][data-state="off"] .fret-dot { visibility: hidden; }
+/* Tones outside the scale: no dot, the name only on hover */
+.fret[data-state="off"] .fret-dot {
+  color: rgb(255 255 255 / 0.75);
+  opacity: 0;
+  transition: opacity 90ms ease-out;
+}
+.fret[data-state="off"]:hover .fret-dot { opacity: 1; }
+/* Open strings always name themselves: that's the tuning, at a glance */
+.fret-open[data-state="off"] .fret-dot,
+.fret-open[data-state="muted"] .fret-dot {
+  border: 0;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  background: var(--bg);
+  width: 1.6rem;
+  height: 1.6rem;
+  box-shadow: inset 0 0 0 1px var(--line);
+  opacity: 1;
+}
+.fret:hover .fret-dot { transform: scale(1.08); }
+.fret:active .fret-dot { transform: scale(0.94); }
+
+/* Flash: a warm glow the size of a dot, whether or not a dot is showing */
+.fret > .tone-overlay {
+  inset: auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  mix-blend-mode: normal;
+  background: radial-gradient(circle, var(--flash) 0 42%, rgb(255 214 120 / 0.55) 62%, transparent 72%);
+  box-shadow: 0 0 18px 6px rgb(255 200 90 / 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fret-dot { transition: none; }
+  .fret:hover .fret-dot, .fret:active .fret-dot { transform: none; }
+}
+.reduce-motion .fret-dot { transition: none; }
+.reduce-motion .fret:hover .fret-dot,
+.reduce-motion .fret:active .fret-dot { transform: none; }
+
+/* ─── Scrollers ─────────────────────────────────────────────────────────── */
+/* The phrase strip scrolls itself to follow playback */
+.phrase-strip, .quiet-scroll {
   scrollbar-width: none;
   contain: layout style;
 }
-.phrase-strip::-webkit-scrollbar { display: none; }
+.phrase-strip::-webkit-scrollbar, .quiet-scroll::-webkit-scrollbar { display: none; }
 
-/* ─── Panel scrollbar ───────────────────────────────────────────────────── */
-aside::-webkit-scrollbar         { width: 4px; }
+.neck-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+/* ─── Range input ───────────────────────────────────────────────────────── */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--ink) var(--pct), var(--line) var(--pct));
+}
+.range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--ink) var(--pct), var(--line) var(--pct));
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.range:focus-visible { outline: none; }
+.range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--focus); }
+.range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--focus); }
+
+/* ─── Drawer scrollbar ──────────────────────────────────────────────────── */
+aside::-webkit-scrollbar         { width: 6px; }
 aside::-webkit-scrollbar-track   { background: transparent; }
-aside::-webkit-scrollbar-thumb   { background: oklch(1 0 0 / 0.10); border-radius: 2px; }
-aside::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.20); }
-
-/* ─── Keyframes ─────────────────────────────────────────────────────────── */
-@keyframes app-bg-reveal {
-  from { opacity: 0; transform: scale3d(1.02, 1.02, 1); }
-  to   { opacity: 1; transform: scale3d(1, 1, 1); }
-}
-
-@keyframes app-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+aside::-webkit-scrollbar-thumb   { background: var(--line); border-radius: 3px; }

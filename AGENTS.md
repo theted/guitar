@@ -57,13 +57,15 @@ src/
 │   ├── useKeyboardShortcuts.ts # Space / Escape / arrow keys
 │   └── useApplySetting.ts      # Settings change that interrupts playback
 ├── components/
-│   ├── TopBar.tsx              # Key, scale, play, tempo, mute, settings
-│   ├── Controls.tsx            # Tab shell for the settings drawer
-│   ├── controls/               # ControlsPanel (drawer) + the four tabs
-│   ├── guitar/                 # Fretboard and the strips above it
+│   ├── Header.tsx              # Key row, title (= scale picker), scale legend
+│   ├── Transport.tsx           # Bottom bar: play, pattern, octaves, tempo, sound, volume
+│   ├── controls/               # Settings drawer (SetupControls) + shared option lists
+│   ├── guitar/                 # The neck, its toolbar and the phrase strip
+│   │   ├── geometry.ts         # Fret spacing and inlay positions
 │   │   └── hooks/              # Fretboard geometry + phrase event hooks
-│   └── ui/                     # Radix select wrapper, slider, field label
+│   └── ui/                     # Picker (Radix select), segmented, stepper, switch, slider
 ├── lib/tone-animation.ts       # Flash registry (frets, legend, phrase steps)
+├── lib/notation.ts             # pretty(): "Bb" → "B♭" for display only
 ├── types/music.ts              # Branded number types
 └── integration/                # Cross-module tests
 ```
@@ -141,7 +143,7 @@ oscillators → layer gains → [filter] → [distortion] → [delay] → [rever
 
 Adding a sound: add the key to `SoundType` and a config to `SOUND_PRESETS`
 (both in `audio/presets.ts`), then add it to `SOUND_GROUPS` in
-`components/controls/InstrumentControls.tsx`.
+`components/controls/options.ts`.
 
 ### 5. Scheduler (`scheduler.ts`)
 
@@ -191,7 +193,7 @@ change invalidates what is currently playing (scale, key, tuning, phrase shape).
 Settings that apply cleanly mid-phrase — volume, mute, visual toggles — should
 call `setFormState` directly and *not* interrupt playback.
 
-Persistence is versioned (currently 4). `migrateFormState` keeps only fields
+Persistence is versioned (currently 5). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
 linger in localStorage, and maps renamed fields via `RENAMED_FIELDS`. Add to
 both when you rename or remove a setting, and bump the version.
@@ -200,16 +202,17 @@ both when you rename or remove a setting, and bump the version.
 
 ```
 App
-├── TopBar                    key · scale · play/pause · tempo · mute · settings
-├── Guitar
-│   ├── ScaleLegend           the scale's degrees (flash on playback)
+├── Header                    what: key row · title/scale picker · ScaleLegend (flashes)
+├── Guitar                    how it's shown
 │   ├── ChordStrip            diatonic chords (heptatonic scales only)
 │   ├── PositionStrip         position boxes
-│   ├── PhraseStrip           the phrase note by note, follows playback
-│   ├── GuitarNeck → GuitarString → StringFret
-│   └── FretMarkers
+│   ├── label mode            notes / degrees / intervals
+│   ├── GuitarNeck → Board + GuitarString → StringFret
+│   ├── FretMarkers           fret numbers
+│   └── PhraseStrip           the phrase note by note, follows playback
+├── Transport                 play: play/pause · pattern · octaves · tempo · sound · volume
 └── ControlsPanel (drawer)
-    └── Controls              tabs: Scale · Instrument · Playback · Info
+    └── SetupControls         instrument · positions · display · keyboard
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase
@@ -228,12 +231,29 @@ The fretboard renders ~150 fret elements. What keeps it smooth:
   the callback identity stays stable; otherwise dragging the trail slider would
   re-render the whole fretboard.
 - `contain` and `translateZ(0)` on the containers (`index.css`).
+- Each fret's look is a `data-state` attribute (`root`, `scale`, `chord`,
+  `chord-root`, `muted`, `off`) styled in `index.css`, not a class string.
+
+## Visual system
+
+Tokens live at the top of `index.css` and are exposed to Tailwind through
+`@theme inline` (so utilities resolve them where they're used). `.inverse`
+re-maps the same tokens for the dark transport bar; components never need to
+know they're inside it. Colour is information: amber is the tonic, teal a
+chord tone, bone any other scale tone. Keep it that way. Type is Archivo; its
+width axis (`.type-title`, `.type-wide`) stands in for a second typeface.
+
+The neck is drawn from `guitar/geometry.ts`: `neckColumns` gives the board, the
+strings and the fret numbers the same grid, with frets narrowing towards the
+body. Wood, nut, wires and inlays are a single `Board` layer behind the strings.
 
 ## Testing
 
-19 test files, ~245 tests, all under `src/` next to what they test, plus
+22 test files, ~260 tests, all under `src/` next to what they test, plus
 `src/integration/` for cross-module behaviour. `vitest` + Testing Library +
-jsdom. jsdom has no Web Audio and no Web Animations API — audio and animation
+jsdom. `setupTests.ts` swaps in an in-memory `localStorage` when Node's own
+(Node 22+, empty without `--localstorage-file`) shadows jsdom's. jsdom has no
+Web Audio and no Web Animations API — audio and animation
 tests mock `Element.prototype.animate` and the `./audio` module.
 
 Prefer exact expected values over shape assertions: the spec tables in

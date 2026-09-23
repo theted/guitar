@@ -61,9 +61,9 @@ export const usePlayback = () => {
   // Flash settings are read at call time so this callback stays stable —
   // dragging the trail slider must not re-render the fretboard.
   const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, event) => {
-    const { trailLength, minimalHighlight, reduceAnimations } = useFormStore.getState();
-    // Long visual trails are an animation; honor both opt-outs
-    const flashMs = minimalHighlight || reduceAnimations
+    const { trailLength, reduceAnimations } = useFormStore.getState();
+    // Long visual trails are an animation; honor the opt-out
+    const flashMs = reduceAnimations
       ? durationMs
       : Math.max(trailLength, durationMs);
     const existing = playingTimersRef.current[absSemitone];

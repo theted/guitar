@@ -16,7 +16,8 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 - Scale notes highlighted on the fretboard with their degree and interval name
 - Diatonic chord strip: select a chord to see its tones on the neck
 - Scale positions (boxes) with a selectable hand span, for one-position practice
-- An info panel with the spelled scale, its interval formula and its diatonic chords
+- The spelled scale with each note's interval, lit up as it sounds
+- Label the neck with note names, scale degrees or intervals
 
 ### Playback & phrases
 - Automated phrase playback with adjustable tempo (30–700 BPM)
@@ -39,7 +40,9 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
   clean and distorted guitar, bass
 
 ### Sound & visuals
-- Master volume with a one-click mute in the top bar
+- A true-to-life neck: rosewood board, inlays, wound bass strings, frets that narrow towards the body
+- Light and dark themes following the system setting
+- Master volume with a one-click mute in the playback bar
 - Note highlighting during playback, with an adjustable trail (100–4000 ms)
 - Flash every octave of a note, or only the one being played
 - Hide the scale highlighting entirely to test yourself against a blank neck
@@ -72,31 +75,38 @@ npm run preview    # serve the production build
 
 ### Basic usage
 
-1. **Select a scale** from the dropdown in the top bar
-2. **Choose a key** — the fretboard highlights the scale's notes with their degrees
-3. **Click any fret** to hear that note
-4. **Press play** (or `Space`) to hear the current phrase
+The screen reads top to bottom: **what** you're looking at, **how** it's shown, and a bar at the bottom for **playing** it.
 
-### Playing phrases
+1. **Choose a key** from the row of twelve keys at the top
+2. **Choose a scale** by clicking the title ("E Blues ▾")
+3. **Click any fret** to hear that note — the tonic is amber, other scale tones are pearl dots; hover anywhere else to see the note's name
+4. **Press play** (or `Space`) in the bottom bar to hear the current pattern
 
-1. Open **Settings → Scale** and pick a phrase pattern
-2. Press play; the phrase strip above the neck shows what's coming and lights up each note as it sounds
-3. Adjust tempo, octaves, swing and descent to taste
-4. Enable **Loop** to practice continuously
+Use **Label notes with** to switch the dots between note names, scale degrees and intervals.
+Tuning, strings, frets and display options are under the settings button (top right).
 
-### Practicing a position
+### Playing patterns
 
-1. Pick a box from the position strip (P1, P2, …) above the neck
-2. Everything outside the box dims
-3. Press play — the box is played one fret at a time, and exactly the fret to play lights up
+1. Pick a **Pattern** in the bottom bar
+2. Press play; the phrase strip under the neck shows what's coming and lights up each note as it sounds
+3. Adjust octaves, tempo, **Descend** and **Swing** to taste
+4. Turn on **Loop** to practice continuously
+
+On a phone, the chevron next to the pattern opens the rest of the playback controls.
+
+### Chords and positions
+
+- Pick a chord under **Chords in this key**: its tones turn teal, the rest of the scale becomes hollow rings
+- Pick a numbered **Position**: everything outside the box becomes hollow rings, the neck scrolls to it,
+  and Play steps through it one fret at a time, lighting exactly the fret to play
 
 ### Practice tips
 
-- Start with **Full Scale** at 60–80 BPM, then use **Loop** and raise the tempo
+- Start with **Full scale** at 60–80 BPM, then use **Loop** and raise the tempo
 - **Thirds** and **Fourths** train interval recognition
 - **Lowest string only** shows each tone once, which makes the pattern along the neck obvious
-- Turn off **Show scale on fretboard** to quiz yourself — played notes still flash
-- Select a chord from the chord strip and switch to the **Chord Arpeggio** phrase to hear it
+- Turn off **Show the scale** (settings) to quiz yourself — played notes still flash
+- Select a chord and switch to the **Chord arpeggio** pattern to hear it
 
 ## Development
 

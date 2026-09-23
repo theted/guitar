@@ -3,11 +3,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { keyToOffset, getScalePitchClasses } from '@/music';
 import { getScaleSpelling, formatNote } from '@/theory/spelling';
 import { intervalName } from '@/theory/intervals';
+import { pretty } from '@/lib/notation';
 import { scales } from '@/constants';
 import { useFormStore } from '@/store';
 import ScaleDegree from './ScaleDegree';
 
-// Pure display of the scale's degrees; playback lives in usePlayback/TopBar.
+// The scale's notes with their intervals; each lights up as it sounds.
 const ScaleLegend: React.FC = () => {
   const { scale, keyy } = useFormStore(
     useShallow((state) => ({
@@ -19,23 +20,22 @@ const ScaleLegend: React.FC = () => {
   const keyOffset = useMemo(() => keyToOffset(keyy), [keyy]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
   const degreeLabels = useMemo(
-    () => getScaleSpelling(keyy, pitchClasses).map(formatNote),
+    () => getScaleSpelling(keyy, pitchClasses).map((note) => pretty(formatNote(note))),
     [keyy, pitchClasses]
   );
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <ol className="flex flex-wrap gap-0.5" aria-label="Notes in the scale">
       {pitchClasses.map((pc, index) => (
         <ScaleDegree
           key={pc}
-          index={index}
           label={degreeLabels[index]}
           interval={intervalName(pc)}
           abs={keyOffset + pc}
           isTonic={index === 0}
         />
       ))}
-    </div>
+    </ol>
   );
 };
 

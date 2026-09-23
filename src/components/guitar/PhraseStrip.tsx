@@ -6,6 +6,7 @@ import { getSpellingMap, formatNoteWithOctave } from '@/theory/spelling';
 import { relativeTo } from '@/theory/pitch';
 import { scales } from '@/constants';
 import { toneAnimationManager } from '@/lib/tone-animation';
+import { pretty } from '@/lib/notation';
 import { useFormStore } from '@/store';
 import type { PhraseEvent } from './hooks/usePhraseEvents';
 
@@ -33,11 +34,9 @@ const PhraseStep: React.FC<StepProps> = React.memo(({ index, label, isTonic, sta
     <div
       ref={ref}
       className={cx(
-        'relative overflow-hidden shrink-0 px-1.5 py-0.5 rounded text-[11px] font-mono border select-none',
-        startsGroup ? 'ml-2' : '',
-        isTonic
-          ? 'bg-emerald-500/15 text-emerald-200/90 border-emerald-400/40'
-          : 'bg-white/[0.04] text-white/50 border-white/[0.07]'
+        'tabular relative shrink-0 select-none rounded-md px-1.5 py-1 text-xs font-medium',
+        startsGroup ? 'ml-3' : '',
+        isTonic ? 'text-ink shadow-[inset_0_-3px_0_var(--tonic)]' : 'text-ink-2'
       )}
     >
       {label}
@@ -78,7 +77,7 @@ const PhraseStrip: React.FC<Props> = ({ events }) => {
       events.map(({ abs }, index) => {
         const isTonic = relativeTo(abs, keyOffset) === 0;
         return {
-          label: formatNoteWithOctave(abs, spellingMap),
+          label: pretty(formatNoteWithOctave(abs, spellingMap)),
           isTonic,
           // Each pass through the scale restarts on the tonic
           startsGroup: index > 0 && isTonic,
@@ -90,21 +89,26 @@ const PhraseStrip: React.FC<Props> = ({ events }) => {
   if (steps.length === 0) return null;
 
   return (
-    <div
-      ref={viewportRef}
-      className="mb-4 flex items-center gap-1 overflow-x-auto pb-1 phrase-strip"
-      role="group"
-      aria-label={`Phrase — ${steps.length} notes`}
-    >
-      {steps.map((step, index) => (
-        <PhraseStep
-          key={index}
-          index={index}
-          label={step.label}
-          isTonic={step.isTonic}
-          startsGroup={step.startsGroup}
-        />
-      ))}
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="tabular shrink-0 text-xs font-medium text-ink-3">
+        {steps.length} notes
+      </span>
+      <div
+        ref={viewportRef}
+        className="phrase-strip flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [mask-image:linear-gradient(90deg,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] px-6"
+        role="group"
+        aria-label={`Phrase — ${steps.length} notes`}
+      >
+        {steps.map((step, index) => (
+          <PhraseStep
+            key={index}
+            index={index}
+            label={step.label}
+            isTonic={step.isTonic}
+            startsGroup={step.startsGroup}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,13 +1,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// Standard label for control fields: small uppercase muted text.
+// Label for a control: small, sentence case, one step quieter than the value.
 const FieldLabel: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({
   className,
   ...props
 }) => (
   <label
-    className={cn("text-[11px] font-medium uppercase tracking-wider text-white/40", className)}
+    className={cn("text-xs font-medium text-ink-3", className)}
     {...props}
   />
 );

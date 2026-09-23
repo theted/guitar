@@ -1,10 +1,11 @@
 import React, { useCallback } from "react";
-import cx from "classnames";
 import { SoundType, ensureAudioInitialized } from "@/audio";
 import { scheduler } from "@/scheduler";
 import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
+import { pretty } from "@/lib/notation";
 import { intervalName } from "@/theory/intervals";
+import type { LabelMode } from "@/store";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
 
@@ -29,18 +30,38 @@ const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
   );
 };
 
+type FretState = "root" | "scale" | "chord" | "chord-root" | "muted" | "off";
+
+// How a fret is drawn. A selected chord takes over the colouring; the rest of
+// the scale stays as small markers so the chord can be seen inside it.
+const fretState = (d: FretDescriptor): FretState => {
+  if (d.chordTone !== null) {
+    if (d.chordTone) return d.isChordRoot ? "chord-root" : "chord";
+    return d.showScaleHighlight ? "muted" : "off";
+  }
+  if (!d.showScaleHighlight) return "off";
+  return d.isBase ? "root" : "scale";
+};
+
+const withoutOctave = (label: string) => label.replace(/-?\d+$/, "");
+
+const dotText = (d: FretDescriptor, state: FretState, labelMode: LabelMode): string => {
+  if (state === "off" || labelMode === "note") return pretty(withoutOctave(d.label));
+  if (labelMode === "degree") return d.degree != null ? String(d.degree) : "";
+  return intervalName(d.relativePc);
+};
+
 type StringFretProps = {
   descriptor: FretDescriptor;
   /** Low-based string index (0 = lowest string), for positional flashes */
   stringIndex: number;
   onClick: (note: number) => void;
-  reduceAnimations: boolean;
-  minimalHighlight: boolean;
+  labelMode: LabelMode;
 };
 
 // Memoized: ~150 instances render per fretboard; descriptor identity is stable
 // (useStringNotes memo) so unrelated store changes skip all of them.
-const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIndex, onClick, reduceAnimations, minimalHighlight }) => {
+const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIndex, onClick, labelMode }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -52,48 +73,19 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
     return () => { toneAnimationManager.clearToneClass(element); };
   }, [descriptor.actualNote, descriptor.fret, stringIndex]);
 
-  const chordActive = descriptor.chordTone !== null;
-  const positionActive = descriptor.inPosition !== null;
-  // While practicing a position, everything outside the box recedes
-  const outsidePosition = positionActive && !descriptor.inPosition;
-  const colorClasses = outsidePosition
-    ? "bg-zinc-900/40 text-zinc-600 border-white/[0.04]"
-    : chordActive && descriptor.chordTone
-    ? descriptor.isChordRoot
-      ? "bg-cyan-950/80 text-white border-cyan-400/60"
-      : "bg-zinc-600/70 text-white border-cyan-400/30"
-    : chordActive && descriptor.showScaleHighlight
-    ? "bg-zinc-800/40 text-zinc-400 border-white/10" // scale note dimmed while a chord is shown
-    : descriptor.isBase && descriptor.showScaleHighlight
-    ? "bg-black/70 text-white border-white/20"
-    : descriptor.showScaleHighlight
-    ? "bg-zinc-700/60 text-white border-white/10"
-    : "bg-zinc-800/40 text-zinc-100 border-white/10";
+  const state = fretState(descriptor);
 
   return (
     <div
       ref={ref}
       data-abs={descriptor.actualNote}
-      title={`${descriptor.label} · ${intervalName(descriptor.relativePc)}`}
-      className={cx(
-        "relative flex items-center justify-center text-sm md:text-base h-16 md:h-20 rounded-md border transition-transform transition-colors duration-75 cursor-pointer select-none",
-        colorClasses,
-        "fret-button",
-        reduceAnimations ? "" : "hover:bg-white/20 transition-transform duration-75 hover:scale-[1.03]"
-      )}
+      data-state={state}
+      data-outside={descriptor.inPosition === false ? "" : undefined}
+      title={`${pretty(descriptor.label)} (${intervalName(descriptor.relativePc)})`}
+      className={descriptor.fret === 0 ? "fret fret-open" : "fret"}
       onClick={() => onClick(descriptor.actualNote)}
     >
-      {descriptor.label}
-      {descriptor.showScaleHighlight && descriptor.degree && !minimalHighlight && (
-        <span
-          className={cx(
-            "absolute top-1 right-1 text-[11px] px-1 py-0.5 rounded",
-            descriptor.isBase ? "bg-emerald-500/30" : "bg-amber-500/30"
-          )}
-        >
-          {descriptor.degree}
-        </span>
-      )}
+      <span className="fret-dot">{dotText(descriptor, state, labelMode)}</span>
       {/* Tone-based animation overlay — primary highlighting system */}
       <span className="tone-overlay" />
     </div>
@@ -103,16 +95,19 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
 type Props = {
   /** Low-based string index (0 = lowest string) */
   stringIndex: number;
+  /** Total strings, for the gauge */
+  stringCount?: number;
   note: number;
   frets: number;
+  /** Grid columns shared with the board, see geometry.ts */
+  columns?: string;
   scales?: ScaleDefinition;
   scale: ScaleName;
   keyy: string;
   highlightEnabled?: boolean;
   scaleHighlightBottomOnly?: boolean;
   isBottom?: boolean;
-  reduceAnimations?: boolean;
-  minimalHighlight?: boolean;
+  labelMode?: LabelMode;
   soundType?: SoundType;
   selectedChordDegree?: number | null;
   /** Frets of the active practice position on this string, null when off */
@@ -122,16 +117,17 @@ type Props = {
 
 const GuitarString: React.FC<Props> = React.memo(({
   stringIndex,
+  stringCount = 6,
   note,
   frets,
+  columns,
   scales = baseScales,
   scale,
   keyy,
   highlightEnabled = true,
   scaleHighlightBottomOnly = false,
   isBottom = false,
-  reduceAnimations = false,
-  minimalHighlight = false,
+  labelMode = "note",
   soundType = "marimba",
   selectedChordDegree = null,
   positionFrets = null,
@@ -152,19 +148,23 @@ const GuitarString: React.FC<Props> = React.memo(({
 
   const handleFretClick = useFretClick({ soundType, onPlayNote });
 
+  // 0 = lowest string. Bass strings are heavier and bronze-wound.
+  const t = stringCount > 1 ? stringIndex / (stringCount - 1) : 1;
+  const style = {
+    gridTemplateColumns: columns ?? `repeat(${frets + 1}, minmax(44px, 1fr))`,
+    "--gauge": `${(1 + 2.4 * (1 - t)).toFixed(2)}px`,
+    "--string-color": t < 0.5 ? "var(--string-wound)" : "var(--string-plain)",
+  } as React.CSSProperties;
+
   return (
-    <div
-      className="relative grid gap-1 guitar-string"
-      style={{ gridTemplateColumns: `repeat(${frets + 1}, minmax(44px, 1fr))` }}
-    >
+    <div className="neck-string" style={style}>
       {fretDescriptors.map((descriptor) => (
         <StringFret
           key={descriptor.fret}
           descriptor={descriptor}
           stringIndex={stringIndex}
           onClick={handleFretClick}
-          reduceAnimations={reduceAnimations}
-          minimalHighlight={minimalHighlight}
+          labelMode={labelMode}
         />
       ))}
     </div>

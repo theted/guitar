@@ -3,7 +3,6 @@ import cx from "classnames";
 import { toneAnimationManager } from "@/lib/tone-animation";
 
 type ScaleDegreeProps = {
-  index: number;
   label: string;
   /** Interval name relative to the tonic, e.g. "m3" */
   interval?: string;
@@ -12,13 +11,12 @@ type ScaleDegreeProps = {
 };
 
 const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
-  index,
   label,
   interval,
   abs,
   isTonic,
 }) => {
-  const ref = React.useRef<HTMLDivElement | null>(null);
+  const ref = React.useRef<HTMLLIElement | null>(null);
 
   React.useEffect(() => {
     const element = ref.current;
@@ -29,22 +27,23 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
     return () => { toneAnimationManager.clearToneClass(element); };
   }, [abs]);
 
-  const classes = cx(
-    "relative overflow-hidden px-2 py-1 rounded-md text-sm uppercase tracking-wide transition-colors border",
-    isTonic
-      ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/70"
-      : "bg-amber-500/15 text-amber-200 border-amber-400/50"
-  );
-
   return (
-    <div ref={ref} className={classes} data-pc={abs % 12}>
-      <span className="mr-1 font-semibold">{index + 1}</span>
-      {label}
-      {interval && (
-        <span className="ml-1.5 text-[10px] normal-case opacity-50">{interval}</span>
-      )}
+    <li
+      ref={ref}
+      className="relative flex min-w-[2.6rem] flex-col items-center gap-1 rounded-md px-1.5 pb-2 pt-1"
+      data-pc={abs % 12}
+    >
+      <span className="text-[0.7rem] font-medium text-ink-3">{interval}</span>
+      <span className="type-wide text-xl font-bold leading-none text-ink">{label}</span>
+      <span
+        className={cx(
+          "absolute inset-x-1.5 bottom-0 h-1 rounded-full",
+          isTonic ? "bg-tonic" : "bg-line"
+        )}
+        aria-hidden
+      />
       <span className="tone-overlay" />
-    </div>
+    </li>
   );
 });
 

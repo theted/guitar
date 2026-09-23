@@ -81,3 +81,15 @@ describe("migrateFormState — v4", () => {
     expect(migrateFormState({ volume: 25, muted: true }).muted).toBe(true);
   });
 });
+
+describe("migrateFormState — v5", () => {
+  it("drops 'minimal highlight' and labels notes by name", () => {
+    const migrated = migrateFormState({ minimalHighlight: true });
+    expect(migrated).not.toHaveProperty("minimalHighlight");
+    expect(migrated.labelMode).toBe("note");
+  });
+
+  it("keeps a stored label mode", () => {
+    expect(migrateFormState({ labelMode: "interval" }).labelMode).toBe("interval");
+  });
+});
