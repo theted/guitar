@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { SwitchRow } from '@/components/ui/switch-row';
 import FieldLabel from '@/components/ui/field-label';
 import { TuningName } from '@/constants';
-import { setFormState, useFormStore } from '@/store';
+import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { useApplySetting } from '@/hooks/useApplySetting';
 import { TUNING_GROUP_OPTIONS } from './options';
 
@@ -26,6 +26,18 @@ const Row: React.FC<{ label: string; htmlFor?: string; children: React.ReactNode
     {children}
   </div>
 );
+
+const FLASH_OPTIONS: ReadonlyArray<{ value: FlashMode; label: string }> = [
+  { value: 'fret', label: 'One fret' },
+  { value: 'octave', label: 'Same pitch' },
+  { value: 'all', label: 'Every octave' },
+];
+
+const FLASH_HINTS: Record<FlashMode, string> = {
+  fret: 'Only the fret each note is played on, fingered from the nut up.',
+  octave: 'Every fret with the same pitch, across strings.',
+  all: 'The note in every octave, all over the neck.',
+};
 
 const SPAN_OPTIONS = [4, 5, 6].map((value) => ({ value, label: `${value} frets` }));
 
@@ -47,7 +59,8 @@ const SetupControls: React.FC<SetupControlsProps> = ({ stopAllPlayback }) => {
     positionSpan: state.positionSpan,
     highlightEnabled: state.highlightEnabled,
     singleStringScale: state.singleStringScale,
-    octaveHighlight: state.octaveHighlight,
+    flashMode: state.flashMode,
+    leftHanded: state.leftHanded,
     trailLength: state.trailLength,
     reduceAnimations: state.reduceAnimations,
   })));
@@ -82,6 +95,13 @@ const SetupControls: React.FC<SetupControlsProps> = ({ stopAllPlayback }) => {
             onChange={(v) => apply({ startOctave: v })}
           />
         </Row>
+        <SwitchRow
+          id="leftHanded"
+          label="Left-handed"
+          hint="Mirror the neck, with the nut on the right."
+          checked={s.leftHanded}
+          onChange={(v) => setFormState({ leftHanded: v })}
+        />
         <SwitchRow
           id="lowAtBottom"
           label="Low string at the bottom"
@@ -123,19 +143,22 @@ const SetupControls: React.FC<SetupControlsProps> = ({ stopAllPlayback }) => {
             onChange={(v) => setFormState({ singleStringScale: v })}
           />
           <SwitchRow
-            id="octaveHighlight"
-            label="Light up the played octave only"
-            hint="Off lights the same note in every octave."
-            checked={s.octaveHighlight}
-            onChange={(v) => setFormState({ octaveHighlight: v })}
-          />
-          <SwitchRow
             id="reduceAnimations"
             label="Reduce motion"
             hint="Short flashes, no hover movement."
             checked={s.reduceAnimations}
             onChange={(v) => setFormState({ reduceAnimations: v })}
           />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>When a note plays, light up</FieldLabel>
+          <Segmented
+            aria-label="When a note plays, light up"
+            value={s.flashMode}
+            onChange={(v) => apply({ flashMode: v })}
+            options={FLASH_OPTIONS}
+          />
+          <p className="text-xs leading-snug text-ink-3">{FLASH_HINTS[s.flashMode]}</p>
         </div>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">

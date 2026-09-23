@@ -3,6 +3,7 @@ import type { PhraseMode } from "@/constants";
 import { buildRelSequence } from "@/phrases";
 import type { PlaybackEvent } from "@/scheduler";
 import type { PositionNote } from "@/theory/positions";
+import { fingerSequence } from "@/theory/fingering";
 import type { PitchClass } from "@/types";
 
 /**
@@ -26,6 +27,11 @@ interface UsePhraseEventsArgs {
    * when `descend` is on, and every event carries its fret location.
    */
   path?: PositionNote[] | null;
+  /**
+   * The neck to finger the phrase on. When set, every event carries the fret
+   * it's played on (see theory/fingering.ts), so playback lights that fret only.
+   */
+  neck?: { baseNotes: number[]; frets: number } | null;
 }
 
 type SequenceNote = { abs: number; stringIndex?: number; fret?: number };
@@ -39,6 +45,7 @@ export const usePhraseEvents = ({
   swing,
   rootAbs,
   path = null,
+  neck = null,
 }: UsePhraseEventsArgs) => {
   const relSequence = useMemo(
     () => (path ? [] : buildRelSequence(pitchClasses as PitchClass[], mode, octaves, descend)),
@@ -55,8 +62,11 @@ export const usePhraseEvents = ({
       if (!descend || ascending.length < 2) return ascending;
       return [...ascending, ...ascending.slice(0, -1).reverse()];
     }
-    return relSequence.map((relative) => ({ abs: rootAbs + relative }));
-  }, [path, descend, relSequence, rootAbs]);
+    const notes = relSequence.map((relative) => rootAbs + relative);
+    if (!neck) return notes.map((abs) => ({ abs }));
+    const fingering = fingerSequence(notes, neck.baseNotes, neck.frets);
+    return notes.map((abs, i) => ({ abs, ...fingering[i] }));
+  }, [path, descend, relSequence, rootAbs, neck]);
 
   const { events, loopDuration } = useMemo(() => {
     if (sequence.length === 0) {

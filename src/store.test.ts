@@ -93,3 +93,16 @@ describe("migrateFormState — v5", () => {
     expect(migrateFormState({ labelMode: "interval" }).labelMode).toBe("interval");
   });
 });
+
+describe("migrateFormState — v6", () => {
+  it("lights the played fret by default", () => {
+    expect(migrateFormState({}).flashMode).toBe("fret");
+    expect(migrateFormState({ octaveHighlight: false }).flashMode).toBe("fret");
+  });
+
+  it("keeps 'played octave only' as the octave flash mode", () => {
+    const migrated = migrateFormState({ octaveHighlight: true });
+    expect(migrated.flashMode).toBe("octave");
+    expect(migrated).not.toHaveProperty("octaveHighlight");
+  });
+});

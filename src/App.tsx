@@ -21,10 +21,12 @@ const App: React.FC = () => {
     return () => document.removeEventListener('pointerdown', warmUp);
   }, []);
 
-  const octaveHighlight = useFormStore((s) => s.octaveHighlight);
+  // "fret" mode flashes single locations (see usePlayback); the registry mode
+  // only matters for pitch-wide flashes
+  const flashMode = useFormStore((s) => s.flashMode);
   React.useEffect(() => {
-    toneAnimationManager.setMode(octaveHighlight ? 'octave-specific' : 'pitch-class');
-  }, [octaveHighlight]);
+    toneAnimationManager.setMode(flashMode === 'all' ? 'pitch-class' : 'octave-specific');
+  }, [flashMode]);
 
   const volume = useFormStore((s) => s.volume);
   const muted = useFormStore((s) => s.muted);

@@ -170,11 +170,18 @@ class ToneAnimationManager {
     delete element.dataset.toneFret;
   }
 
-  /** Flash exactly one fretboard location (guided position practice). */
+  /**
+   * Flash exactly one fretboard location — the fret a note is played on.
+   * Displays that stand for the pitch class (the scale legend) light up too.
+   */
   flashAt(stringIndex: number, fret: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS): void {
     const element = this.byFret.get(this.fretKey(stringIndex, fret));
     if (!element) return;
     this.flashElement(element, durationMs);
+    const pc = element.dataset.tonePc;
+    if (pc !== undefined) {
+      this.byPitchClassAlways.get(parseInt(pc, 10))?.forEach((el) => this.flashElement(el, durationMs));
+    }
   }
 
   /**
