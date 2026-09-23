@@ -1,49 +1,35 @@
+# The build-and-sync steps live in theted/workflows/.github/workflows/deploy-static.yml; the
+# reasoning behind the cache headers and the three-pass upload order is in static-s3.md in the
+# private theted/infrastructure repo.
+#
+# Switching to it is also the fix for a known deviation: the sync this replaces passed no
+# --cache-control at all, so every object was served with no Cache-Control header and caching fell
+# back to heuristics. The shared workflow gives assets/* the immutable year and everything with a
+# stable URL max-age=0, must-revalidate.
 name: Deploy to S3
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
+
+# One deploy at a time. The shared workflow deletes superseded objects in its second and third
+# passes, so two overlapping runs could have the loser sweep assets the winner had just published.
+# deploy-static.yml declares no concurrency of its own, and a called workflow runs inside this
+# workflow's run, so this group covers it.
+concurrency:
+  group: deploy-s3
+  cancel-in-progress: true
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Test
-        run: npx vitest run
-
-      - name: Build
-        run: npm run build
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Sync to S3
-        run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
-
-      - name: Invalidate CloudFront cache
-        if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        env:
-          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
+    uses: theted/workflows/.github/workflows/deploy-static.yml@master
+    with:
+      # Matches .nvmrc.
+      node-version: '20'
+      # The tests gate the deploy, as they did when this workflow had its own Test step. The shared
+      # workflow has no separate test input, so they hang off the build command; a failure here
+      # stops the run before any credentials are configured.
+      build-command: npm run test:run && npm run build
+      dist-dir: dist
+    secrets: inherit
