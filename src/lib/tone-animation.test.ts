@@ -142,4 +142,17 @@ describe("toneAnimationManager", () => {
     toneAnimationManager.flashAt(3, 3, 500); // unregistered location: no-op
     expect(animateMock).toHaveBeenCalledTimes(1);
   });
+
+  it("flashAt also lights the legend entry for that pitch class", () => {
+    const fret = document.createElement("div");
+    fret.innerHTML = '<span class="tone-overlay"></span>';
+    const legend = document.createElement("div");
+    legend.innerHTML = '<span class="tone-overlay"></span>';
+    document.body.append(fret, legend);
+    registered.push(fret, legend);
+    toneAnimationManager.applyToneClass(fret, -12, { fret: { stringIndex: 0, fret: 12 } });
+    toneAnimationManager.applyToneClass(legend, 0, { anyOctave: true }); // E, any octave
+    toneAnimationManager.flashAt(0, 12, 500);
+    expect(animateMock).toHaveBeenCalledTimes(2);
+  });
 });

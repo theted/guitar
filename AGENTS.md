@@ -22,6 +22,8 @@ npm run test       # vitest, watch mode
 npm run test:run   # vitest, single run
 npm run coverage   # vitest run --coverage
 npm run lint       # eslint src
+npm run typecheck  # tsc --noEmit
+npm run check      # lint + typecheck + tests, what CI runs on every PR
 ```
 
 `@/` is a path alias for `src/` (see `vite.config.ts` and `tsconfig.json`).
@@ -47,7 +49,8 @@ src/
 │   ├── spelling.ts             # Enharmonic spelling (Bb vs A#) per key
 │   ├── intervals.ts            # Interval names (P1, m3, …)
 │   ├── chords.ts               # Diatonic chords for heptatonic scales
-│   └── positions.ts            # String base notes, fretboard range, position boxes
+│   ├── positions.ts            # String base notes, fretboard range, position boxes
+│   └── fingering.ts            # Which string/fret each phrase note is played on
 ├── constants/
 │   ├── scales.ts  tones.ts  tunings.ts  phrases.ts   # catalogs + UI groupings
 │   ├── defaults.ts  scheduler.ts  animation.ts
@@ -179,8 +182,14 @@ class toggling per note. Three registries:
 | `applyToneClass(el, abs, { anyOctave: true })` | `flashTone(abs)` in either mode | scale legend |
 | `registerStep(el, index)` | `flashStep(index)` | phrase strip |
 
-Modes: `pitch-class` (default) flashes every octave of a note;
-`octave-specific` flashes only the exact pitch. `anyOctave` elements opt out of
+What lights up is the `flashMode` setting. In `fret` (the default) phrases are
+fingered by `theory/fingering.ts` (start at the nut, cross strings rather than
+shift, shift as little as possible), so every event carries a `stringIndex`/
+`fret` and plays through `flashAt`. Fret clicks pass their location too.
+`flashAt` also lights the pitch's `anyOctave` elements (the legend). Position
+practice always uses its box path. The other two modes flash by pitch through
+the registry modes: `pitch-class` flashes every octave of a note,
+`octave-specific` only the exact pitch. `anyOctave` elements opt out of
 that restriction — the legend shows degrees, not pitches, so it lights up
 whichever octave is playing. Every registered element needs a
 `<span className="tone-overlay" />` child; that's what animates.
@@ -193,7 +202,7 @@ change invalidates what is currently playing (scale, key, tuning, phrase shape).
 Settings that apply cleanly mid-phrase — volume, mute, visual toggles — should
 call `setFormState` directly and *not* interrupt playback.
 
-Persistence is versioned (currently 5). `migrateFormState` keeps only fields
+Persistence is versioned (currently 6). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
 linger in localStorage, and maps renamed fields via `RENAMED_FIELDS`. Add to
 both when you rename or remove a setting, and bump the version.
@@ -243,6 +252,9 @@ know they're inside it. Colour is information: amber is the tonic, teal a
 chord tone, bone any other scale tone. Keep it that way. Type is Archivo; its
 width axis (`.type-title`, `.type-wide`) stands in for a second typeface.
 
+Left-handed mode is `dir="rtl"` on the neck's scroll container; the neck CSS
+uses logical properties only, so nothing else changes. Keep it that way.
+
 The neck is drawn from `guitar/geometry.ts`: `neckColumns` gives the board, the
 strings and the fret numbers the same grid, with frets narrowing towards the
 body. Wood, nut, wires and inlays are a single `Board` layer behind the strings.
@@ -251,8 +263,8 @@ body. Wood, nut, wires and inlays are a single `Board` layer behind the strings.
 
 22 test files, ~260 tests, all under `src/` next to what they test, plus
 `src/integration/` for cross-module behaviour. `vitest` + Testing Library +
-jsdom. `setupTests.ts` swaps in an in-memory `localStorage` when Node's own
-(Node 22+, empty without `--localstorage-file`) shadows jsdom's. jsdom has no
+jsdom. On Node 22+ the test workers run with `--no-experimental-webstorage`
+(`vite.config.ts`); otherwise Node's own empty `localStorage` shadows jsdom's. jsdom has no
 Web Audio and no Web Animations API — audio and animation
 tests mock `Element.prototype.animate` and the `./audio` module.
 

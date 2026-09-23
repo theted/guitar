@@ -6,6 +6,9 @@ import { SoundType } from './audio';
 /** What the dots on the neck say */
 export type LabelMode = 'note' | 'degree' | 'interval';
 
+/** What lights up when a note plays: its fret, that pitch everywhere, or every octave */
+export type FlashMode = 'fret' | 'octave' | 'all';
+
 export type FormState = {
   scale: ScaleName;
   strings: number;
@@ -15,7 +18,9 @@ export type FormState = {
   lowAtBottom: boolean;
   /** Mark the scale's notes on the fretboard; off leaves a blank neck to test yourself against */
   highlightEnabled: boolean;
-  octaveHighlight: boolean;
+  flashMode: FlashMode;
+  /** Mirror the neck: nut on the right */
+  leftHanded: boolean;
   phraseMode: PhraseMode;
   bpm: number;
   swing: boolean;
@@ -53,7 +58,8 @@ const initial: FormState = {
   tone: DEFAULTS.KEY,
   lowAtBottom: true,
   highlightEnabled: true,
-  octaveHighlight: false,
+  flashMode: 'fret',
+  leftHanded: false,
   phraseMode: 'full-scale',
   bpm: 300,
   swing: false,
@@ -102,6 +108,10 @@ const RENAMED_FIELDS: Record<string, keyof FormState> = {
 // v5 replaced "minimal highlight" (hide the degree badges) with a label mode;
 // it is dropped rather than mapped, since the new default already shows no badges.
 
+// v6 replaced the "played octave only" switch with a flash mode. Its old off
+// state (every octave) is deliberately not carried over: lighting the one fret
+// being played is the new default.
+
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
 export const migrateFormState = (persisted: unknown): FormState => {
@@ -113,6 +123,7 @@ export const migrateFormState = (persisted: unknown): FormState => {
   for (const key of Object.keys(initial)) {
     if (key in stored) known[key] = stored[key];
   }
+  if (stored.octaveHighlight === true && !('flashMode' in stored)) known.flashMode = 'octave';
   for (const [oldKey, newKey] of Object.entries(RENAMED_FIELDS)) {
     if (oldKey in stored && !(newKey in stored)) known[newKey] = stored[oldKey];
   }
@@ -146,7 +157,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 5,
+      version: 6,
       migrate: (persisted) => migrateFormState(persisted),
     }
   )

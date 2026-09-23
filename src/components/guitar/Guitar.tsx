@@ -29,9 +29,10 @@ const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: str
 // How the scale is shown on the neck, the neck itself, and the phrase that
 // Play will run through it.
 const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
-  const { lowAtBottom, labelMode } = useFormStore(useShallow((state) => ({
+  const { lowAtBottom, labelMode, leftHanded } = useFormStore(useShallow((state) => ({
     lowAtBottom: state.lowAtBottom,
     labelMode: state.labelMode,
+    leftHanded: state.leftHanded,
   })));
   const { baseNotes, frets } = useFretboard();
 
@@ -46,8 +47,12 @@ const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
     if (lowFret == null || !scroller || scroller.scrollWidth <= scroller.clientWidth) return;
     const fret = scroller.querySelector<HTMLElement>(`.neck-string > .fret:nth-child(${lowFret + 1})`);
     if (!fret) return;
-    scroller.scrollTo({ left: Math.max(0, fret.offsetLeft - 48), behavior: "smooth" });
-  }, [lowFret]);
+    // Measured on screen so it works whichever way the neck faces
+    const box = scroller.getBoundingClientRect();
+    const target = fret.getBoundingClientRect();
+    const left = leftHanded ? target.right - box.right + 48 : target.left - box.left - 48;
+    scroller.scrollBy({ left, behavior: "smooth" });
+  }, [lowFret, leftHanded]);
 
   return (
     <section className="flex flex-col gap-4" aria-label="Fretboard">
@@ -69,7 +74,7 @@ const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
       </div>
 
       {/* Frets keep a minimum width; the neck scrolls sideways when they don't fit */}
-      <div ref={scrollRef} className="neck-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+      <div ref={scrollRef} dir={leftHanded ? "rtl" : undefined} className="neck-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
         <div style={{ minWidth: neckMinWidth(frets) }}>
           <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} />
           <FretMarkers frets={frets} />

@@ -13,12 +13,15 @@ import { usePhraseEvents, type PhraseEvent } from "@/components/guitar/hooks/use
 import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 import { useFretboard } from "@/components/guitar/hooks/useFretboard";
+import type { FretLocation } from "@/theory/fingering";
 
 export type PlayNoteFn = (
   absSemitone: number,
   durationMs?: number,
-  /** Present for phrase playback; fret clicks pass nothing */
-  event?: PhraseEvent
+  /** Present for phrase playback */
+  event?: PhraseEvent,
+  /** The fret that was clicked, for fret clicks */
+  at?: FretLocation
 ) => void;
 
 // Owns all playback orchestration: phrase event generation, the phrase
@@ -26,7 +29,7 @@ export type PlayNoteFn = (
 export const usePlayback = () => {
   const {
     scale, tone, phraseMode, bpm, swing, phraseOctaves, phraseDescend,
-    phraseLoop, soundType, selectedChordDegree,
+    phraseLoop, soundType, selectedChordDegree, flashMode,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
@@ -38,6 +41,7 @@ export const usePlayback = () => {
     phraseLoop: state.phraseLoop,
     soundType: state.soundType,
     selectedChordDegree: state.selectedChordDegree,
+    flashMode: state.flashMode,
   })));
 
   const playingTimersRef = useRef<Record<number, number>>({});
@@ -60,8 +64,8 @@ export const usePlayback = () => {
 
   // Flash settings are read at call time so this callback stays stable —
   // dragging the trail slider must not re-render the fretboard.
-  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, event) => {
-    const { trailLength, reduceAnimations } = useFormStore.getState();
+  const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, event, at) => {
+    const { trailLength, reduceAnimations, flashMode: mode } = useFormStore.getState();
     // Long visual trails are an animation; honor the opt-out
     const flashMs = reduceAnimations
       ? durationMs
@@ -69,8 +73,10 @@ export const usePlayback = () => {
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
     if (event?.stringIndex !== undefined && event.fret !== undefined) {
-      // Guided position practice: light up exactly the fret to play
+      // A fingered phrase or position practice: light up exactly the fret to play
       toneAnimationManager.flashAt(event.stringIndex, event.fret, flashMs);
+    } else if (at && mode === "fret") {
+      toneAnimationManager.flashAt(at.stringIndex, at.fret, flashMs);
     } else {
       toneAnimationManager.flashTone(absSemitone, flashMs);
     }
@@ -98,7 +104,12 @@ export const usePlayback = () => {
 
   // Phrases are laid out on the neck that is actually on screen: they start at
   // the lowest tonic available and span no further than the top fret.
-  const { lowest, highest } = useFretboard();
+  const { lowest, highest, baseNotes, frets } = useFretboard();
+  // In "fret" mode the phrase is fingered, so each note lights one fret
+  const neck = useMemo(
+    () => (flashMode === "fret" ? { baseNotes, frets } : null),
+    [flashMode, baseNotes, frets]
+  );
   const rootAbs = useMemo(() => getPhraseRootAbs(keyOffset, lowest), [keyOffset, lowest]);
   const playableOctaves = useMemo(
     () =>
@@ -125,6 +136,7 @@ export const usePlayback = () => {
     swing,
     rootAbs,
     path: activePosition?.notes ?? null,
+    neck,
   });
 
   const { isPlaying, onTogglePlay } = usePhrasePlayer({

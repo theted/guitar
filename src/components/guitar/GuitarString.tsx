@@ -5,6 +5,7 @@ import { scales as baseScales, type ScaleName } from "@/constants";
 import { toneAnimationManager } from "@/lib/tone-animation";
 import { pretty } from "@/lib/notation";
 import { intervalName } from "@/theory/intervals";
+import type { FretLocation } from "@/theory/fingering";
 import type { LabelMode } from "@/store";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
@@ -18,10 +19,10 @@ type UseFretClickArgs = {
 
 const useFretClick = ({ soundType, onPlayNote }: UseFretClickArgs) => {
   return useCallback(
-    async (note: number) => {
+    async (note: number, at: FretLocation) => {
       try {
         await ensureAudioInitialized();
-        scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs));
+        scheduler.triggerNow(note, 300, soundType, (abs, durMs) => onPlayNote?.(abs, durMs, undefined, at));
       } catch (error) {
         console.error('Failed to play note:', error);
       }
@@ -55,7 +56,7 @@ type StringFretProps = {
   descriptor: FretDescriptor;
   /** Low-based string index (0 = lowest string), for positional flashes */
   stringIndex: number;
-  onClick: (note: number) => void;
+  onClick: (note: number, at: FretLocation) => void;
   labelMode: LabelMode;
 };
 
@@ -83,7 +84,7 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
       data-outside={descriptor.inPosition === false ? "" : undefined}
       title={`${pretty(descriptor.label)} (${intervalName(descriptor.relativePc)})`}
       className={descriptor.fret === 0 ? "fret fret-open" : "fret"}
-      onClick={() => onClick(descriptor.actualNote)}
+      onClick={() => onClick(descriptor.actualNote, { stringIndex, fret: descriptor.fret })}
     >
       <span className="fret-dot">{dotText(descriptor, state, labelMode)}</span>
       {/* Tone-based animation overlay — primary highlighting system */}

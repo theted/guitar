@@ -28,6 +28,8 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
   - Technique — alternate picking, pedal tone, sequences, skip patterns
   - Metal — power chords, djent palm mutes, polyrhythms, breakdowns, tremolo, legato
 - A phrase strip showing the notes about to be played, following along as they sound
+- Phrases are fingered like a player would: they start at the nut, and only the fret being played lights up
+  (or light the pitch everywhere, or every octave, if you prefer)
 - Phrases are laid out on the neck you're looking at — they start at the lowest
   available tonic and never run past the top fret
 - Loop mode, swing feel, descending runs, 1–5 octave range
@@ -35,7 +37,7 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 ### Instrument configuration
 - 28 tuning presets: standard, drop, open, DADGAD, extended range, bass
 - 1–12 strings, 1–36 frets
-- Low string at top or bottom
+- Low string at top or bottom, and a left-handed (mirrored) neck
 - 15 sounds: marimba, piano, organ, bells, strings, flute, brass, five synths,
   clean and distorted guitar, bass
 
@@ -44,7 +46,6 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 - Light and dark themes following the system setting
 - Master volume with a one-click mute in the playback bar
 - Note highlighting during playback, with an adjustable trail (100–4000 ms)
-- Flash every octave of a note, or only the one being played
 - Hide the scale highlighting entirely to test yourself against a blank neck
 - Show the scale on the lowest string only, so each tone appears once
 - Reduce animations (respects `prefers-reduced-motion` on first run)
