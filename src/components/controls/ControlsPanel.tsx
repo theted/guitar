@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import Controls from '@/components/Controls';
+import SetupControls from './SetupControls';
 
 interface ControlsPanelProps {
   open: boolean;
@@ -59,7 +59,7 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose, stopAllPla
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -71,34 +71,31 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose, stopAllPla
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Settings"
+        aria-labelledby="settings-title"
         aria-hidden={!open}
-        className={`fixed z-50 flex flex-col bg-[#080810]/95 backdrop-blur-xl
-          transition-transform duration-300 ease-in-out shadow-2xl
-          right-0 top-0 h-full w-[min(300px,88vw)] border-l border-white/[0.07]
-          max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:h-[75vh] max-sm:w-full
-          max-sm:border-l-0 max-sm:border-t max-sm:border-white/[0.07] max-sm:rounded-t-2xl
+        inert={!open}
+        className={`fixed z-50 flex flex-col bg-bg text-ink
+          transition-transform duration-300 ease-out shadow-[0_0_60px_-10px_rgb(0_0_0/0.4)]
+          right-0 top-0 h-full w-[min(360px,92vw)] border-l border-line
+          max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:h-[85vh] max-sm:w-full
+          max-sm:border-l-0 max-sm:border-t max-sm:rounded-t-2xl
           ${open
             ? 'translate-x-0 max-sm:translate-y-0'
             : 'translate-x-full max-sm:translate-x-0 max-sm:translate-y-full'}`}
       >
-        {/* Panel header */}
-        <div className="flex items-center justify-between px-4 h-12 border-b border-white/[0.06] flex-shrink-0">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
-            Settings
-          </span>
+        <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-line px-5">
+          <h2 id="settings-title" className="type-wide text-base font-bold">Settings</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all"
+            className="grid h-8 w-8 place-items-center rounded-md text-ink-2 transition-colors hover:bg-surface hover:text-ink"
             aria-label="Close settings"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <Controls stopAllPlayback={stopAllPlayback} />
+          <SetupControls stopAllPlayback={stopAllPlayback} />
         </div>
       </aside>
     </>

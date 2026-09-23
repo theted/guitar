@@ -1,22 +1,28 @@
 import React from "react";
+import cx from "classnames";
+import { inlayAt, neckColumns } from "./geometry";
 
 type FretMarkersProps = {
-  markers: number[];
+  frets: number;
 };
 
-const FretMarkers: React.FC<FretMarkersProps> = ({ markers }) => {
-  return (
-    <div
-      className="grid gap-1 mt-3 text-sm opacity-60 select-none"
-      style={{ gridTemplateColumns: `repeat(${markers.length}, minmax(44px, 1fr))` }}
-    >
-      {markers.map((fret) => (
-        <div key={fret} className="text-center">
-          {fret}
-        </div>
-      ))}
-    </div>
-  );
-};
+// Fret numbers under the neck, lined up with the fret columns. The inlaid
+// frets are the ones players navigate by, so they carry the weight.
+const FretMarkers: React.FC<FretMarkersProps> = React.memo(({ frets }) => (
+  <div
+    className="tabular mt-1.5 grid select-none text-xs"
+    style={{ gridTemplateColumns: neckColumns(frets) }}
+    aria-hidden
+  >
+    {Array.from({ length: frets + 1 }, (_, fret) => (
+      <div
+        key={fret}
+        className={cx("text-center", inlayAt(fret) ? "font-semibold text-ink" : "text-ink-3")}
+      >
+        {fret}
+      </div>
+    ))}
+  </div>
+));
 
 export default FretMarkers;

@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS } from './constants';
 import { SoundType } from './audio';
 
+/** What the dots on the neck say */
+export type LabelMode = 'note' | 'degree' | 'interval';
+
 export type FormState = {
   scale: ScaleName;
   strings: number;
@@ -24,7 +27,7 @@ export type FormState = {
   phraseLoop: boolean;
   reduceAnimations: boolean;
   trailLength: number;
-  minimalHighlight: boolean;
+  labelMode: LabelMode;
   soundType: SoundType;
   startOctave: number;
   /** Show the scale on the lowest string only, so each tone appears once */
@@ -61,7 +64,7 @@ const initial: FormState = {
   phraseLoop: false,
   reduceAnimations: prefersReducedMotion,
   trailLength: 1200,
-  minimalHighlight: false,
+  labelMode: 'note',
   soundType: 'marimba',
   startOctave: 6,
   singleStringScale: false,
@@ -95,6 +98,9 @@ const LEGACY_TUNING_NAMES: Record<string, TuningName> = {
 const RENAMED_FIELDS: Record<string, keyof FormState> = {
   oncePerTone: 'singleStringScale',
 };
+
+// v5 replaced "minimal highlight" (hide the degree badges) with a label mode;
+// it is dropped rather than mapped, since the new default already shows no badges.
 
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
@@ -140,7 +146,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 4,
+      version: 5,
       migrate: (persisted) => migrateFormState(persisted),
     }
   )

@@ -1,6 +1,7 @@
 import React from 'react';
 import Guitar from '@/components/guitar/Guitar';
-import TopBar from '@/components/TopBar';
+import Header from '@/components/Header';
+import Transport from '@/components/Transport';
 import ControlsPanel from '@/components/controls/ControlsPanel';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
@@ -36,22 +37,22 @@ const App: React.FC = () => {
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
 
   return (
-    <div className="app-content min-h-screen w-full">
-      <div className="app-bg" />
-
-      <TopBar
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlay}
-        stopAllPlayback={stopAllPlayback}
-        onOpenSettings={() => setPanelOpen(true)}
-      />
-
-      {/* Guitar — centered when it fits, scrollable when it doesn't */}
-      <main className="fixed inset-0 pt-12 overflow-y-auto flex">
-        <div className="m-auto w-full flex justify-center px-4 py-6">
+    <div className="flex h-dvh flex-col">
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex min-h-full max-w-[1680px] flex-col gap-6 px-4 pb-6 sm:px-6">
+          <Header
+            stopAllPlayback={stopAllPlayback}
+            onOpenSettings={() => setPanelOpen(true)}
+          />
           <Guitar onPlayNote={playNote} phraseEvents={events} />
         </div>
       </main>
+
+      <Transport
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        stopAllPlayback={stopAllPlayback}
+      />
 
       <ControlsPanel
         open={panelOpen}

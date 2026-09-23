@@ -12,12 +12,10 @@ describe("useRenderedStrings", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
         baseNotes: standard(6),
-        frets: 12,
         lowAtBottom: true,
       })
     );
 
-    expect(result.current.fretMarkers).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(result.current.descriptors.map((string) => string.baseNote)).toEqual([
       0, -5, -9, -14, -19, -24,
     ]);
@@ -31,12 +29,10 @@ describe("useRenderedStrings", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
         baseNotes: standard(6),
-        frets: 3,
         lowAtBottom: false,
       })
     );
 
-    expect(result.current.fretMarkers).toEqual([0, 1, 2, 3]);
     expect(result.current.descriptors.map((string) => string.baseNote)).toEqual([
       -24, -19, -14, -9, -5, 0,
     ]);
@@ -51,7 +47,6 @@ describe("useRenderedStrings", () => {
     const { result } = renderHook(() =>
       useRenderedStrings({
         baseNotes: standard(8),
-        frets: 1,
         lowAtBottom: true,
       })
     );

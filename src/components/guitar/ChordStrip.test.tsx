@@ -36,7 +36,7 @@ describe('ChordStrip', () => {
     setFormState({ tone: 'f' });
     render(<ChordStrip />);
     const group = screen.getByRole('group', { name: /diatonic chords/i });
-    expect(group.textContent).toContain('Bb');
-    expect(group.textContent).not.toContain('A#');
+    expect(group.textContent).toContain('B♭');
+    expect(group.textContent).not.toMatch(/A[#♯]/);
   });
 });

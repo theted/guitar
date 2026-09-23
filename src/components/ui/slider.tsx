@@ -8,6 +8,8 @@ interface SliderProps {
   onChange: (value: number) => void;
   className?: string;
   id?: string;
+  'aria-label'?: string;
+  'aria-valuetext'?: string;
 }
 
 export const Slider: React.FC<SliderProps> = ({
@@ -18,34 +20,24 @@ export const Slider: React.FC<SliderProps> = ({
   onChange,
   className = '',
   id,
+  'aria-label': ariaLabel,
+  'aria-valuetext': valueText,
 }) => {
   const pct = ((value - min) / (max - min)) * 100;
 
   return (
-    <div className={`relative flex items-center h-5 ${className}`}>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-[3px] rounded-full appearance-none cursor-pointer
-          focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
-          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
-          [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer
-          [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-100
-          [&::-webkit-slider-thumb]:hover:scale-125
-          [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3
-          [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
-          [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-        style={{
-          background: `linear-gradient(to right, #22d3ee 0%, #22d3ee ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`,
-        }}
-      />
-    </div>
+    <input
+      id={id}
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      aria-label={ariaLabel}
+      aria-valuetext={valueText}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className={`range ${className}`}
+      style={{ '--pct': `${pct}%` } as React.CSSProperties}
+    />
   );
 };

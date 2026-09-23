@@ -33,8 +33,8 @@ describe('PhraseStrip', () => {
     setFormState({ tone: 'f' });
     render(<PhraseStrip events={eventsFor(-23, -21, -19, -18)} />);
     const strip = screen.getByRole('group', { name: /phrase/i });
-    expect(strip.textContent).toContain('Bb');
-    expect(strip.textContent).not.toContain('A#');
+    expect(strip.textContent).toContain('B♭');
+    expect(strip.textContent).not.toMatch(/A[#♯]/);
   });
 
   it('flashes each step by position, so a repeated pitch lights up once', () => {
