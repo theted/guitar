@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
@@ -45,21 +45,16 @@ export const usePlayback = () => {
   })));
 
   const playingTimersRef = useRef<Record<number, number>>({});
-  const isPlayingRef = useRef(false);
-  const [stopSignal, setStopSignal] = useState(0);
 
-  const stopAllPlayback = useCallback(() => {
+  // Everything that sounds or glows outside the phrase session itself
+  const silenceOthers = useCallback(() => {
     scheduler.stopAll();
     stopAllAudio();
-    const hadTimers = Object.keys(playingTimersRef.current).length > 0;
     Object.values(playingTimersRef.current).forEach((tid) => {
       try { window.clearTimeout(tid); } catch { /* already cleared */ }
     });
     playingTimersRef.current = {};
     toneAnimationManager.stopAll();
-    // The signal exists to reset an active phrase session; bumping it while
-    // idle would just re-render the whole tree for nothing.
-    if (hadTimers || isPlayingRef.current) setStopSignal((cur) => cur + 1);
   }, []);
 
   // Flash settings are read at call time so this callback stays stable —
@@ -137,21 +132,24 @@ export const usePlayback = () => {
     rootAbs,
     path: activePosition?.notes ?? null,
     neck,
+    loop: phraseLoop,
   });
 
-  const { isPlaying, onTogglePlay } = usePhrasePlayer({
+  const { isPlaying, onTogglePlay, stop } = usePhrasePlayer({
     events,
     loopDuration,
     loop: phraseLoop,
     onPlayNote: playNote,
     soundType,
-    stopAllPlayback,
-    stopSignal,
+    silenceOthers,
   });
 
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+  // The app-wide stop: ends the phrase (the button goes back to Play) and
+  // silences everything else. Stable, and a no-op when nothing is playing.
+  const stopAllPlayback = useCallback(() => {
+    stop();
+    silenceOthers();
+  }, [stop, silenceOthers]);
 
   const togglePlay = useCallback(async () => {
     if (!isPlaying) {
@@ -165,5 +163,5 @@ export const usePlayback = () => {
     onTogglePlay();
   }, [isPlaying, onTogglePlay]);
 
-  return { isPlaying, togglePlay, stopAllPlayback, playNote, stopSignal, events };
+  return { isPlaying, togglePlay, stopAllPlayback, playNote, events };
 };

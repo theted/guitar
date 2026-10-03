@@ -21,6 +21,7 @@ const ChordStrip: React.FC = () => {
     [keyy, scale]
   );
 
+
   if (chords.length === 0) return null;
 
   return (

@@ -28,10 +28,33 @@ describe("usePhraseEvents timing", () => {
     }
   });
 
-  it("spans the loop duration exactly to the last event's end", () => {
-    const { events, loopDuration } = renderEvents();
-    const last = events[events.length - 1];
-    expect(loopDuration).toBeCloseTo(last.startTimeSec + last.durSec, 6);
+  it("lasts exactly one beat per note, so a loop restarts on the beat", () => {
+    for (const stepMs of [86, 200, 600]) {
+      const { events, loopDuration } = renderEvents({ stepMs, loop: true });
+      // The next pass starts where the next note would have: no gap
+      expect(loopDuration).toBeCloseTo((events.length * stepMs) / 1000, 6);
+    }
+  });
+
+  it("keeps the swing feel across the turnaround", () => {
+    const { events, loopDuration } = renderEvents({ swing: true, loop: true });
+    const total = events.slice(1).reduce((sum, e, i) => sum + (e.startTimeSec - events[i].startTimeSec), 0);
+    const lastStep = loopDuration - total;
+    // The last note gets its own swung step, not its ringing duration
+    expect([0.2 * 4 / 3, 0.2 * 2 / 3].some((step) => Math.abs(step - lastStep) < 1e-6)).toBe(true);
+  });
+
+  it("doesn't play the tonic twice at the turnaround of a descending loop", () => {
+    const once = renderEvents({ loop: false }).events;
+    const looped = renderEvents({ loop: true }).events;
+    expect(once[0].abs).toBe(once[once.length - 1].abs);
+    expect(looped).toHaveLength(once.length - 1);
+    expect(looped[looped.length - 1].abs).not.toBe(looped[0].abs);
+  });
+
+  it("keeps every note of a loop that doesn't come back to its start", () => {
+    const once = renderEvents({ descend: false, loop: false }).events;
+    expect(renderEvents({ descend: false, loop: true }).events).toHaveLength(once.length);
   });
 
   it("swing alternates long and short steps in a 2:1 feel", () => {

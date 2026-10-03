@@ -191,6 +191,7 @@ export const synthesizeSound = (
 
   const voice: ActiveVoice & { stopped: boolean } = {
     stopped: false,
+    startTime,
     stop: (time = ctx.currentTime) => {
       if (voice.stopped) return;
       voice.stopped = true;

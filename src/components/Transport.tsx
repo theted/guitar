@@ -7,14 +7,12 @@ import { Segmented } from '@/components/ui/segmented';
 import { Slider } from '@/components/ui/slider';
 import { PATTERN_GROUPS, SOUND_GROUPS } from '@/components/controls/options';
 import { setFormState, useFormStore } from '@/store';
-import { useApplySetting } from '@/hooks/useApplySetting';
 import type { PhraseMode } from '@/constants';
 import type { SoundType } from '@/audio';
 
 type TransportProps = {
   isPlaying: boolean;
   onTogglePlay: () => void;
-  stopAllPlayback: () => void;
 };
 
 const OCTAVE_OPTIONS = [1, 2, 3, 4, 5].map((value) => ({
@@ -50,8 +48,9 @@ const ToggleChip: React.FC<{ pressed: boolean; onClick: () => void; title: strin
 );
 
 // Everything about *playing*: what to play, how fast, and what it sounds like.
-// Settings that change the phrase stop playback; volume and mute never do.
-const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllPlayback }) => {
+// Changes apply while playing: the phrase carries on from the same step with
+// the new pattern, tempo or sound (see usePhrasePlayer).
+const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
   const {
     phraseMode, phraseOctaves, phraseDescend, phraseLoop, swing, bpm, soundType,
     volume, muted, selectedPosition,
@@ -68,7 +67,6 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
     selectedPosition: state.selectedPosition,
   })));
 
-  const apply = useApplySetting(stopAllPlayback);
   // On phones only play and pattern show until the rest is asked for
   const [expanded, setExpanded] = React.useState(false);
   const more = expanded ? undefined : 'max-sm:hidden';
@@ -97,7 +95,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
         <Control label={positionActive ? `Position ${selectedPosition}` : 'Pattern'} className="w-48 grow sm:grow-0">
           <Picker
             value={phraseMode}
-            onValueChange={(v) => apply({ phraseMode: v as PhraseMode })}
+            onValueChange={(v) => setFormState({ phraseMode: v as PhraseMode })}
             groups={PATTERN_GROUPS}
             aria-label="Pattern"
             disabled={positionActive}
@@ -121,20 +119,20 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
             <Segmented
               aria-label="Octaves"
               value={phraseOctaves}
-              onChange={(value) => apply({ phraseOctaves: value })}
+              onChange={(value) => setFormState({ phraseOctaves: value })}
               options={OCTAVE_OPTIONS}
             />
           </div>
         </Control>
 
         <div id="transport-more" className={cx('flex gap-1', more)}>
-          <ToggleChip pressed={phraseDescend} onClick={() => apply({ phraseDescend: !phraseDescend })} title="Come back down after going up">
+          <ToggleChip pressed={phraseDescend} onClick={() => setFormState({ phraseDescend: !phraseDescend })} title="Come back down after going up">
             Descend
           </ToggleChip>
-          <ToggleChip pressed={phraseLoop} onClick={() => apply({ phraseLoop: !phraseLoop })} title="Repeat until stopped">
+          <ToggleChip pressed={phraseLoop} onClick={() => setFormState({ phraseLoop: !phraseLoop })} title="Repeat until stopped">
             Loop
           </ToggleChip>
-          <ToggleChip pressed={swing} onClick={() => apply({ swing: !swing })} title="Swing the eighth notes">
+          <ToggleChip pressed={swing} onClick={() => setFormState({ swing: !swing })} title="Swing the eighth notes">
             Swing
           </ToggleChip>
         </div>
@@ -147,7 +145,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
               max={700}
               step={5}
               value={bpm}
-              onChange={(v) => apply({ bpm: v })}
+              onChange={(v) => setFormState({ bpm: v })}
               aria-valuetext={`${bpm} beats per minute`}
             />
             <span className="tabular w-16 shrink-0 text-sm font-semibold">
@@ -160,7 +158,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
           <Control label="Sound" className="w-40 max-sm:grow">
             <Picker
               value={soundType}
-              onValueChange={(v) => apply({ soundType: v as SoundType })}
+              onValueChange={(v) => setFormState({ soundType: v as SoundType })}
               groups={SOUND_GROUPS}
               aria-label="Sound"
             />

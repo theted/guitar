@@ -57,8 +57,7 @@ src/
 │   └── index.ts                # the import surface: `from "@/constants"`
 ├── hooks/
 │   ├── usePlayback.ts          # Playback orchestration (owns the phrase)
-│   ├── useKeyboardShortcuts.ts # Space / Escape / arrow keys
-│   └── useApplySetting.ts      # Settings change that interrupts playback
+│   └── useKeyboardShortcuts.ts # Space / Escape / arrow keys
 ├── components/
 │   ├── Header.tsx              # Key row, title (= scale picker), scale legend
 │   ├── Transport.tsx           # Bottom bar: play, pattern, octaves, tempo, sound, volume
@@ -197,10 +196,9 @@ whichever octave is playing. Every registered element needs a
 ### 7. State (`store.ts`)
 
 One persisted Zustand store. Read with selectors (`useShallow` for objects),
-write with `setFormState`, or with `useApplySetting(stopAllPlayback)` when the
-change invalidates what is currently playing (scale, key, tuning, phrase shape).
-Settings that apply cleanly mid-phrase — volume, mute, visual toggles — should
-call `setFormState` directly and *not* interrupt playback.
+write with `setFormState`. Nothing needs to stop playback first: a change
+while a phrase plays (key, scale, chord, position, pattern, tempo, sound,
+tuning…) is picked up live — see below.
 
 Persistence is versioned (currently 6). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
@@ -225,8 +223,17 @@ App
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase
-events, the player session, note flashes and the global stop signal. It hands
-`playNote` and `events` down to `Guitar`.
+events, the player session and note flashes. It hands `playNote` and `events`
+down to `Guitar`.
+
+`usePhrasePlayer` keeps playing through changes. When the events, loop or
+sound change mid-phrase, `nextStep` finds the next step that hasn't sounded and
+when it was due; voices scheduled after *now* are cancelled
+(`stopVoicesStartingAfter`) while sounding notes ring on, and the new phrase
+starts at that step on that beat (`startPhraseSession(…, startIndex)`). A tempo
+change takes effect from the next note; a key change carries on mid-run.
+`stopAllPlayback` (the player's `stop()` plus silencing fret clicks and
+flashes) is stable, safe while idle, and always leaves `isPlaying` false.
 
 ## Performance notes
 

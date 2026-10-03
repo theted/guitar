@@ -12,6 +12,7 @@ const PositionStrip: React.FC = () => {
   })));
   const { positions } = useScalePositions();
 
+
   if (positions.length === 0) return null;
 
   return (

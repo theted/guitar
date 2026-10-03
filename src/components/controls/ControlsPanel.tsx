@@ -5,13 +5,12 @@ import SetupControls from './SetupControls';
 interface ControlsPanelProps {
   open: boolean;
   onClose: () => void;
-  stopAllPlayback: () => void;
 }
 
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose, stopAllPlayback }) => {
+const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose }) => {
   const panelRef = React.useRef<HTMLElement | null>(null);
   const restoreFocusRef = React.useRef<HTMLElement | null>(null);
 
@@ -95,7 +94,7 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose, stopAllPla
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          <SetupControls stopAllPlayback={stopAllPlayback} />
+          <SetupControls />
         </div>
       </aside>
     </>

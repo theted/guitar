@@ -23,6 +23,7 @@ const targetHandlesKeys = (target: EventTarget | null): boolean => {
   return element.closest('[role="combobox"], [role="listbox"], [role="dialog"]') != null;
 };
 
+// Applies while playing, like the tempo slider
 const adjustBpm = (delta: number) => {
   const { bpm } = useFormStore.getState();
   setFormState({ bpm: Math.min(BPM_MAX, Math.max(BPM_MIN, bpm + delta)) });

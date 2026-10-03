@@ -42,10 +42,7 @@ const App: React.FC = () => {
     <div className="flex h-dvh flex-col">
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full max-w-[1680px] flex-col gap-6 px-4 pb-6 sm:px-6">
-          <Header
-            stopAllPlayback={stopAllPlayback}
-            onOpenSettings={() => setPanelOpen(true)}
-          />
+          <Header onOpenSettings={() => setPanelOpen(true)} />
           <Guitar onPlayNote={playNote} phraseEvents={events} />
         </div>
       </main>
@@ -53,13 +50,11 @@ const App: React.FC = () => {
       <Transport
         isPlaying={isPlaying}
         onTogglePlay={togglePlay}
-        stopAllPlayback={stopAllPlayback}
       />
 
       <ControlsPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
-        stopAllPlayback={stopAllPlayback}
       />
     </div>
   );
