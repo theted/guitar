@@ -2,6 +2,7 @@ import { activeVoices, voicesByNote, getMasterBus, MAX_POLYPHONY, type ActiveVoi
 import { VOICE_STOP_RAMP_SEC, VOICE_CLEANUP_EXTRA_MS, VOICE_MIN_STOP_SEC } from "../constants";
 import { createReverb, createDistortion, createDelay } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
+import { getPluckBuffer } from "./pluck";
 
 const createGainNode = (
   ctx: AudioContext,
@@ -80,10 +81,19 @@ export const synthesizeSound = (
   startTime: number,
   duration: number,
   config: SoundConfig,
+  /** Identifies the preset, for caching rendered strings */
+  soundKey = "custom",
 ): ActiveVoice => {
-  // Voice stealing: stop any existing voice on this pitch before creating the new one.
+  // Voice stealing: the previous voice on this pitch fades out as the new one
+  // starts (not when it's scheduled, up to a lookahead window earlier).
   // Prevents volume doubling when the same note is retriggered rapidly.
-  voicesByNote.get(semitone)?.stop();
+  voicesByNote.get(semitone)?.stop(startTime);
+
+  // A plucked string rings on after its step, the way a guitar note does when
+  // the next one is played on another string; slow phrases ring longer
+  if (config.pluck) {
+    duration = Math.min(config.pluck.length, Math.max(0.4, duration * 3));
+  }
 
   // Polyphony cap: if we're at the limit, evict the oldest active voice.
   // Sets iterate in insertion order so .values().next() gives the oldest entry.
@@ -94,7 +104,7 @@ export const synthesizeSound = (
   master.connect(getMasterBus());
 
   const nodesToDisconnect: AudioNode[] = [master];
-  const oscillators: OscillatorNode[] = [];
+  const sources: AudioScheduledSourceNode[] = [];
   const layerGains: GainNode[] = [];
 
   // Build effects chain from end to beginning (master ← reverb ← delay ← distortion ← filter)
@@ -186,8 +196,17 @@ export const synthesizeSound = (
     layerGain.connect(chainInput);
     osc.start(startTime);
     osc.stop(startTime + duration);
-    oscillators.push(osc);
+    sources.push(osc);
   });
+
+  if (config.pluck) {
+    const source = ctx.createBufferSource();
+    source.buffer = getPluckBuffer(ctx, soundKey, baseFreq, config.pluck);
+    source.connect(chainInput);
+    source.start(startTime);
+    source.stop(startTime + duration);
+    sources.push(source);
+  }
 
   const voice: ActiveVoice & { stopped: boolean } = {
     stopped: false,
@@ -196,31 +215,29 @@ export const synthesizeSound = (
       if (voice.stopped) return;
       voice.stopped = true;
 
+      // Fade from `time` (or now, if that has passed). A voice that hasn't
+      // started by then never sounds.
       const now = ctx.currentTime;
-      const stopAt = Math.max(time, now, startTime);
+      const at = Math.max(time, now);
+      const fadeEnd = at + VOICE_STOP_RAMP_SEC;
 
-      try {
-        master.gain.cancelScheduledValues(now);
-        master.gain.setValueAtTime(0.0001, now);
-        master.gain.exponentialRampToValueAtTime(0.0001, now + VOICE_STOP_RAMP_SEC);
-      } catch {}
-
-      layerGains.forEach((gain) => {
+      [master, ...layerGains].forEach((gain) => {
         try {
-          gain.gain.cancelScheduledValues(now);
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + VOICE_STOP_RAMP_SEC);
+          const param = gain.gain;
+          if (typeof param.cancelAndHoldAtTime === "function") param.cancelAndHoldAtTime(at);
+          else param.cancelScheduledValues(at);
+          param.setTargetAtTime(0.0001, at, VOICE_STOP_RAMP_SEC / 3);
         } catch {}
       });
 
-      oscillators.forEach((osc) => {
-        try { osc.stop(Math.max(stopAt, now + VOICE_MIN_STOP_SEC)); } catch {}
-        try { osc.disconnect(); } catch {}
+      sources.forEach((source) => {
+        try { source.stop(Math.max(fadeEnd, now + VOICE_MIN_STOP_SEC)); } catch {}
       });
 
-      nodesToDisconnect.forEach((node) => {
-        try { node.disconnect(); } catch {}
-      });
+      window.setTimeout(() => {
+        sources.forEach((source) => { try { source.disconnect(); } catch {} });
+        nodesToDisconnect.forEach((node) => { try { node.disconnect(); } catch {} });
+      }, (fadeEnd - now) * 1000 + 50);
 
       activeVoices.delete(voice);
       if (voicesByNote.get(semitone) === voice) voicesByNote.delete(semitone);

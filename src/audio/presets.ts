@@ -1,4 +1,10 @@
+import type { PluckConfig } from "./pluck";
+
 export type SoundType =
+  | "acoustic-steel"
+  | "acoustic-nylon"
+  | "guitar-muted"
+  | "bass-picked"
   | "marimba"
   | "sine"
   | "organ"
@@ -39,7 +45,10 @@ export type EffectConfig = {
 };
 
 export type SoundConfig = {
+  /** Oscillator layers; empty for plucked sounds */
   layers: OscillatorLayer[];
+  /** A Karplus-Strong string instead of oscillators (see pluck.ts) */
+  pluck?: PluckConfig;
   masterEnvelope: EnvelopeConfig;
   filter?: { type: BiquadFilterType; frequency: number; Q?: number };
   effects?: EffectConfig;
@@ -89,40 +98,70 @@ export const SOUND_PRESETS: Record<SoundType, SoundConfig> = {
     filter: { type: "lowpass", frequency: 6, Q: 0.8 },
   },
 
-  "guitar-clean": {
-    layers: [
-      { frequency: 1, type: "sawtooth", gain: 0.7 },
-      { frequency: 1.01, type: "triangle", gain: 0.5, detune: 8 },
-      { frequency: 2, type: "sine", gain: 0.2, envelope: { decay: 0.3, sustain: 0.1 } },
-      { frequency: 3.2, type: "sine", gain: 0.15, envelope: { decay: 0.2, sustain: 0.05 } },
-    ],
-    masterEnvelope: { attack: 0.008, attackLevel: 0.8, decay: 0.15, sustain: 0.6, release: 1.2 },
-    filter: { type: "bandpass", frequency: 3.5, Q: 1.2 },
-    effects: { reverb: { roomSize: 0.3, damping: 0.4, wet: 0.15 } },
+  // ── Plucked strings (Karplus-Strong, see pluck.ts) ─────────────────────────
+  // Filter frequencies here are absolute Hz: a guitar's tone is set by its
+  // body and pickups, not by the note being played. Envelope levels balance
+  // the voices to the same loudness (measured RMS on the master bus).
+
+  "acoustic-steel": {
+    layers: [],
+    pluck: { brightness: 0.72, sustain: 3.2, pickPosition: 0.16, length: 2.4 },
+    masterEnvelope: { attack: 0.001, attackLevel: 0.9, decay: 0.05, sustain: 0.9, release: 0.12 },
+    filter: { type: "lowpass", frequency: 7000, Q: 0.5 },
+    effects: { reverb: { roomSize: 0.35, damping: 0.45, wet: 0.14 } },
   },
 
-  "guitar-distorted": {
-    layers: [
-      { frequency: 1, type: "sawtooth", gain: 0.8 },
-      { frequency: 1.01, type: "square", gain: 0.6, detune: -12 },
-      { frequency: 2, type: "sawtooth", gain: 0.3, envelope: { decay: 0.4, sustain: 0.2 } },
-    ],
-    masterEnvelope: { attack: 0.005, attackLevel: 0.9, decay: 0.1, sustain: 0.7, release: 0.8, attackCurve: "linear" },
-    filter: { type: "bandpass", frequency: 4, Q: 0.8 },
+  "acoustic-nylon": {
+    layers: [],
+    pluck: { brightness: 0.38, sustain: 2.6, pickPosition: 0.24, damping: 0.55, length: 2.2 },
+    masterEnvelope: { attack: 0.001, attackLevel: 1.1, decay: 0.05, sustain: 1.1, release: 0.12 },
+    filter: { type: "lowpass", frequency: 3800, Q: 0.5 },
+    effects: { reverb: { roomSize: 0.3, damping: 0.5, wet: 0.16 } },
+  },
+
+  "guitar-clean": {
+    layers: [],
+    pluck: { brightness: 0.6, sustain: 4, pickPosition: 0.1, damping: 0.45, length: 2.6 },
+    masterEnvelope: { attack: 0.001, attackLevel: 0.9, decay: 0.05, sustain: 0.9, release: 0.12 },
+    filter: { type: "lowpass", frequency: 4200, Q: 0.9 },
     effects: {
-      distortion: { drive: 8, tone: 0.7, wet: 0.6 },
-      delay: { time: 0.12, feedback: 0.25, wet: 0.2 },
+      delay: { time: 0.18, feedback: 0.2, wet: 0.12 },
+      reverb: { roomSize: 0.3, damping: 0.4, wet: 0.12 },
     },
   },
 
+  "guitar-distorted": {
+    layers: [],
+    pluck: { brightness: 0.55, sustain: 5, pickPosition: 0.12, length: 2.6 },
+    masterEnvelope: { attack: 0.001, attackLevel: 0.95, decay: 0.05, sustain: 0.95, release: 0.12 },
+    filter: { type: "lowpass", frequency: 3200, Q: 0.7 },
+    effects: {
+      distortion: { drive: 12, tone: 0.55, wet: 0.85 },
+      delay: { time: 0.12, feedback: 0.2, wet: 0.12 },
+    },
+  },
+
+  "guitar-muted": {
+    layers: [],
+    pluck: { brightness: 0.45, sustain: 0.35, pickPosition: 0.12, damping: 0.65, length: 0.6 },
+    masterEnvelope: { attack: 0.001, attackLevel: 2.0, decay: 0.05, sustain: 2.0, release: 0.06 },
+    filter: { type: "lowpass", frequency: 2200, Q: 0.8 },
+    effects: { distortion: { drive: 10, tone: 0.5, wet: 0.8 } },
+  },
+
   bass: {
-    layers: [
-      { frequency: 1, type: "sawtooth", gain: 0.9 },
-      { frequency: 0.5, type: "square", gain: 0.6, envelope: { decay: 0.3, sustain: 0.4 } },
-      { frequency: 2, type: "triangle", gain: 0.2, envelope: { decay: 0.15, sustain: 0.1 } },
-    ],
-    masterEnvelope: { attack: 0.01, attackLevel: 0.9, decay: 0.1, sustain: 0.7, release: 0.4 },
-    filter: { type: "lowpass", frequency: 1.5, Q: 0.7 },
+    layers: [],
+    pluck: { brightness: 0.3, sustain: 3.5, pickPosition: 0.28, damping: 0.55, length: 2.6 },
+    masterEnvelope: { attack: 0.001, attackLevel: 0.9, decay: 0.05, sustain: 0.9, release: 0.12 },
+    filter: { type: "lowpass", frequency: 1600, Q: 0.7 },
+  },
+
+  "bass-picked": {
+    layers: [],
+    pluck: { brightness: 0.65, sustain: 3, pickPosition: 0.12, length: 2.4 },
+    masterEnvelope: { attack: 0.001, attackLevel: 1.2, decay: 0.05, sustain: 1.2, release: 0.12 },
+    filter: { type: "lowpass", frequency: 3000, Q: 0.8 },
+    effects: { distortion: { drive: 2.5, tone: 0.6, wet: 0.25 } },
   },
 
   "synth-lead": {

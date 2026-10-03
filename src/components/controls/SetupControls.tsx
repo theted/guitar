@@ -6,7 +6,7 @@ import { Stepper } from '@/components/ui/stepper';
 import { Slider } from '@/components/ui/slider';
 import { SwitchRow } from '@/components/ui/switch-row';
 import FieldLabel from '@/components/ui/field-label';
-import { TuningName } from '@/constants';
+import { tunings, concertOctave, isBassTuning, type TuningName } from '@/constants';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
 
@@ -38,10 +38,19 @@ const FLASH_HINTS: Record<FlashMode, string> = {
 
 const SPAN_OPTIONS = [4, 5, 6].map((value) => ({ value, label: `${value} frets` }));
 
+// A tuning brings its string count, and moving between guitar and bass
+// brings the instrument's register; both stay adjustable afterwards
+const tuningChange = (from: TuningName, to: TuningName) => ({
+  tuningName: to,
+  strings: tunings[to].length,
+  ...(isBassTuning(from) !== isBassTuning(to) && { startOctave: concertOctave(to) }),
+});
+
 const SHORTCUTS: Array<[string, string]> = [
   ['Space', 'Play or pause'],
   ['Esc', 'Stop'],
   ['↑ ↓', 'Tempo up or down'],
+  ['← →', 'Previous or next key'],
 ];
 
 // Set-once configuration: the instrument, and how the neck is drawn.
@@ -70,7 +79,7 @@ const SetupControls: React.FC = () => {
           <FieldLabel>Tuning</FieldLabel>
           <Picker
             value={s.tuningName}
-            onValueChange={(v) => setFormState({ tuningName: v as TuningName })}
+            onValueChange={(v) => setFormState(tuningChange(s.tuningName, v as TuningName))}
             groups={TUNING_GROUP_OPTIONS}
             aria-label="Tuning"
           />
@@ -81,16 +90,23 @@ const SetupControls: React.FC = () => {
         <Row label="Frets">
           <Stepper aria-label="Frets" value={s.frets} min={1} max={36} onChange={(v) => setFormState({ frets: v })} />
         </Row>
-        <Row label="Pitch">
-          <Stepper
-            aria-label="Octave"
-            value={s.startOctave}
-            min={0}
-            max={9}
-            format={(v) => `Octave ${v}`}
-            onChange={(v) => setFormState({ startOctave: v })}
-          />
-        </Row>
+        <div className="flex flex-col gap-1.5">
+          <Row label="Pitch">
+            <Stepper
+              aria-label="Octave"
+              value={s.startOctave}
+              min={0}
+              max={9}
+              format={(v) => `Octave ${v}`}
+              onChange={(v) => setFormState({ startOctave: v })}
+            />
+          </Row>
+          <p className="text-xs leading-snug text-ink-3">
+            {s.startOctave === concertOctave(s.tuningName)
+              ? `Real ${isBassTuning(s.tuningName) ? 'bass' : 'guitar'} pitch.`
+              : `Octave ${concertOctave(s.tuningName)} is real ${isBassTuning(s.tuningName) ? 'bass' : 'guitar'} pitch.`}
+          </p>
+        </div>
         <SwitchRow
           id="leftHanded"
           label="Left-handed"

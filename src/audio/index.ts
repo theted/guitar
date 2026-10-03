@@ -27,9 +27,9 @@ export const playSemitoneAt = (
 
   if (!config) {
     console.warn(`Unknown sound type: ${soundType}, falling back to sine`);
-    synthesizeSound(ctx, semitoneFromE0, frequency, startAtTime, duration, SOUND_PRESETS.sine);
+    synthesizeSound(ctx, semitoneFromE0, frequency, startAtTime, duration, SOUND_PRESETS.sine, "sine");
     return;
   }
 
-  synthesizeSound(ctx, semitoneFromE0, frequency, startAtTime, duration, config);
+  synthesizeSound(ctx, semitoneFromE0, frequency, startAtTime, duration, config, soundType);
 };

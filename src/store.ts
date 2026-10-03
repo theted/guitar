@@ -71,8 +71,9 @@ const initial: FormState = {
   reduceAnimations: prefersReducedMotion,
   trailLength: 1200,
   labelMode: 'note',
-  soundType: 'marimba',
-  startOctave: 6,
+  soundType: 'acoustic-steel',
+  // The top string's octave: 4 puts high E at E4, a real guitar's pitch
+  startOctave: 4,
   singleStringScale: false,
   selectedChordDegree: null,
   selectedPosition: null,
@@ -112,6 +113,10 @@ const RENAMED_FIELDS: Record<string, keyof FormState> = {
 // state (every octave) is deliberately not carried over: lighting the one fret
 // being played is the new default.
 
+// v7 moved the neck to real guitar pitch. The old default, octave 6, sounded
+// two octaves high — harmless on a marimba, a toy-like ukulele with real
+// plucked strings — so a stored 6 is taken as that default and moved to 4.
+
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
 export const migrateFormState = (persisted: unknown): FormState => {
@@ -123,6 +128,7 @@ export const migrateFormState = (persisted: unknown): FormState => {
   for (const key of Object.keys(initial)) {
     if (key in stored) known[key] = stored[key];
   }
+  if (stored.startOctave === 6) known.startOctave = 4;
   if (stored.octaveHighlight === true && !('flashMode' in stored)) known.flashMode = 'octave';
   for (const [oldKey, newKey] of Object.entries(RENAMED_FIELDS)) {
     if (oldKey in stored && !(newKey in stored)) known[newKey] = stored[oldKey];
@@ -157,7 +163,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 6,
+      version: 7,
       migrate: (persisted) => migrateFormState(persisted),
     }
   )
