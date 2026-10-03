@@ -5,7 +5,8 @@ import { getScalePitchClasses } from '@/music';
 import { getDiatonicChords } from '@/theory/chords';
 import { pretty } from '@/lib/notation';
 import { scales } from '@/constants';
-import { setFormState, useFormStore } from '@/store';
+import { useFormStore } from '@/store';
+import { useApplySetting } from '@/hooks/useApplySetting';
 
 // Diatonic chord buttons (I ii iii …). Selecting one highlights its chord
 // tones on the fretboard; only rendered for heptatonic scales.
@@ -21,6 +22,9 @@ const ChordStrip: React.FC = () => {
     [keyy, scale]
   );
 
+  // A different chord or box is a different phrase
+  const apply = useApplySetting();
+
   if (chords.length === 0) return null;
 
   return (
@@ -34,7 +38,7 @@ const ChordStrip: React.FC = () => {
               key={chord.degree}
               type="button"
               aria-pressed={active}
-              onClick={() => setFormState({ selectedChordDegree: active ? null : chord.degree })}
+              onClick={() => apply({ selectedChordDegree: active ? null : chord.degree })}
               title={chord.seventhName ? `${pretty(chord.name)}, or ${pretty(chord.seventhName)} with the 7th` : pretty(chord.name)}
               className={cx(
                 'inline-flex h-8 items-baseline gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',

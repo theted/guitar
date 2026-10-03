@@ -1,7 +1,8 @@
 import React from 'react';
 import cx from 'classnames';
 import { useShallow } from 'zustand/react/shallow';
-import { setFormState, useFormStore } from '@/store';
+import { useFormStore } from '@/store';
+import { useApplySetting } from '@/hooks/useApplySetting';
 import { useScalePositions } from './hooks/useScalePositions';
 
 // Scale position (box) selector. Selecting a position dims everything outside
@@ -11,6 +12,9 @@ const PositionStrip: React.FC = () => {
     selectedPosition: state.selectedPosition,
   })));
   const { positions } = useScalePositions();
+
+  // A different chord or box is a different phrase
+  const apply = useApplySetting();
 
   if (positions.length === 0) return null;
 
@@ -25,7 +29,7 @@ const PositionStrip: React.FC = () => {
               key={position.index}
               type="button"
               aria-pressed={active}
-              onClick={() => setFormState({ selectedPosition: active ? null : position.index })}
+              onClick={() => apply({ selectedPosition: active ? null : position.index })}
               title={`Frets ${position.lowFret}–${position.highFret}. Play steps through this box one note at a time.`}
               className={cx(
                 'inline-flex h-8 items-baseline gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',

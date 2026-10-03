@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { scheduler } from "@/scheduler";
 import { getCurrentTime, SoundType, stopAllAudio } from "@/audio";
 import { AUDIO_LOOKAHEAD_SEC } from "@/constants";
@@ -11,24 +11,27 @@ type UsePhrasePlayerArgs = {
   loop: boolean;
   onPlayNote?: PlayNoteFn;
   soundType?: SoundType;
-  stopAllPlayback?: () => void;
-  stopSignal?: number;
+  /** Silences everything else (fret clicks, flashes) before a phrase starts */
+  silenceOthers?: () => void;
 };
 
+/**
+ * Plays the phrase. `stop` is the one way playback ends early: it is stable,
+ * safe to call while idle, and always leaves `isPlaying` false.
+ */
 export const usePhrasePlayer = ({
   events,
   loopDuration,
   loop,
   onPlayNote,
   soundType = "marimba",
-  stopAllPlayback,
-  stopSignal,
+  silenceOthers,
 }: UsePhrasePlayerArgs) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const schedulerSessionRef = useRef<number | null>(null);
+  // Bumped on every start and stop; callbacks from an older run see a stale
+  // value and do nothing
   const playSessionRef = useRef<number>(0);
-  const ignoredStopSignalRef = useRef<Set<number>>(new Set());
-  const lastStopSignalRef = useRef<number | undefined>(stopSignal);
 
   const clearPlayTimers = useCallback(() => {
     playSessionRef.current += 1;
@@ -39,16 +42,14 @@ export const usePhrasePlayer = ({
     stopAllAudio();
   }, []);
 
-  const triggerGlobalStop = useCallback(() => {
-    if (!stopAllPlayback) return;
-    const predictedNext = typeof stopSignal === "number" ? stopSignal + 1 : 0;
-    ignoredStopSignalRef.current.add(predictedNext);
-    stopAllPlayback();
-  }, [stopAllPlayback, stopSignal]);
+  const stop = useCallback(() => {
+    clearPlayTimers();
+    setIsPlaying(false);
+  }, [clearPlayTimers]);
 
   const playArpeggio = useCallback(() => {
     clearPlayTimers();
-    triggerGlobalStop();
+    silenceOthers?.();
 
     if (events.length === 0) {
       setIsPlaying(false);
@@ -85,45 +86,19 @@ export const usePhrasePlayer = ({
 
       window.setTimeout(() => {
         if (playSessionRef.current !== session) return;
-        setIsPlaying(false);
-        clearPlayTimers();
+        stop();
       }, totalDuration * 1000 + 100);
     }
-  }, [
-    clearPlayTimers,
-    triggerGlobalStop,
-    events,
-    loop,
-    loopDuration,
-    onPlayNote,
-    soundType,
-  ]);
+  }, [clearPlayTimers, silenceOthers, events, loop, loopDuration, onPlayNote, soundType, stop]);
 
   const onTogglePlay = useCallback(() => {
     if (isPlaying) {
-      clearPlayTimers();
-      triggerGlobalStop();
-      setIsPlaying(false);
+      stop();
+      silenceOthers?.();
     } else {
       playArpeggio();
     }
-  }, [isPlaying, clearPlayTimers, triggerGlobalStop, playArpeggio]);
+  }, [isPlaying, stop, silenceOthers, playArpeggio]);
 
-  useEffect(() => {
-    if (stopSignal == null) return;
-    if (lastStopSignalRef.current === stopSignal) return;
-    lastStopSignalRef.current = stopSignal;
-
-    if (ignoredStopSignalRef.current.has(stopSignal)) {
-      ignoredStopSignalRef.current.delete(stopSignal);
-      return;
-    }
-
-    ignoredStopSignalRef.current.clear();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsPlaying(false);
-    clearPlayTimers();
-  }, [stopSignal, clearPlayTimers]);
-
-  return { isPlaying, onTogglePlay };
+  return { isPlaying, onTogglePlay, stop };
 };

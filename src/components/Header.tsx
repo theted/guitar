@@ -10,13 +10,12 @@ import { cn } from '@/lib/utils';
 import type { ScaleName } from '@/constants';
 
 type HeaderProps = {
-  stopAllPlayback: () => void;
   onOpenSettings: () => void;
 };
 
 // Everything about *what* is on the neck: the key, the scale, and the notes
 // that make it up. The title is the scale picker itself.
-const Header: React.FC<HeaderProps> = ({ stopAllPlayback, onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const { scale, tone, tuningName, strings } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
@@ -24,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ stopAllPlayback, onOpenSettings }) => {
     strings: state.strings,
   })));
 
-  const apply = useApplySetting(stopAllPlayback);
+  const apply = useApplySetting();
 
   return (
     <header className="flex flex-col gap-4 pt-3">

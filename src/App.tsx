@@ -8,6 +8,7 @@ import { toneAnimationManager } from '@/lib/tone-animation';
 import { ensureAudioInitialized, setMasterVolume } from '@/audio';
 import { usePlayback } from '@/hooks/usePlayback';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { StopPlaybackContext } from '@/hooks/useApplySetting';
 
 const App: React.FC = () => {
   const [panelOpen, setPanelOpen] = React.useState(false);
@@ -39,13 +40,11 @@ const App: React.FC = () => {
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
 
   return (
+    <StopPlaybackContext.Provider value={stopAllPlayback}>
     <div className="flex h-dvh flex-col">
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full max-w-[1680px] flex-col gap-6 px-4 pb-6 sm:px-6">
-          <Header
-            stopAllPlayback={stopAllPlayback}
-            onOpenSettings={() => setPanelOpen(true)}
-          />
+          <Header onOpenSettings={() => setPanelOpen(true)} />
           <Guitar onPlayNote={playNote} phraseEvents={events} />
         </div>
       </main>
@@ -53,15 +52,14 @@ const App: React.FC = () => {
       <Transport
         isPlaying={isPlaying}
         onTogglePlay={togglePlay}
-        stopAllPlayback={stopAllPlayback}
       />
 
       <ControlsPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
-        stopAllPlayback={stopAllPlayback}
       />
     </div>
+    </StopPlaybackContext.Provider>
   );
 };
 

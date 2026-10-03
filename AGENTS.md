@@ -197,10 +197,11 @@ whichever octave is playing. Every registered element needs a
 ### 7. State (`store.ts`)
 
 One persisted Zustand store. Read with selectors (`useShallow` for objects),
-write with `setFormState`, or with `useApplySetting(stopAllPlayback)` when the
-change invalidates what is currently playing (scale, key, tuning, phrase shape).
-Settings that apply cleanly mid-phrase — volume, mute, visual toggles — should
-call `setFormState` directly and *not* interrupt playback.
+write with `setFormState`, or with `useApplySetting()` when the change alters
+what is played: key, scale, chord, position, pattern, octaves, loop, tempo,
+sound, tuning, strings, frets. `apply` stops playback first, so the play button
+resets. Settings that apply cleanly mid-phrase (volume, mute, label mode, how
+the neck is drawn) call `setFormState` directly and *don't* interrupt playback.
 
 Persistence is versioned (currently 6). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
@@ -225,8 +226,12 @@ App
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase
-events, the player session, note flashes and the global stop signal. It hands
-`playNote` and `events` down to `Guitar`.
+events, the player session and note flashes. Its `stopAllPlayback` (the
+player's `stop()` plus silencing fret clicks and flashes) is stable, safe to
+call while idle, and always leaves `isPlaying` false. App provides it through
+`StopPlaybackContext`, which `useApplySetting` and `useStopPlayback` read, so
+controls never take it as a prop. It hands `playNote` and `events` down to
+`Guitar`.
 
 ## Performance notes
 

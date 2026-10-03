@@ -11,8 +11,6 @@ import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { useApplySetting } from '@/hooks/useApplySetting';
 import { TUNING_GROUP_OPTIONS } from './options';
 
-type SetupControlsProps = { stopAllPlayback: () => void };
-
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="flex flex-col gap-4 border-t border-line px-5 py-5 first:border-t-0">
     <h3 className="type-wide text-sm font-bold text-ink">{title}</h3>
@@ -49,7 +47,7 @@ const SHORTCUTS: Array<[string, string]> = [
 
 // Set-once configuration: the instrument, and how the neck is drawn.
 // Everything used while practising lives on the page itself.
-const SetupControls: React.FC<SetupControlsProps> = ({ stopAllPlayback }) => {
+const SetupControls: React.FC = () => {
   const s = useFormStore(useShallow((state) => ({
     tuningName: state.tuningName,
     strings: state.strings,
@@ -65,7 +63,7 @@ const SetupControls: React.FC<SetupControlsProps> = ({ stopAllPlayback }) => {
     reduceAnimations: state.reduceAnimations,
   })));
 
-  const apply = useApplySetting(stopAllPlayback);
+  const apply = useApplySetting();
 
   return (
     <div className="flex flex-col">

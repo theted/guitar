@@ -14,7 +14,6 @@ import type { SoundType } from '@/audio';
 type TransportProps = {
   isPlaying: boolean;
   onTogglePlay: () => void;
-  stopAllPlayback: () => void;
 };
 
 const OCTAVE_OPTIONS = [1, 2, 3, 4, 5].map((value) => ({
@@ -50,8 +49,9 @@ const ToggleChip: React.FC<{ pressed: boolean; onClick: () => void; title: strin
 );
 
 // Everything about *playing*: what to play, how fast, and what it sounds like.
-// Settings that change the phrase stop playback; volume and mute never do.
-const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllPlayback }) => {
+// Every setting here changes what's played, so it stops playback; volume and
+// mute are the exception and apply live.
+const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
   const {
     phraseMode, phraseOctaves, phraseDescend, phraseLoop, swing, bpm, soundType,
     volume, muted, selectedPosition,
@@ -68,7 +68,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, stopAllP
     selectedPosition: state.selectedPosition,
   })));
 
-  const apply = useApplySetting(stopAllPlayback);
+  const apply = useApplySetting();
   // On phones only play and pattern show until the rest is asked for
   const [expanded, setExpanded] = React.useState(false);
   const more = expanded ? undefined : 'max-sm:hidden';

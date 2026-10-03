@@ -23,8 +23,10 @@ const targetHandlesKeys = (target: EventTarget | null): boolean => {
   return element.closest('[role="combobox"], [role="listbox"], [role="dialog"]') != null;
 };
 
-const adjustBpm = (delta: number) => {
+// Same rule as the tempo slider: a new tempo stops what's playing
+const adjustBpm = (delta: number, stop: () => void) => {
   const { bpm } = useFormStore.getState();
+  stop();
   setFormState({ bpm: Math.min(BPM_MAX, Math.max(BPM_MIN, bpm + delta)) });
 };
 
@@ -42,10 +44,10 @@ export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboar
         stop();
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        adjustBpm(BPM_STEP);
+        adjustBpm(BPM_STEP, stop);
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
-        adjustBpm(-BPM_STEP);
+        adjustBpm(-BPM_STEP, stop);
       }
     };
 
