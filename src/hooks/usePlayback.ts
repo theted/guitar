@@ -132,6 +132,7 @@ export const usePlayback = () => {
     rootAbs,
     path: activePosition?.notes ?? null,
     neck,
+    loop: phraseLoop,
   });
 
   const { isPlaying, onTogglePlay, stop } = usePhrasePlayer({

@@ -32,6 +32,12 @@ interface UsePhraseEventsArgs {
    * it's played on (see theory/fingering.ts), so playback lights that fret only.
    */
   neck?: { baseNotes: number[]; frets: number } | null;
+  /**
+   * The phrase will repeat. A phrase that ends on the note it starts with
+   * (any descending run) drops that last note, so the turnaround doesn't
+   * play the tonic twice.
+   */
+  loop?: boolean;
 }
 
 type SequenceNote = { abs: number; stringIndex?: number; fret?: number };
@@ -46,6 +52,7 @@ export const usePhraseEvents = ({
   rootAbs,
   path = null,
   neck = null,
+  loop = false,
 }: UsePhraseEventsArgs) => {
   const relSequence = useMemo(
     () => (path ? [] : buildRelSequence(pitchClasses as PitchClass[], mode, octaves, descend)),
@@ -69,7 +76,11 @@ export const usePhraseEvents = ({
   }, [path, descend, relSequence, rootAbs, neck]);
 
   const { events, loopDuration } = useMemo(() => {
-    if (sequence.length === 0) {
+    const repeatsSeam =
+      loop && sequence.length > 2 && sequence[0].abs === sequence[sequence.length - 1].abs;
+    const played = repeatsSeam ? sequence.slice(0, -1) : sequence;
+
+    if (played.length === 0) {
       return { events: [] as PhraseEvent[], loopDuration: 0 };
     }
 
@@ -80,7 +91,7 @@ export const usePhraseEvents = ({
     const generated: PhraseEvent[] = [];
     let currentTime = 0;
 
-    sequence.forEach((note, index) => {
+    played.forEach((note, index) => {
       const factor = swing ? (index % 2 === 0 ? longF : shortF) : 1;
       const durationSeconds = (straightMs * factor) / 1000;
 
@@ -95,13 +106,11 @@ export const usePhraseEvents = ({
       currentTime += durationSeconds;
     });
 
-    const totalDuration =
-      generated.length > 0
-        ? generated[generated.length - 1].startTimeSec + generated[generated.length - 1].durSec
-        : 0;
-
-    return { events: generated, loopDuration: totalDuration };
-  }, [sequence, stepMs, swing]);
+    // One pass lasts until the next beat, not until the last note stops
+    // ringing: notes sound a little past their step, and timing the loop to
+    // the release put a gap at every turnaround
+    return { events: generated, loopDuration: currentTime };
+  }, [sequence, stepMs, swing, loop]);
 
   return { relSequence, events, loopDuration };
 };
