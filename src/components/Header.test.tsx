@@ -1,14 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Header from '@/components/Header';
 import { setFormState, useFormStore } from '@/store';
-import { StopPlaybackContext } from '@/hooks/useApplySetting';
 
-const renderHeader = (stop: () => void = () => {}) =>
-  render(
-    <StopPlaybackContext.Provider value={stop}>
-      <Header onOpenSettings={() => {}} />
-    </StopPlaybackContext.Provider>
-  );
+const renderHeader = () => render(<Header onOpenSettings={() => {}} />);
 
 describe('Header', () => {
   beforeEach(() => {
@@ -23,12 +17,10 @@ describe('Header', () => {
     ]);
   });
 
-  it('changes key in one click and stops what is playing', () => {
-    const stop = vi.fn();
-    renderHeader(stop);
+  it('changes key in one click', () => {
+    renderHeader();
     fireEvent.click(screen.getByRole('radio', { name: 'B♭' }));
     expect(useFormStore.getState().tone).toBe('bb');
-    expect(stop).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('radio', { name: 'B♭' })).toHaveAttribute('aria-checked', 'true');
   });
 

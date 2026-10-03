@@ -8,7 +8,6 @@ import { SwitchRow } from '@/components/ui/switch-row';
 import FieldLabel from '@/components/ui/field-label';
 import { TuningName } from '@/constants';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
-import { useApplySetting } from '@/hooks/useApplySetting';
 import { TUNING_GROUP_OPTIONS } from './options';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -63,7 +62,6 @@ const SetupControls: React.FC = () => {
     reduceAnimations: state.reduceAnimations,
   })));
 
-  const apply = useApplySetting();
 
   return (
     <div className="flex flex-col">
@@ -72,16 +70,16 @@ const SetupControls: React.FC = () => {
           <FieldLabel>Tuning</FieldLabel>
           <Picker
             value={s.tuningName}
-            onValueChange={(v) => apply({ tuningName: v as TuningName })}
+            onValueChange={(v) => setFormState({ tuningName: v as TuningName })}
             groups={TUNING_GROUP_OPTIONS}
             aria-label="Tuning"
           />
         </div>
         <Row label="Strings">
-          <Stepper aria-label="Strings" value={s.strings} min={1} max={12} onChange={(v) => apply({ strings: v })} />
+          <Stepper aria-label="Strings" value={s.strings} min={1} max={12} onChange={(v) => setFormState({ strings: v })} />
         </Row>
         <Row label="Frets">
-          <Stepper aria-label="Frets" value={s.frets} min={1} max={36} onChange={(v) => apply({ frets: v })} />
+          <Stepper aria-label="Frets" value={s.frets} min={1} max={36} onChange={(v) => setFormState({ frets: v })} />
         </Row>
         <Row label="Pitch">
           <Stepper
@@ -90,7 +88,7 @@ const SetupControls: React.FC = () => {
             min={0}
             max={9}
             format={(v) => `Octave ${v}`}
-            onChange={(v) => apply({ startOctave: v })}
+            onChange={(v) => setFormState({ startOctave: v })}
           />
         </Row>
         <SwitchRow
@@ -105,7 +103,7 @@ const SetupControls: React.FC = () => {
           label="Low string at the bottom"
           hint="As in tab. Turn off to see the neck the way you look down at it while playing."
           checked={s.lowAtBottom}
-          onChange={(v) => apply({ lowAtBottom: v })}
+          onChange={(v) => setFormState({ lowAtBottom: v })}
         />
       </Section>
 
@@ -115,7 +113,7 @@ const SetupControls: React.FC = () => {
           <Segmented
             aria-label="Position hand span"
             value={s.positionSpan}
-            onChange={(v) => apply({ positionSpan: v, selectedPosition: null })}
+            onChange={(v) => setFormState({ positionSpan: v, selectedPosition: null })}
             options={SPAN_OPTIONS}
           />
           <p className="text-xs leading-snug text-ink-3">
@@ -153,7 +151,7 @@ const SetupControls: React.FC = () => {
           <Segmented
             aria-label="When a note plays, light up"
             value={s.flashMode}
-            onChange={(v) => apply({ flashMode: v })}
+            onChange={(v) => setFormState({ flashMode: v })}
             options={FLASH_OPTIONS}
           />
           <p className="text-xs leading-snug text-ink-3">{FLASH_HINTS[s.flashMode]}</p>

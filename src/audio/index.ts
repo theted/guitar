@@ -9,6 +9,7 @@ export {
   ensureAudioInitialized,
   getCurrentTime,
   stopAllAudio,
+  stopVoicesStartingAfter,
   setMasterVolume,
   getMasterVolume,
 } from "./context";

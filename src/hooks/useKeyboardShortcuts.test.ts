@@ -50,12 +50,12 @@ describe("useKeyboardShortcuts", () => {
     expect(useFormStore.getState().bpm).toBe(700);
   });
 
-  it("stops playback when the tempo changes, like the slider does", () => {
+  it("changes tempo without stopping playback", () => {
     const stop = vi.fn();
     renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop, panelOpen: false }));
     press({ key: "ArrowUp" });
     press({ key: "ArrowDown" });
-    expect(stop).toHaveBeenCalledTimes(2);
+    expect(stop).not.toHaveBeenCalled();
   });
 
   it("ignores modified shortcuts and keyboard events from interactive targets", () => {

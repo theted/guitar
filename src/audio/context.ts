@@ -2,6 +2,8 @@ import { MASTER_VOLUME_RAMP_SEC } from "../constants";
 
 export type ActiveVoice = {
   stop: (time?: number) => void;
+  /** When the voice starts sounding (AudioContext time) */
+  startTime: number;
 };
 
 export const activeVoices = new Set<ActiveVoice>();
@@ -97,6 +99,18 @@ export const ensureAudioInitialized = async (): Promise<void> => {
 };
 
 export const getCurrentTime = (): number => getAudioContext().currentTime;
+
+/**
+ * Cancel voices that are scheduled but haven't started by `time`. Notes
+ * already sounding ring on — used when a running phrase is rescheduled.
+ */
+export const stopVoicesStartingAfter = (time: number): void => {
+  activeVoices.forEach((voice) => {
+    if (voice.startTime > time) {
+      try { voice.stop(); } catch { /* noop */ }
+    }
+  });
+};
 
 export const stopAllAudio = (): void => {
   const now = getCurrentTime();

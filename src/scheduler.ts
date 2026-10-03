@@ -74,20 +74,23 @@ class AudioScheduler {
    * via setTimeout — never all at once. UI callbacks fire from rAF when
    * AudioContext.currentTime reaches each event's scheduled time.
    *
-   * @param events  Array of events with *absolute* AudioContext startTimeSec values.
+   * @param events      Array of events with *absolute* AudioContext startTimeSec values.
+   * @param startIndex  Begin part-way through the phrase (a running phrase that
+   *                    was rescheduled); earlier events wait for the next loop.
    */
   startPhraseSession(
     events: PlaybackEvent[],
     onUiNote: UiCallback,
     soundType: SoundType,
     loopDurationSec?: number,
+    startIndex = 0,
   ): number {
     const id = this.nextId++;
     const session: PhraseSession = {
       id,
       events,
-      nextScheduleIdx: 0,
-      nextUiIdx: 0,
+      nextScheduleIdx: startIndex,
+      nextUiIdx: startIndex,
       // Guard against zero-length loops spinning the scheduler
       loopDurationSec: loopDurationSec && loopDurationSec > 0.05 ? loopDurationSec : null,
       scheduleCycle: 0,

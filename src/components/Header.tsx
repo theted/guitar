@@ -4,8 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Picker } from '@/components/ui/select';
 import ScaleLegend from '@/components/guitar/ScaleLegend';
 import { SCALE_GROUP_OPTIONS, KEYS_CHROMATIC, keyLabel } from '@/components/controls/options';
-import { useFormStore } from '@/store';
-import { useApplySetting } from '@/hooks/useApplySetting';
+import { setFormState, useFormStore } from '@/store';
 import { cn } from '@/lib/utils';
 import type { ScaleName } from '@/constants';
 
@@ -23,7 +22,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     strings: state.strings,
   })));
 
-  const apply = useApplySetting();
 
   return (
     <header className="flex flex-col gap-4 pt-3">
@@ -57,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               type="button"
               role="radio"
               aria-checked={active}
-              onClick={() => { if (!active) apply({ tone: key }); }}
+              onClick={() => { if (!active) setFormState({ tone: key }); }}
               className={cn(
                 'h-9 min-w-10 shrink-0 rounded-lg px-2 text-sm font-semibold transition-colors',
                 active
@@ -77,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
           <Picker
             variant="title"
             value={scale}
-            onValueChange={(v) => apply({ scale: v as ScaleName })}
+            onValueChange={(v) => setFormState({ scale: v as ScaleName })}
             groups={SCALE_GROUP_OPTIONS}
             aria-label="Scale"
             title="Change scale"
