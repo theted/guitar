@@ -38,8 +38,12 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 - 28 tuning presets: standard, drop, open, DADGAD, extended range, bass
 - 1–12 strings, 1–36 frets
 - Low string at top or bottom, and a left-handed (mirrored) neck
-- 15 sounds: marimba, piano, organ, bells, strings, flute, brass, five synths,
-  clean and distorted guitar, bass
+- 19 sounds, led by plucked-string guitars and basses (physically modelled, at
+  real pitch): steel-string acoustic, nylon classical, clean and overdriven
+  electric, palm-muted, fingerstyle and picked bass, plus keys, orchestral
+  and synth voices
+- Picking a tuning sets its string count, and bass tunings sit an octave below guitar
+- Copy a link to the current key, scale, pattern and tempo
 
 ### Sound & visuals
 - A true-to-life neck: rosewood board, inlays, wound bass strings, frets that narrow towards the body
@@ -54,6 +58,7 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 - `Space` — play / pause
 - `Escape` — stop
 - `↑` / `↓` — tempo
+- `←` / `→` — previous / next key
 
 ## Getting started
 

@@ -50,6 +50,19 @@ describe("useKeyboardShortcuts", () => {
     expect(useFormStore.getState().bpm).toBe(700);
   });
 
+  it("steps through the keys chromatically with ← and →, wrapping around", () => {
+    renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop: vi.fn(), panelOpen: false }));
+    setFormState({ tone: "e" });
+    press({ key: "ArrowRight" });
+    expect(useFormStore.getState().tone).toBe("f");
+    press({ key: "ArrowLeft" });
+    press({ key: "ArrowLeft" });
+    expect(useFormStore.getState().tone).toBe("eb");
+    setFormState({ tone: "b" });
+    press({ key: "ArrowRight" });
+    expect(useFormStore.getState().tone).toBe("c");
+  });
+
   it("changes tempo without stopping playback", () => {
     const stop = vi.fn();
     renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop, panelOpen: false }));

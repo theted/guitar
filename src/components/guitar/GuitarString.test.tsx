@@ -40,7 +40,7 @@ describe('GuitarString highlighting', () => {
     const { rerender } = render(<GuitarString {...baseProps} note={3} frets={0} />); // G4, the m3 of E
     expect(fret('G4').textContent).toBe('G');
     rerender(<GuitarString {...baseProps} note={3} frets={0} labelMode="degree" />);
-    expect(fret('G4').textContent).toBe('2');
+    expect(fret('G4').textContent).toBe('♭3');
     rerender(<GuitarString {...baseProps} note={3} frets={0} labelMode="interval" />);
     expect(fret('G4').textContent).toBe('m3');
   });

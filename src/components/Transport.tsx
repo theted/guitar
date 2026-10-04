@@ -1,13 +1,13 @@
 import React from 'react';
 import cx from 'classnames';
-import { ChevronUp, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { ChevronUp, Minus, Pause, Play, Plus, Volume2, VolumeX } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Picker } from '@/components/ui/select';
 import { Segmented } from '@/components/ui/segmented';
 import { Slider } from '@/components/ui/slider';
 import { PATTERN_GROUPS, SOUND_GROUPS } from '@/components/controls/options';
 import { setFormState, useFormStore } from '@/store';
-import type { PhraseMode } from '@/constants';
+import { TEMPO, clampTempo, type PhraseMode } from '@/constants';
 import type { SoundType } from '@/audio';
 
 type TransportProps = {
@@ -42,6 +42,18 @@ const ToggleChip: React.FC<{ pressed: boolean; onClick: () => void; title: strin
       'h-9 rounded-lg px-3 text-sm font-medium transition-colors',
       pressed ? 'bg-ink text-bg' : 'text-ink-2 ring-1 ring-inset ring-line hover:text-ink'
     )}
+  >
+    {children}
+  </button>
+);
+
+const TempoStep: React.FC<{ label: string; onClick: () => void; children: React.ReactNode }> = ({ label, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    title={`${label} (${label === 'Faster' ? '↑' : '↓'})`}
+    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-2 transition-colors hover:bg-surface hover:text-ink"
   >
     {children}
   </button>
@@ -137,18 +149,25 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
           </ToggleChip>
         </div>
 
-        <Control label="Tempo" htmlFor="tempo" className={cx('w-full grow sm:w-56 sm:grow-0', more)}>
-          <div className="flex h-9 items-center gap-3">
+        <Control label="Tempo" htmlFor="tempo" className={cx('w-full grow sm:w-72 sm:grow-0', more)}>
+          <div className="flex h-9 items-center gap-1">
+            <TempoStep label="Slower" onClick={() => setFormState({ bpm: clampTempo(bpm - TEMPO.STEP) })}>
+              <Minus className="h-3.5 w-3.5" />
+            </TempoStep>
             <Slider
               id="tempo"
-              min={30}
-              max={700}
-              step={5}
+              min={TEMPO.MIN}
+              max={TEMPO.MAX}
+              step={TEMPO.STEP}
               value={bpm}
               onChange={(v) => setFormState({ bpm: v })}
               aria-valuetext={`${bpm} beats per minute`}
+              className="mx-1"
             />
-            <span className="tabular w-16 shrink-0 text-sm font-semibold">
+            <TempoStep label="Faster" onClick={() => setFormState({ bpm: clampTempo(bpm + TEMPO.STEP) })}>
+              <Plus className="h-3.5 w-3.5" />
+            </TempoStep>
+            <span className="tabular ml-2 w-16 shrink-0 text-sm font-semibold">
               {bpm} <span className="font-normal text-ink-3">bpm</span>
             </span>
           </div>

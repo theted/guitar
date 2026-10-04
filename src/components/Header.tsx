@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Check, Link2, SlidersHorizontal } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Picker } from '@/components/ui/select';
 import ScaleLegend from '@/components/guitar/ScaleLegend';
@@ -23,23 +23,45 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   })));
 
 
+  // The address bar always describes the current exercise (useShareableUrl)
+  const [copied, setCopied] = React.useState(false);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable: the address bar still has the link */ }
+  };
+
   return (
     <header className="flex flex-col gap-4 pt-3">
       <div className="flex items-center justify-between gap-4">
         <span className="type-wide text-sm font-semibold tracking-tight text-ink">
           Guitar Scale Finder
         </span>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-2 transition-colors hover:bg-surface hover:text-ink"
-          aria-label="Instrument and display settings"
-        >
-          <span className="hidden sm:inline">
-            {tuningName} tuning, {strings} strings
-          </span>
-          <SlidersHorizontal className="h-4 w-4" aria-hidden />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={copyLink}
+            className="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+            aria-label={copied ? 'Link copied' : 'Copy a link to this exercise'}
+            title="Copy a link to this key, scale, pattern and tempo"
+          >
+            {copied ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
+            <span className="hidden sm:inline" aria-live="polite">{copied ? 'Link copied' : 'Copy link'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+            aria-label="Instrument and display settings"
+          >
+            <span className="hidden sm:inline">
+              {tuningName} tuning, {strings} strings
+            </span>
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div

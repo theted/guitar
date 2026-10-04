@@ -215,6 +215,15 @@
   background: linear-gradient(90deg, var(--fret-wire-shade), var(--fret-wire) 45%, #f4f6f8 60%, var(--fret-wire-shade));
   border-radius: 1.5px;
 }
+/* The practised position, outlined on the wood */
+.neck-box {
+  grid-row: 1;
+  margin: 0.2rem 2px;
+  border-radius: 6px;
+  background: rgb(255 244 210 / 0.07);
+  box-shadow: inset 0 0 0 1.5px rgb(255 244 210 / 0.35);
+}
+
 .neck-inlay {
   position: absolute;
   left: 50%;
@@ -229,7 +238,8 @@
 .neck-string {
   position: relative;
   display: grid;
-  height: 2.75rem;
+  /* The neck grows with the window instead of leaving empty space under it */
+  height: clamp(2.6rem, 5.4vh, 3.4rem);
   contain: layout style;
 }
 /* The string itself: thicker and bronze-wound towards the bass side */

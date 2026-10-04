@@ -18,9 +18,19 @@ const EMPTY_FRETS: Set<number> = new Set();
 
 // Wood, nut, fret wires and inlays: everything behind the strings. Inlays sit
 // between strings (halfway, and at the thirds for the doubles) so notes don't cover them.
-const Board: React.FC<{ frets: number; columns: string }> = React.memo(({ frets, columns }) => (
+type BoardProps = {
+  frets: number;
+  columns: string;
+  /** Fret range of the practised position, outlined on the board */
+  box: { lowFret: number; highFret: number } | null;
+};
+
+const Board: React.FC<BoardProps> = React.memo(({ frets, columns, box }) => (
   <div className="neck-board" style={{ gridTemplateColumns: columns }} aria-hidden>
     <div className="neck-wood" />
+    {box && (
+      <div className="neck-box" style={{ gridColumn: `${box.lowFret + 1} / ${box.highFret + 2}` }} />
+    )}
     <div className="neck-nut" />
     {Array.from({ length: frets }, (_, i) => {
       const fret = i + 1;
@@ -72,7 +82,11 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
 
   return (
     <div className={reduceAnimations ? "neck reduce-motion" : "neck"}>
-      <Board frets={frets} columns={columns} />
+      <Board
+        frets={frets}
+        columns={columns}
+        box={activePosition && { lowFret: activePosition.lowFret, highFret: activePosition.highFret }}
+      />
       {descriptors.map((descriptor) => (
         <GuitarString
           key={descriptor.originalIndex}

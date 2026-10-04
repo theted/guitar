@@ -4,7 +4,9 @@ import { toneAnimationManager } from "@/lib/tone-animation";
 
 type ScaleDegreeProps = {
   label: string;
-  /** Interval name relative to the tonic, e.g. "m3" */
+  /** Scale degree, e.g. "♭3" */
+  degree: string;
+  /** Interval name relative to the tonic, e.g. "m3", for the tooltip */
   interval?: string;
   abs: number;
   isTonic: boolean;
@@ -12,6 +14,7 @@ type ScaleDegreeProps = {
 
 const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
   label,
+  degree,
   interval,
   abs,
   isTonic,
@@ -32,8 +35,9 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
       ref={ref}
       className="relative flex min-w-[2.6rem] flex-col items-center gap-1 rounded-md px-1.5 pb-2 pt-1"
       data-pc={abs % 12}
+      title={interval ? `${label}: ${degree} (${interval})` : undefined}
     >
-      <span className="text-[0.7rem] font-medium text-ink-3">{interval}</span>
+      <span className="text-[0.7rem] font-medium text-ink-3">{degree}</span>
       <span className="type-wide text-xl font-bold leading-none text-ink">{label}</span>
       <span
         className={cx(

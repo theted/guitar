@@ -48,7 +48,7 @@ const withoutOctave = (label: string) => label.replace(/-?\d+$/, "");
 
 const dotText = (d: FretDescriptor, state: FretState, labelMode: LabelMode): string => {
   if (state === "off" || labelMode === "note") return pretty(withoutOctave(d.label));
-  if (labelMode === "degree") return d.degree != null ? String(d.degree) : "";
+  if (labelMode === "degree") return d.degreeName ?? "";
   return intervalName(d.relativePc);
 };
 
