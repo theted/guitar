@@ -4,6 +4,17 @@ import { setFormState, useFormStore } from '@/store';
 
 const renderTransport = () => render(<Transport isPlaying={false} onTogglePlay={() => {}} />);
 
+describe('Transport octaves', () => {
+  it('marks octaves that do not fit on the neck, and shows what will play', () => {
+    setFormState({ selectedPosition: null, phraseOctaves: 5 });
+    render(<Transport isPlaying={false} onTogglePlay={() => {}} maxOctaves={3} />);
+    const group = screen.getByRole('radiogroup', { name: 'Octaves' });
+    const options = Array.from(group.querySelectorAll('button'));
+    expect(options.map((b) => b.disabled)).toEqual([false, false, false, true, true]);
+    expect(options[2]).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
 describe('Transport while practising a position', () => {
   beforeEach(() => {
     setFormState({ scale: 'pentatonic', tone: 'a', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4, positionSpan: 5, selectedPosition: null });

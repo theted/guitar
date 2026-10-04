@@ -87,12 +87,20 @@ export const usePhraseEvents = ({
     const straightMs = Math.max(20, Math.round(stepMs));
     const longF = 4 / 3;
     const shortF = 2 / 3;
+    // Swing pairs a long step with a short one, a beat per pair. The last
+    // note of an odd phrase has no partner, so it takes the whole beat: the
+    // phrase stays a whole number of beats and every pass of a loop starts on
+    // the beat, instead of two long steps at the seam pushing it off the grid.
+    const swingFactor = (index: number) => {
+      if (index % 2 === 1) return shortF;
+      return index === played.length - 1 ? longF + shortF : longF;
+    };
 
     const generated: PhraseEvent[] = [];
     let currentTime = 0;
 
     played.forEach((note, index) => {
-      const factor = swing ? (index % 2 === 0 ? longF : shortF) : 1;
+      const factor = swing ? swingFactor(index) : 1;
       const durationSeconds = (straightMs * factor) / 1000;
 
       generated.push({

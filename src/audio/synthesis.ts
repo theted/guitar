@@ -1,48 +1,69 @@
 import { activeVoices, voicesByNote, getMasterBus, MAX_POLYPHONY, type ActiveVoice } from "./context";
-import { VOICE_STOP_RAMP_SEC, VOICE_CLEANUP_EXTRA_MS, VOICE_MIN_STOP_SEC } from "../constants";
+import { VOICE_CLEANUP_EXTRA_MS } from "../constants";
 import { createReverb, createDistortion, createDelay } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
 import { getPluckBuffer } from "./pluck";
+import {
+  SILENT,
+  envelopeLevelAt,
+  envelopeTimes,
+  layerEnvelope,
+  stopPlan,
+  sustainLevel,
+  type EnvelopeTimes,
+} from "./envelope";
 
-const createGainNode = (
+/** A gain shaped by an envelope, kept with its timing so the voice can fade it out */
+type ShapedGain = { param: AudioParam; envelope: EnvelopeConfig; times: EnvelopeTimes };
+
+const createEnvelopeGain = (
   ctx: AudioContext,
-  startTime: number,
-  duration: number,
   envelope: EnvelopeConfig,
+  times: EnvelopeTimes,
 ): GainNode => {
   const gain = ctx.createGain();
-  const { attack, attackLevel, decay, sustain, release } = envelope;
+  const param = gain.gain;
+  const sustain = sustainLevel(envelope);
 
-  // Exponential ramps reject zero targets and negative times
-  const sustainLevel = Math.max(0.0001, sustain);
+  // Rest silent rather than at the GainNode default of 1, so nothing leaks
+  // through if the automation below is cancelled before the note starts
+  param.value = SILENT;
+  param.setValueAtTime(SILENT, times.start);
 
-  gain.gain.setValueAtTime(0.0001, startTime);
-
-  if (attack > 0) {
-    const rampFn =
-      envelope.attackCurve === "exponential"
-        ? "exponentialRampToValueAtTime"
-        : "linearRampToValueAtTime";
-    gain.gain[rampFn](attackLevel, startTime + attack);
+  if (times.attackEnd > times.start) {
+    if (envelope.attackCurve === "exponential") {
+      param.exponentialRampToValueAtTime(envelope.attackLevel, times.attackEnd);
+    } else {
+      param.linearRampToValueAtTime(envelope.attackLevel, times.attackEnd);
+    }
   } else {
-    gain.gain.setValueAtTime(attackLevel, startTime);
+    param.setValueAtTime(envelope.attackLevel, times.start);
   }
 
-  if (sustain !== attackLevel) {
-    gain.gain.exponentialRampToValueAtTime(sustainLevel, startTime + attack + decay);
+  if (envelope.sustain !== envelope.attackLevel) {
+    param.exponentialRampToValueAtTime(sustain, times.decayEnd);
   }
 
-  // Release fades over the tail of the note (oscillators hard-stop at
-  // startTime + duration). Clamped so the ramp can never start before the
-  // sustain point or target a time in the past — short notes with long
-  // releases used to compute a negative time here, which threw on a freshly
-  // created AudioContext and silenced the first playback entirely.
-  const noteEnd = startTime + duration;
-  const releaseStart = Math.max(startTime + attack + decay, noteEnd - release);
-  gain.gain.setValueAtTime(sustainLevel, releaseStart);
-  gain.gain.exponentialRampToValueAtTime(0.0001, Math.max(noteEnd, releaseStart + 0.005));
+  // Exponential ramps reject zero targets, so the release ends at SILENT.
+  // envelopeTimes never lets it start before the decay is over or end
+  // before it has run its length; the voice's sources stop only after it.
+  param.setValueAtTime(sustain, times.releaseStart);
+  param.exponentialRampToValueAtTime(SILENT, times.end);
 
   return gain;
+};
+
+/** Fade a sounding envelope from `at` down to zero at `silentAt` */
+const fadeOut = ({ param, envelope, times }: ShapedGain, at: number, silentAt: number) => {
+  if (typeof param.cancelAndHoldAtTime === "function") {
+    param.cancelAndHoldAtTime(at);
+  } else {
+    // Without cancelAndHoldAtTime (Firefox), cancelling drops a ramp that's
+    // under way and the level would jump: pin the level it has reached
+    param.cancelScheduledValues(at);
+    param.setValueAtTime(envelopeLevelAt(envelope, times, at), at);
+  }
+  param.linearRampToValueAtTime(0, silentAt);
 };
 
 const createOscillator = (
@@ -100,12 +121,19 @@ export const synthesizeSound = (
   if (activeVoices.size >= MAX_POLYPHONY) {
     activeVoices.values().next().value?.stop();
   }
-  const master = createGainNode(ctx, startTime, duration, config.masterEnvelope);
+
+  // Everything passes through the master envelope, so the voice is silent
+  // once it is: that, not the end of the step, is when the voice ends
+  const masterTimes = envelopeTimes(startTime, duration, config.masterEnvelope);
+  const endTime = masterTimes.end;
+  const master = createEnvelopeGain(ctx, config.masterEnvelope, masterTimes);
   master.connect(getMasterBus());
 
   const nodesToDisconnect: AudioNode[] = [master];
   const sources: AudioScheduledSourceNode[] = [];
-  const layerGains: GainNode[] = [];
+  const shapedGains: ShapedGain[] = [
+    { param: master.gain, envelope: config.masterEnvelope, times: masterTimes },
+  ];
 
   // Build effects chain from end to beginning (master ← reverb ← delay ← distortion ← filter)
   let chainInput: AudioNode = master;
@@ -177,15 +205,10 @@ export const synthesizeSound = (
     const freq = baseFreq * layer.frequency;
     const osc = createOscillator(ctx, freq, layer.type);
 
-    const layerEnvelope = {
-      ...config.masterEnvelope,
-      ...layer.envelope,
-      attackLevel:
-        (layer.envelope?.attackLevel ?? config.masterEnvelope.attackLevel) * layer.gain,
-    };
-
-    const layerGain = createGainNode(ctx, startTime, duration, layerEnvelope);
-    layerGains.push(layerGain);
+    const envelope = layerEnvelope(config.masterEnvelope, layer);
+    const times = envelopeTimes(startTime, duration, envelope);
+    const layerGain = createEnvelopeGain(ctx, envelope, times);
+    shapedGains.push({ param: layerGain.gain, envelope, times });
     nodesToDisconnect.push(layerGain);
 
     if (layer.detune) {
@@ -195,7 +218,8 @@ export const synthesizeSound = (
     osc.connect(layerGain);
     layerGain.connect(chainInput);
     osc.start(startTime);
-    osc.stop(startTime + duration);
+    // Silent once either its own envelope or the master one is
+    osc.stop(Math.min(times.end, endTime));
     sources.push(osc);
   });
 
@@ -204,7 +228,7 @@ export const synthesizeSound = (
     source.buffer = getPluckBuffer(ctx, soundKey, baseFreq, config.pluck);
     source.connect(chainInput);
     source.start(startTime);
-    source.stop(startTime + duration);
+    source.stop(endTime);
     sources.push(source);
   }
 
@@ -215,29 +239,32 @@ export const synthesizeSound = (
       if (voice.stopped) return;
       voice.stopped = true;
 
-      // Fade from `time` (or now, if that has passed). A voice that hasn't
-      // started by then never sounds.
       const now = ctx.currentTime;
-      const at = Math.max(time, now);
-      const fadeEnd = at + VOICE_STOP_RAMP_SEC;
+      const plan = stopPlan({ start: startTime, end: endTime }, time, now);
 
-      [master, ...layerGains].forEach((gain) => {
-        try {
-          const param = gain.gain;
-          if (typeof param.cancelAndHoldAtTime === "function") param.cancelAndHoldAtTime(at);
-          else param.cancelScheduledValues(at);
-          param.setTargetAtTime(0.0001, at, VOICE_STOP_RAMP_SEC / 3);
-        } catch {}
-      });
+      if (plan.kind === "never") {
+        // It hasn't started: hold every gain silent and stop the sources
+        // before they start. Cancelling the envelope alone also cancels its
+        // opening SILENT, so a note due within the fade would sound
+        // unshaped for a moment — a tick on every live change.
+        shapedGains.forEach(({ param }) => {
+          try {
+            param.cancelScheduledValues(now);
+            param.setValueAtTime(SILENT, now);
+          } catch {}
+        });
+        sources.forEach((source) => { try { source.stop(startTime); } catch {} });
+      } else if (plan.kind === "fade") {
+        // Sounding: a short fade, reaching zero exactly as the sources stop
+        shapedGains.forEach((shaped) => { try { fadeOut(shaped, plan.at, plan.silentAt); } catch {} });
+        sources.forEach((source) => { try { source.stop(plan.silentAt); } catch {} });
+      }
 
-      sources.forEach((source) => {
-        try { source.stop(Math.max(fadeEnd, now + VOICE_MIN_STOP_SEC)); } catch {}
-      });
-
+      const silentAt = plan.kind === "fade" ? plan.silentAt : plan.kind === "done" ? endTime : now;
       window.setTimeout(() => {
         sources.forEach((source) => { try { source.disconnect(); } catch {} });
         nodesToDisconnect.forEach((node) => { try { node.disconnect(); } catch {} });
-      }, (fadeEnd - now) * 1000 + 50);
+      }, Math.max(0, silentAt - now) * 1000 + 50);
 
       activeVoices.delete(voice);
       if (voicesByNote.get(semitone) === voice) voicesByNote.delete(semitone);
@@ -247,9 +274,11 @@ export const synthesizeSound = (
   activeVoices.add(voice);
   voicesByNote.set(semitone, voice);
 
-  const cleanupDelayMs = Math.max(0, (startTime + duration - ctx.currentTime) * 1000 + VOICE_CLEANUP_EXTRA_MS);
+  // Unregister once the voice has rung out, so the polyphony count includes
+  // release tails that outlast the step
+  const cleanupDelayMs = Math.max(0, (endTime - ctx.currentTime) * 1000 + VOICE_CLEANUP_EXTRA_MS);
   window.setTimeout(() => {
-    voice.stop(startTime + duration);
+    voice.stop(endTime);
   }, cleanupDelayMs);
 
   return voice;

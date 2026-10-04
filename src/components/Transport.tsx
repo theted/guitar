@@ -8,12 +8,18 @@ import { Slider } from '@/components/ui/slider';
 import { PATTERN_GROUPS, SOUND_GROUPS } from '@/components/controls/options';
 import { setFormState, useFormStore } from '@/store';
 import { useScalePositions } from '@/components/guitar/hooks/useScalePositions';
+import PhraseStrip from '@/components/guitar/PhraseStrip';
+import type { PhraseEvent } from '@/components/guitar/hooks/usePhraseEvents';
 import { TEMPO, clampTempo, type PhraseMode } from '@/constants';
 import type { SoundType } from '@/audio';
 
 type TransportProps = {
   isPlaying: boolean;
   onTogglePlay: () => void;
+  /** The phrase Play runs, shown note by note above the controls */
+  events?: PhraseEvent[];
+  /** How many octaves of the pattern fit on the neck */
+  maxOctaves?: number;
 };
 
 const OCTAVE_OPTIONS = [1, 2, 3, 4, 5].map((value) => ({
@@ -63,7 +69,7 @@ const TempoStep: React.FC<{ label: string; onClick: () => void; children: React.
 // Everything about *playing*: what to play, how fast, and what it sounds like.
 // Changes apply while playing: the phrase carries on from the same step with
 // the new pattern, tempo or sound (see usePhrasePlayer).
-const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
+const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay, events = [], maxOctaves = 5 }) => {
   const {
     phraseMode, phraseOctaves, phraseDescend, phraseLoop, swing, bpm, soundType,
     volume, muted,
@@ -88,7 +94,16 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
 
   return (
     <div className="inverse border-t border-line pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex max-w-[1680px] flex-wrap items-end gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
+      {events.length > 0 && (
+        <div className="border-b border-line">
+          <div className="mx-auto max-w-[1680px] px-4 py-1.5 sm:px-6">
+            <PhraseStrip events={events} />
+          </div>
+        </div>
+      )}
+      {/* Groups: what to play | how fast | how it sounds. The dividers only show
+          once everything fits on one row; wrapped, they'd start a line. */}
+      <div className="mx-auto flex max-w-[1680px] flex-wrap items-end gap-x-5 gap-y-3 px-4 py-3 sm:px-6">
         <button
           type="button"
           onClick={onTogglePlay}
@@ -103,7 +118,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
         </button>
 
         {activePosition ? (
-          <Control label="Practising" className="w-48 grow sm:grow-0">
+          <Control label="Practising" className="w-60 grow sm:grow-0">
             <div className="flex h-9 items-center justify-between gap-2 rounded-lg bg-surface pl-3 pr-1 ring-1 ring-inset ring-line">
               <span className="truncate text-sm">
                 <span className="font-semibold">Position {activePosition.index}</span>
@@ -121,7 +136,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
             </div>
           </Control>
         ) : (
-          <Control label="Pattern" className="w-48 grow sm:grow-0">
+          <Control label="Pattern" className="w-44 grow sm:grow-0">
             <Picker
               value={phraseMode}
               onValueChange={(v) => setFormState({ phraseMode: v as PhraseMode })}
@@ -146,9 +161,13 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
           <Control label="Octaves" className={more}>
             <Segmented
               aria-label="Octaves"
-              value={phraseOctaves}
+              value={Math.min(phraseOctaves, maxOctaves)}
               onChange={(value) => setFormState({ phraseOctaves: value })}
-              options={OCTAVE_OPTIONS}
+              options={OCTAVE_OPTIONS.map((option) =>
+                option.value > maxOctaves
+                  ? { ...option, disabled: true, title: `Only ${maxOctaves} octave${maxOctaves > 1 ? 's' : ''} of this pattern fit on the neck` }
+                  : option
+              )}
             />
           </Control>
         )}
@@ -165,7 +184,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
           </ToggleChip>
         </div>
 
-        <Control label="Tempo" htmlFor="tempo" className={cx('w-full grow sm:w-72 sm:grow-0', more)}>
+        <Control label="Tempo" htmlFor="tempo" className={cx('w-full grow sm:w-64 sm:grow-0 min-[1400px]:border-l min-[1400px]:border-line min-[1400px]:pl-5', more)}>
           <div className="flex h-9 items-center gap-1">
             <TempoStep label="Slower" onClick={() => setFormState({ bpm: clampTempo(bpm - TEMPO.STEP) })}>
               <Minus className="h-3.5 w-3.5" />
@@ -189,8 +208,8 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
           </div>
         </Control>
 
-        <div className={cx('ml-auto flex items-end gap-x-6 gap-y-3 max-sm:w-full', more)}>
-          <Control label="Sound" className="w-40 max-sm:grow">
+        <div className={cx('ml-auto flex items-end gap-x-5 gap-y-3 max-sm:w-full min-[1400px]:border-l min-[1400px]:border-line min-[1400px]:pl-5', more)}>
+          <Control label="Sound" className="w-48 max-sm:grow">
             <Picker
               value={soundType}
               onValueChange={(v) => setFormState({ soundType: v as SoundType })}
@@ -199,7 +218,7 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
             />
           </Control>
 
-          <Control label={muted ? 'Muted' : 'Volume'} htmlFor="volume" className="w-36">
+          <Control label={muted ? 'Muted' : 'Volume'} htmlFor="volume" className="w-32">
             <div className="flex h-9 items-center gap-2">
               <button
                 type="button"

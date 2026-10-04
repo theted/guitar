@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { keyToOffset, getScalePitchClasses } from '@/music';
-import { getScaleSpelling, formatNote } from '@/theory/spelling';
-import { degreeNames, intervalName } from '@/theory/intervals';
+import { getScaleSpelling, getDegreeNames, formatNote } from '@/theory/spelling';
+import { intervalName } from '@/theory/intervals';
 import { pretty } from '@/lib/notation';
 import { scales } from '@/constants';
 import { useFormStore } from '@/store';
@@ -19,7 +19,7 @@ const ScaleLegend: React.FC = () => {
 
   const keyOffset = useMemo(() => keyToOffset(keyy), [keyy]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
-  const degrees = useMemo(() => degreeNames(pitchClasses), [pitchClasses]);
+  const degrees = useMemo(() => getDegreeNames(keyy, pitchClasses), [keyy, pitchClasses]);
   const degreeLabels = useMemo(
     () => getScaleSpelling(keyy, pitchClasses).map((note) => pretty(formatNote(note))),
     [keyy, pitchClasses]

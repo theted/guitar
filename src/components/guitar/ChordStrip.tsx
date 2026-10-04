@@ -25,8 +25,8 @@ const ChordStrip: React.FC = () => {
   if (chords.length === 0) return null;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-xs font-medium text-ink-3">Chords in this key</span>
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="shrink-0 text-xs font-medium text-ink-3" title="The chords built on each note of the scale">Chords</span>
       <div className="flex flex-wrap gap-1" role="group" aria-label="Diatonic chords">
         {chords.map((chord) => {
           const active = selectedChordDegree === chord.degree;
@@ -38,7 +38,7 @@ const ChordStrip: React.FC = () => {
               onClick={() => setFormState({ selectedChordDegree: active ? null : chord.degree })}
               title={chord.seventhName ? `${pretty(chord.name)}, or ${pretty(chord.seventhName)} with the 7th` : pretty(chord.name)}
               className={cx(
-                'inline-flex h-8 items-baseline gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',
                 active
                   ? 'bg-chord text-chord-ink'
                   : 'text-ink ring-1 ring-inset ring-line hover:bg-surface'

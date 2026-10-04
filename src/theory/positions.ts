@@ -25,10 +25,23 @@ export type ScalePosition = {
 };
 
 /**
+ * Where the highest string sits (abs semitones from E4) for a start octave.
+ *
+ * At octave 4 it lands between A3 and G#4, which is real pitch for every
+ * guitar tuning: standard's top string is E4, D standard's D4, A standard's
+ * A3, New Standard's G4. Pitch classes count from E, so A..D# (5–11) belong
+ * to the octave *below* E4, not above it. Octave 2 is the same two octaves
+ * down — real bass pitch (bass standard's G string is G2).
+ */
+const topStringAbs = (pitchClass: number, startOctave: number): number =>
+  12 * (startOctave - 4) + (pitchClass > 4 ? pitchClass - 12 : pitchClass);
+
+/**
  * Open-string pitches (abs semitones from E4) ordered LOW string first.
  * Same placement rules as the fretboard renderer: the highest string anchors
- * at the start octave and each lower string sits within the octave below its
- * neighbor; extra strings beyond the tuning cycle an octave down.
+ * at the start octave (see topStringAbs) and each lower string sits within the
+ * octave below its neighbor; extra strings beyond the tuning cycle an octave
+ * down.
  */
 export const getStringBaseNotes = (
   tuning: readonly string[],
@@ -44,8 +57,7 @@ export const getStringBaseNotes = (
   // pitch classes again, an octave lower — and because every string is placed
   // strictly below the one above it, the result is always sorted low→high
   // (the monotonic contract getScalePositions and the renderer rely on).
-  const anchorEAbs = 12 * (startOctave - 4);
-  const highToLow: number[] = [anchorEAbs + pitchClasses[tuningLength - 1]];
+  const highToLow: number[] = [topStringAbs(pitchClasses[tuningLength - 1], startOctave)];
 
   for (let stringFromTop = 1; stringFromTop < strings; stringFromTop += 1) {
     const above = highToLow[stringFromTop - 1];

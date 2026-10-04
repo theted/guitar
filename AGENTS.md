@@ -42,6 +42,7 @@ src/
 │   ├── index.ts                # playSemitoneAt + re-exports
 │   ├── context.ts              # AudioContext, master bus, voice registry
 │   ├── synthesis.ts            # Voice construction (oscillators, envelopes, FX chain)
+│   ├── envelope.ts             # Envelope timing and stop plans, pure (tested without Web Audio)
 │   ├── effects.ts              # Reverb / distortion / delay nodes (cached)
 │   ├── pluck.ts                # Karplus-Strong plucked strings, rendered + cached
 │   └── presets.ts              # SoundType and the 19 sound configs
@@ -63,7 +64,7 @@ src/
 │   ├── Header.tsx              # Key row, title (= scale picker), scale legend
 │   ├── Transport.tsx           # Bottom bar: play, pattern, octaves, tempo, sound, volume
 │   ├── controls/               # Settings drawer (SetupControls) + shared option lists
-│   ├── guitar/                 # The neck, its toolbar and the phrase strip
+│   ├── guitar/                 # The neck, its toolbar, and the phrase strip (shown in Transport)
 │   │   ├── geometry.ts         # Fret spacing and inlay positions
 │   │   └── hooks/              # Fretboard geometry + phrase event hooks
 │   └── ui/                     # Picker (Radix select), segmented, stepper, switch, slider
@@ -92,20 +93,29 @@ src/
 
 ### 1b. Spelling and degrees
 
-Seven-note scales spell one letter per degree. Smaller scales spell each note
-by the degree it's read as (`degreeSteps` in `theory/intervals.ts`): ♭5 for the
-blues note, ♯4 when there's no 4th (lydian, whole tone), ♯5 when there's no 5th
-to flatten against; spellings needing Cb/Fb/E#/B# or doubles fall back to the
-key's accidentals. `degreeNames` (1 ♭3 4 ♭5 …) drives the legend and the
-"Degrees" label mode, so letters and labels always agree.
+Every note is spelled on the letter of the degree it's read as (`degreeSteps`
+in `theory/intervals.ts`): one letter per degree for seven-note scales; ♭5 for
+the blues note, ♯4 when there's no 4th (lydian, whole tone), ♯5 when there's
+no 5th to flatten against, and diminished by its degrees too.
+
+The scale is spelled from its **display tonic** (`getDisplayTonic`), the way
+key signatures work: D♭ minor is written C♯ minor, A♭ minor G♯ minor. The
+title shows that tonic; the key row keeps the key that was picked. A blues ♭5
+doesn't count towards renaming (E♭ blues stays E♭, writing its blue note A).
+Where no name of the tonic avoids Cb/Fb/E#/B# or doubles, seven-note scales
+keep the awkward note (as key signatures do) and smaller scales fall back to
+plain sharps/flats; `spelling.test.ts` sweeps all scales × keys and lists
+those cases. `getDegreeNames(key, pcs)` drives the legend and the "Degrees"
+label mode, so letters and labels agree.
 
 ### 2. Fretboard geometry (`theory/positions.ts`, `hooks/useFretboard.ts`)
 
 `getStringBaseNotes(tuning, strings, startOctave)` returns the open-string
-pitches **low string first**. The highest string anchors at the start octave and
-each lower string is placed in the octave below its neighbour, so the result is
-always sorted ascending — a contract the renderer and the position engine rely
-on.
+pitches **low string first**. The highest string sits near the start octave's
+E (between A below and G♯ above: octave 4 puts every guitar tuning at concert
+pitch, e.g. D standard's top D at D4) and each lower string is placed in the
+octave below its neighbour, so the result is always sorted ascending — a
+contract the renderer and the position engine rely on.
 
 `useFretboard()` is the single source of the on-screen neck: `baseNotes`,
 `frets`, `lowest`, `highest`. Anything that must agree with what the user sees
@@ -169,6 +179,20 @@ plucked string buffer ─────┴→ [filter] → [distortion] → [delay
 - Frequency: `440 * 2^((semitone - 5) / 12)` (A4 is 5 semitones above E4).
 - Envelope ramps are exponential and never target zero or a negative time; a
   negative release time used to throw and silence the first playback entirely.
+- **A voice lasts until its envelope is silent, not until its step ends**
+  (`envelopeTimes` in `envelope.ts`). The release fades over the tail of the
+  note but never starts before the decay is over and always runs its full
+  length, so a note lasts `max(duration, attack + decay + release)`: a short
+  bell rings for 2.4 s. Sources stop, and the voice leaves `activeVoices`, only
+  after that end.
+- A layer's envelope is the master one with the layer's overrides, and **every
+  level is scaled by `layer.gain`** (`layerEnvelope`) — attack and sustain
+  alike, so a quiet partial stays quiet.
+- `voice.stop(time)` (`stopPlan`): a voice that hasn't started by then never
+  sounds (gains held at `SILENT`, sources stopped at their start); a sounding
+  one fades linearly to zero over `VOICE_STOP_RAMP_SEC` as its sources stop;
+  one that has rung out is only unregistered. Envelope gains rest at `SILENT`,
+  never at the GainNode default of 1.
 
 Adding a sound: add the key to `SoundType` and a config to `SOUND_PRESETS`
 (both in `audio/presets.ts`), then add it to `SOUND_GROUPS` in
@@ -231,6 +255,16 @@ Persistence is versioned (currently 7). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
 linger in localStorage, and maps renamed fields via `RENAMED_FIELDS`. Add to
 both when you rename or remove a setting, and bump the version.
+Separately, `sanitizeFormState` runs on every load (persist `merge`), so a
+value the app can't use (an unknown sound, an out-of-range string count)
+falls back to its default instead of breaking the page.
+
+## Keyboard
+
+Shortcuts listen in the capture phase. A control focused by a *mouse click*
+doesn't swallow Space or the arrows (Space still plays); one reached by the
+keyboard (`:focus-visible`) keeps its native keys. Text fields, open pickers
+and the settings dialog get no shortcuts. Escape always stops.
 
 ## Component tree
 
@@ -242,9 +276,9 @@ App
 │   ├── PositionStrip         position boxes
 │   ├── label mode            notes / degrees / intervals
 │   ├── GuitarNeck → Board + GuitarString → StringFret
-│   ├── FretMarkers           fret numbers
-│   └── PhraseStrip           the phrase note by note, follows playback
-├── Transport                 play: play/pause · pattern · octaves · tempo · sound · volume
+│   └── FretMarkers           fret numbers
+├── Transport                 play: PhraseStrip (the phrase note by note) above
+│                             play/pause · pattern · octaves | tempo | sound · volume
 └── ControlsPanel (drawer)
     └── SetupControls         instrument · positions · display · keyboard
 ```
@@ -259,8 +293,18 @@ when it was due; voices scheduled after *now* are cancelled
 (`stopVoicesStartingAfter`) while sounding notes ring on, and the new phrase
 starts at that step on that beat (`startPhraseSession(…, startIndex)`). A tempo
 change takes effect from the next note; a key change carries on mid-run.
-`stopAllPlayback` (the player's `stop()` plus silencing fret clicks and
-flashes) is stable, safe while idle, and always leaves `isPlaying` false.
+A single pass on its last note carries on only if the change takes it further
+(`resumePoint`): Loop turned on goes round again, and a longer phrase plays on
+into its new steps, on the beat after the last step (a descending run that
+just landed on the tonic goes on from the loop's second note). A single pass
+that plays to its end lets its last notes ring out; only `stop()` (and a
+phrase becoming empty) silences them. `stopAllPlayback` (the player's `stop()`
+plus silencing fret clicks and flashes) is stable, safe while idle, and always
+leaves `isPlaying` false.
+
+With swing, an odd-length phrase holds its last note for the whole beat
+(long + short), so the phrase is a whole number of beats and every loop pass
+starts on the beat; there is still one event per displayed step.
 
 ## Performance notes
 

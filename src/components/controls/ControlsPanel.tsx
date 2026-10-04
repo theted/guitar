@@ -18,6 +18,9 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose }) => {
   React.useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
+      // An open picker inside the drawer closes itself on Escape (and marks
+      // the event handled); only an unhandled Escape closes the drawer
+      if (e.key === 'Escape' && e.defaultPrevented) return;
       if (e.key === 'Escape') {
         onClose();
         return;

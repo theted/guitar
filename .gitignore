@@ -25,3 +25,6 @@ yarn-error.log*
 dist/
 IDEA.md
 .gitignore
+
+# Agent worktrees
+.claude/worktrees/

@@ -10,7 +10,7 @@ export const intervalName = (relativePc: number): string =>
 
 // Semitones of each degree of the major scale: the reference that degree
 // names (♭3, ♯4 …) are measured against
-const MAJOR_DEGREE_PCS = [0, 2, 4, 5, 7, 9, 11];
+export const MAJOR_DEGREE_PCS = [0, 2, 4, 5, 7, 9, 11] as const;
 
 /**
  * Which scale degree (letter step from the tonic, 0–6) each note of a scale
@@ -18,6 +18,12 @@ const MAJOR_DEGREE_PCS = [0, 2, 4, 5, 7, 9, 11];
  * guitar convention: the tritone is ♭5 (blues, locrian-like) unless the scale
  * has no 4th and reads major-ish (lydian, whole tone: ♯4); the minor sixth is
  * ♭6 unless there is no 5th to flatten against (whole tone, augmented: ♯5).
+ * Scales with more than seven notes put two notes on some letters: the
+ * half-whole diminished reads 1 ♭2 ♭3 3 ♯4 5 6 ♭7.
+ *
+ * The chromatic scale has no key-independent reading (sharps up in sharp
+ * keys, flats in flat keys); this gives its flat-side default, and
+ * `getDegreeNames` in theory/spelling.ts the reading for a given key.
  */
 export const degreeSteps = (relativePcs: readonly number[]): number[] => {
   if (relativePcs.length === 7) return relativePcs.map((_, index) => index);
@@ -28,14 +34,22 @@ export const degreeSteps = (relativePcs: readonly number[]): number[] => {
   return relativePcs.map((pc) => STEP_FOR_PC[mod12(pc)]);
 };
 
+/**
+ * A degree label from its letter step (0–6) and its distance in semitones
+ * from the major scale's degree on that step: (2, -1) → "♭3".
+ */
+export const formatDegree = (step: number, accidental: number): string => {
+  let shift = accidental;
+  if (shift > 6) shift -= 12;
+  if (shift < -6) shift += 12;
+  const sign = shift < 0 ? "♭".repeat(-shift) : "♯".repeat(shift);
+  return `${sign}${step + 1}`;
+};
+
 /** Degree names for a scale's notes, e.g. blues → 1 ♭3 4 ♭5 5 ♭7 */
 export const degreeNames = (relativePcs: readonly number[]): string[] => {
   const steps = degreeSteps(relativePcs);
-  return relativePcs.map((pc, index) => {
-    let accidental = mod12(pc) - MAJOR_DEGREE_PCS[steps[index]];
-    if (accidental > 6) accidental -= 12;
-    if (accidental < -6) accidental += 12;
-    const sign = accidental < 0 ? "♭".repeat(-accidental) : "♯".repeat(accidental);
-    return `${sign}${steps[index] + 1}`;
-  });
+  return relativePcs.map((pc, index) =>
+    formatDegree(steps[index], mod12(pc) - MAJOR_DEGREE_PCS[steps[index]])
+  );
 };

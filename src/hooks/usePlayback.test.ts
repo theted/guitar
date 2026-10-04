@@ -114,3 +114,52 @@ describe('usePlayback live changes', () => {
     expect(scheduler.startPhraseSession).not.toHaveBeenCalled();
   });
 });
+
+describe('usePlayback at the end of a single pass', () => {
+  beforeEach(() => {
+    audioNow = 0;
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    setFormState({
+      scale: 'major', tone: 'e', phraseLoop: false, phraseDescend: true,
+      selectedPosition: null, bpm: 300, swing: false,
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const sessions = () => vi.mocked(scheduler.startPhraseSession).mock.calls;
+
+  it('lets the closing note ring instead of cutting it', async () => {
+    const { result } = renderHook(() => usePlayback());
+    await act(async () => { await result.current.togglePlay(); });
+    const cutsAtPlay = vi.mocked(stopAllAudio).mock.calls.length;
+
+    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(result.current.isPlaying).toBe(false);
+    expect(stopAllAudio).toHaveBeenCalledTimes(cutsAtPlay);
+  });
+
+  it('goes round again when Loop is turned on during the last note', async () => {
+    const { result } = renderHook(() => usePlayback());
+    await act(async () => { await result.current.togglePlay(); });
+    const [once] = sessions()[0];
+    const closing = once[once.length - 1];
+
+    // The run is back on the tonic it started from
+    audioNow = closing.startTimeSec + 0.05;
+    act(() => setFormState({ phraseLoop: true }));
+
+    expect(sessions()).toHaveLength(2);
+    const [looped, , , loopDuration, startIndex] = sessions()[1];
+    // That tonic was the loop's first note: on with the second, on the next beat
+    expect(looped[0].abs).toBe(closing.abs);
+    expect(startIndex).toBe(1);
+    expect(looped[1].startTimeSec).toBeCloseTo(closing.startTimeSec + 0.2, 6);
+    expect(loopDuration).toBeCloseTo(looped.length * 0.2, 6);
+
+    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(result.current.isPlaying).toBe(true);
+  });
+});

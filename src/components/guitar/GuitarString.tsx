@@ -106,8 +106,9 @@ type Props = {
   scale: ScaleName;
   keyy: string;
   highlightEnabled?: boolean;
-  scaleHighlightBottomOnly?: boolean;
-  isBottom?: boolean;
+  lowestStringOnly?: boolean;
+  /** The lowest-pitched string, for "lowest string only" */
+  isLowest?: boolean;
   labelMode?: LabelMode;
   soundType?: SoundType;
   selectedChordDegree?: number | null;
@@ -126,8 +127,8 @@ const GuitarString: React.FC<Props> = React.memo(({
   scale,
   keyy,
   highlightEnabled = true,
-  scaleHighlightBottomOnly = false,
-  isBottom = false,
+  lowestStringOnly = false,
+  isLowest = false,
   labelMode = "note",
   soundType = "marimba",
   selectedChordDegree = null,
@@ -141,8 +142,8 @@ const GuitarString: React.FC<Props> = React.memo(({
     keyy,
     scaleMap: scales,
     highlightEnabled,
-    scaleHighlightBottomOnly,
-    isBottom,
+    lowestStringOnly,
+    isLowest,
     selectedChordDegree,
     positionFrets,
   });

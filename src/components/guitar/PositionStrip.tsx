@@ -16,8 +16,8 @@ const PositionStrip: React.FC = () => {
   if (positions.length === 0) return null;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-xs font-medium text-ink-3">Positions</span>
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="shrink-0 text-xs font-medium text-ink-3" title="Hand positions (boxes) along the neck">Positions</span>
       <div className="flex flex-wrap gap-1" role="group" aria-label="Scale positions">
         {positions.map((position) => {
           const active = selectedPosition === position.index;
@@ -29,7 +29,7 @@ const PositionStrip: React.FC = () => {
               onClick={() => setFormState({ selectedPosition: active ? null : position.index })}
               title={`Frets ${position.lowFret}–${position.highFret}. Play steps through this box one note at a time.`}
               className={cx(
-                'inline-flex h-8 items-baseline gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm transition-colors select-none',
                 active
                   ? 'bg-ink text-bg'
                   : 'text-ink ring-1 ring-inset ring-line hover:bg-surface'

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS } from './constants';
+import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS, PHRASE_MODE_GROUPS, TEMPO } from './constants';
 import { SoundType } from './audio';
+import { SOUND_PRESETS } from './audio/presets';
 
 /** What the dots on the neck say */
 export type LabelMode = 'note' | 'degree' | 'interval';
@@ -153,7 +154,47 @@ export const migrateFormState = (persisted: unknown): FormState => {
   } else if (!(KEYS as readonly string[]).includes(tone)) {
     state.tone = DEFAULTS.KEY;
   }
-  return state;
+  return sanitizeFormState(state);
+};
+
+const PHRASE_MODES = new Set<string>(PHRASE_MODE_GROUPS.flatMap((group) => group.modes.map((mode) => mode.value)));
+const LABEL_MODES = new Set<string>(['note', 'degree', 'interval']);
+const FLASH_MODES = new Set<string>(['fret', 'octave', 'all']);
+
+const intIn = (value: unknown, min: number, max: number, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+
+/**
+ * Anything stored that the app can't use falls back to its default. Runs on
+ * every load, not only on version upgrades: stored state can be edited by
+ * hand, or written by a newer build that was rolled back.
+ */
+export const sanitizeFormState = (state: FormState): FormState => {
+  const clean = { ...state };
+  const valid = <K extends keyof FormState>(key: K, ok: boolean) => {
+    if (!ok) clean[key] = initial[key];
+  };
+  valid('scale', typeof clean.scale === 'string' && clean.scale in scales);
+  valid('tuningName', typeof clean.tuningName === 'string' && clean.tuningName in tunings);
+  valid('tone', (KEYS as readonly string[]).includes(clean.tone));
+  valid('phraseMode', PHRASE_MODES.has(clean.phraseMode));
+  valid('soundType', typeof clean.soundType === 'string' && clean.soundType in SOUND_PRESETS);
+  valid('labelMode', LABEL_MODES.has(clean.labelMode));
+  valid('flashMode', FLASH_MODES.has(clean.flashMode));
+  clean.strings = intIn(clean.strings, 1, 12, initial.strings);
+  clean.frets = intIn(clean.frets, 1, 36, initial.frets);
+  clean.startOctave = intIn(clean.startOctave, 0, 9, initial.startOctave);
+  clean.bpm = intIn(clean.bpm, TEMPO.MIN, TEMPO.MAX, initial.bpm);
+  clean.volume = intIn(clean.volume, 0, 100, initial.volume);
+  clean.phraseOctaves = intIn(clean.phraseOctaves, 1, 5, initial.phraseOctaves);
+  clean.trailLength = intIn(clean.trailLength, 100, 4000, initial.trailLength);
+  valid('positionSpan', [4, 5, 6].includes(clean.positionSpan));
+  valid('selectedPosition', clean.selectedPosition === null || (Number.isInteger(clean.selectedPosition) && clean.selectedPosition! >= 1));
+  valid('selectedChordDegree', clean.selectedChordDegree === null || (Number.isInteger(clean.selectedChordDegree) && clean.selectedChordDegree! >= 1 && clean.selectedChordDegree! <= 7));
+  for (const key of ['lowAtBottom', 'highlightEnabled', 'swing', 'muted', 'phraseDescend', 'phraseLoop', 'reduceAnimations', 'singleStringScale', 'leftHanded'] as const) {
+    valid(key, typeof clean[key] === 'boolean');
+  }
+  return clean;
 };
 
 export const useFormStore = create<FormState>()(
@@ -165,6 +206,8 @@ export const useFormStore = create<FormState>()(
       name: 'formState',
       version: 7,
       migrate: (persisted) => migrateFormState(persisted),
+      // Current-version state skips migrate, so validate it on the way in too
+      merge: (persisted, current) => sanitizeFormState({ ...current, ...(persisted as Partial<FormState>) }),
     }
   )
 );

@@ -103,8 +103,8 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           scale={scale}
           keyy={keyy}
           highlightEnabled={highlightEnabled}
-          scaleHighlightBottomOnly={singleStringScale}
-          isBottom={descriptor.isBottom}
+          lowestStringOnly={singleStringScale}
+          isLowest={descriptor.lowIndex === 0}
           labelMode={labelMode}
           soundType={soundType}
           selectedChordDegree={selectedChordDegree}

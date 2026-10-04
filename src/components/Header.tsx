@@ -5,12 +5,24 @@ import { Picker } from '@/components/ui/select';
 import ScaleLegend from '@/components/guitar/ScaleLegend';
 import { SCALE_GROUP_OPTIONS, KEYS_CHROMATIC, keyLabel } from '@/components/controls/options';
 import { setFormState, useFormStore } from '@/store';
+import { stepKey } from '@/hooks/useKeyboardShortcuts';
 import { cn } from '@/lib/utils';
-import type { ScaleName } from '@/constants';
+import { scales, type ScaleName } from '@/constants';
+import { getDiatonicChords } from '@/theory/chords';
+import { getScalePitchClasses } from '@/music';
+import { getDisplayTonic, formatNote } from '@/theory/spelling';
+import { pretty } from '@/lib/notation';
 
 type HeaderProps = {
   onOpenSettings: () => void;
 };
+
+// A scale without diatonic chords drops the chord selection, rather than
+// keeping it hidden and silently reviving it later
+const scaleChange = (tone: string, scale: ScaleName) =>
+  getDiatonicChords(tone, getScalePitchClasses(scales[scale])).length > 0
+    ? { scale }
+    : { scale, selectedChordDegree: null };
 
 // Everything about *what* is on the neck: the key, the scale, and the notes
 // that make it up. The title is the scale picker itself.
@@ -22,6 +34,26 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     strings: state.strings,
   })));
 
+
+  // The title names the scale the way it's written: D♭ minor reads as C♯ minor
+  const titleTonic = React.useMemo(
+    () => pretty(formatNote(getDisplayTonic(tone, getScalePitchClasses(scales[scale])))),
+    [tone, scale]
+  );
+
+  // One tab stop for the twelve keys; arrows move the selection, as in any
+  // radio group (the global ←/→ shortcut does the same when nothing's focused)
+  const keyRowRef = React.useRef<HTMLDivElement | null>(null);
+  const onKeyRowKeyDown = (event: React.KeyboardEvent) => {
+    const delta = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    stepKey(delta);
+    requestAnimationFrame(() => {
+      keyRowRef.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    });
+  };
 
   // The address bar always describes the current exercise (useShareableUrl)
   const [copied, setCopied] = React.useState(false);
@@ -65,8 +97,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
       </div>
 
       <div
+        ref={keyRowRef}
         role="radiogroup"
         aria-label="Key"
+        onKeyDown={onKeyRowKeyDown}
         className="quiet-scroll -mx-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0"
       >
         {KEYS_CHROMATIC.map((key) => {
@@ -77,6 +111,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               type="button"
               role="radio"
               aria-checked={active}
+              tabIndex={active ? 0 : -1}
               onClick={() => { if (!active) setFormState({ tone: key }); }}
               className={cn(
                 'h-9 min-w-10 shrink-0 rounded-lg px-2 text-sm font-semibold transition-colors',
@@ -91,13 +126,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
         })}
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+      {/* The scale's name, then its notes: one thing, read left to right */}
+      <div className="flex flex-wrap items-end gap-x-12 gap-y-3">
         <h1 className="type-title flex min-w-0 items-baseline gap-[0.28em] text-[clamp(2rem,4.6vw,3.4rem)]">
-          <span>{keyLabel(tone)}</span>
+          <span title={titleTonic !== keyLabel(tone) ? `Written as ${titleTonic}, the usual name for this scale from ${keyLabel(tone)}` : undefined}>
+            {titleTonic}
+          </span>
           <Picker
             variant="title"
             value={scale}
-            onValueChange={(v) => setFormState({ scale: v as ScaleName })}
+            onValueChange={(v) => setFormState(scaleChange(tone, v as ScaleName))}
             groups={SCALE_GROUP_OPTIONS}
             aria-label="Scale"
             title="Change scale"

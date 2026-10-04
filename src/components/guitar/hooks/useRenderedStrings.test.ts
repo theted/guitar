@@ -22,7 +22,6 @@ describe("useRenderedStrings", () => {
     expect(result.current.descriptors.map((string) => string.originalIndex)).toEqual([
       0, 1, 2, 3, 4, 5,
     ]);
-    expect(result.current.descriptors[result.current.descriptors.length - 1].isBottom).toBe(true);
   });
 
   it("flips render order when the low string is placed at the top", () => {
@@ -40,7 +39,6 @@ describe("useRenderedStrings", () => {
       5, 4, 3, 2, 1, 0,
     ]);
     expect(result.current.descriptors[result.current.descriptors.length - 1].baseNote).toBe(0);
-    expect(result.current.descriptors[result.current.descriptors.length - 1].isBottom).toBe(true);
   });
 
   it("keeps low-index metadata tied to musical low-to-high order", () => {

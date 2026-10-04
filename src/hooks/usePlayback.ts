@@ -118,6 +118,11 @@ export const usePlayback = () => {
       ),
     [phrasePitchClasses, phraseMode, phraseOctaves, phraseDescend, rootAbs, highest]
   );
+  // The most this neck can hold, so the octave picker can say so
+  const maxOctaves = useMemo(
+    () => getPlayableOctaves(phrasePitchClasses as PitchClass[], phraseMode, 5, phraseDescend, rootAbs, highest),
+    [phrasePitchClasses, phraseMode, phraseDescend, rootAbs, highest]
+  );
 
   // Position practice replaces the abstract phrase with the box's fret path
   const { activePosition } = useScalePositions();
@@ -163,5 +168,5 @@ export const usePlayback = () => {
     onTogglePlay();
   }, [isPlaying, onTogglePlay]);
 
-  return { isPlaying, togglePlay, stopAllPlayback, playNote, events };
+  return { isPlaying, togglePlay, stopAllPlayback, playNote, events, maxOctaves };
 };

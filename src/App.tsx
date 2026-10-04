@@ -35,7 +35,7 @@ const App: React.FC = () => {
     setMasterVolume(muted ? 0 : volume / 100);
   }, [volume, muted]);
 
-  const { isPlaying, togglePlay, stopAllPlayback, playNote, events } = usePlayback();
+  const { isPlaying, togglePlay, stopAllPlayback, playNote, events, maxOctaves } = usePlayback();
 
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
   useShareableUrl();
@@ -45,13 +45,18 @@ const App: React.FC = () => {
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full max-w-[1680px] flex-col gap-6 px-4 pb-6 sm:px-6">
           <Header onOpenSettings={() => setPanelOpen(true)} />
-          <Guitar onPlayNote={playNote} phraseEvents={events} />
+          {/* The neck sits in the middle of whatever room is left */}
+          <div className="flex flex-1 flex-col justify-center">
+            <Guitar onPlayNote={playNote} />
+          </div>
         </div>
       </main>
 
       <Transport
         isPlaying={isPlaying}
         onTogglePlay={togglePlay}
+        events={events}
+        maxOctaves={maxOctaves}
       />
 
       <ControlsPanel
