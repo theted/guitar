@@ -9,6 +9,8 @@ import FieldLabel from '@/components/ui/field-label';
 import { tunings, concertOctave, isBassTuning, type TuningName } from '@/constants';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
+import { useFretboard } from '@/components/guitar/hooks/useFretboard';
+import { computePositions, positionAtFret, useScalePositions } from '@/components/guitar/hooks/useScalePositions';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="flex flex-col gap-4 border-t border-line px-5 py-5 first:border-t-0">
@@ -63,6 +65,8 @@ const SetupControls: React.FC = () => {
     startOctave: state.startOctave,
     lowAtBottom: state.lowAtBottom,
     positionSpan: state.positionSpan,
+    tone: state.tone,
+    scale: state.scale,
     highlightEnabled: state.highlightEnabled,
     singleStringScale: state.singleStringScale,
     flashMode: state.flashMode,
@@ -71,6 +75,16 @@ const SetupControls: React.FC = () => {
     reduceAnimations: state.reduceAnimations,
   })));
 
+
+  // A new span keeps the hand where it is: the box starting at the same fret
+  const { activePosition } = useScalePositions();
+  const { baseNotes, frets } = useFretboard();
+  const changeSpan = (span: number) => {
+    const selectedPosition = activePosition
+      ? positionAtFret(computePositions({ baseNotes, frets, tone: s.tone, scale: s.scale, span }), activePosition.lowFret)
+      : null;
+    setFormState({ positionSpan: span, selectedPosition });
+  };
 
   return (
     <div className="flex flex-col">
@@ -129,7 +143,7 @@ const SetupControls: React.FC = () => {
           <Segmented
             aria-label="Position hand span"
             value={s.positionSpan}
-            onChange={(v) => setFormState({ positionSpan: v, selectedPosition: null })}
+            onChange={changeSpan}
             options={SPAN_OPTIONS}
           />
           <p className="text-xs leading-snug text-ink-3">
