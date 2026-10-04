@@ -337,6 +337,24 @@
   box-shadow: inset 0 0 0 1px var(--line);
   opacity: 1;
 }
+/* Keyboard focus on the neck: a ring round the note, light-on-dark so it
+   reads on the wood and on the open-string lane alike; a hidden note shows
+   its name while focused */
+.fret:focus { outline: none; }
+.fret:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--flash), 0 0 0 4px rgb(20 16 12 / 0.85);
+  pointer-events: none;
+}
+.fret[data-state="off"]:focus-visible .fret-dot { opacity: 1; }
+.fret[data-outside][data-state="off"]:focus-visible .fret-dot { visibility: visible; }
+
 .fret:hover .fret-dot { transform: scale(1.08); }
 .fret:active .fret-dot { transform: scale(0.94); }
 

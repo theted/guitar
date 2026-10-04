@@ -154,8 +154,27 @@ the catalog/grouping correspondence.
 
 ```
 oscillators → layer gains ┐
-plucked string buffer ─────┴→ [filter] → [distortion] → [delay] → [reverb] → voice gain → master bus → destination
+plucked string buffer ─────┴→ [filter] → [distortion] → [delay] → voice envelope ┬→ dry ───────────────────────────────────────→ master bus → destination
+                                                                                 └→ send → shared room reverb → reverb return ┘
 ```
+
+- **Reverb is shared, one convolver per room** (`effects.ts`). A room
+  (`roomSize`/`damping`) is a single ConvolverNode, created the first time a
+  sound needs it and kept for the AudioContext's lifetime, feeding the reverb
+  return bus (`getReverbBus()` → master bus, so volume and mute apply to
+  tails). Voices *send* their enveloped output into it; `reverbRouting(config)`
+  decides how much, to which room. A sound with `effects.reverb` keeps its
+  designed balance (dry `1 − wet`, send `wet`); every other sound stays at dry
+  1 and sends `DEFAULT_ROOM_SEND` (0.1, ~32 dB under the dry sound) into
+  `DEFAULT_ROOM` (0.3 / 0.5, also the nylon guitar's room), so all sounds sit
+  in one space. Cleanup disconnects only the voice's own nodes (envelope, dry,
+  send), never a room, so a tail rings out after its voice has stopped (Stop
+  included). Never create a convolver per note.
+- **The Room setting** (`reverb` in the store: off / low / normal / high →
+  `REVERB_LEVELS` 0 / 0.5 / 1 / 1.8) is the reverb return level, applied from
+  `App` with `setReverbLevel` like the volume: ramped, nothing per note, and it
+  reaches tails already ringing. Normal is the balance the sounds were
+  designed with. At Off voices send nothing, so no reverb runs at all.
 
 - **Plucked sounds** (the guitars and basses) set `pluck` instead of oscillator
   `layers`: `pluck.ts` renders each note once by Karplus-Strong synthesis (a
@@ -170,12 +189,12 @@ plucked string buffer ─────┴→ [filter] → [distortion] → [delay
   string count and, between guitar and bass, its octave.
 
 - `playSemitoneAt(semitone, atTime, { duration, type })` is the only entry point.
-- Every voice connects to the **master bus** (`getMasterBus()`), not to
-  `destination`, so `setMasterVolume(0–1)` affects sounding notes and costs
-  nothing per note.
+- Every voice (and the reverb return) connects to the **master bus**
+  (`getMasterBus()`), not to `destination`, so `setMasterVolume(0–1)` affects
+  sounding notes and tails and costs nothing per note.
 - Voice stealing per pitch plus a hard `MAX_POLYPHONY` cap keep the node graph
-  bounded. Reverb impulses and distortion curves are cached — generating them
-  per note was measurably expensive.
+  bounded, and the rooms are shared. Reverb impulses and distortion curves are
+  cached — generating them per note was measurably expensive.
 - Frequency: `440 * 2^((semitone - 5) / 12)` (A4 is 5 semitones above E4).
 - Envelope ramps are exponential and never target zero or a negative time; a
   negative release time used to throw and silence the first playback entirely.
@@ -266,6 +285,12 @@ doesn't swallow Space or the arrows (Space still plays); one reached by the
 keyboard (`:focus-visible`) keeps its native keys. Text fields, open pickers
 and the settings dialog get no shortcuts. Escape always stops.
 
+The neck is an ARIA grid (`GuitarNeck`) with one roving tab stop — the tonic
+of the lowest string until it's been used. `neckNavigation.ts` maps keys to
+cells by what's on screen (rows as drawn, mirrored for left-handed), Enter or
+Space plays the cell (it clicks it), Shift + arrow moves and plays. The global
+shortcuts leave a keyboard-focused `gridcell` alone.
+
 ## Component tree
 
 ```
@@ -280,7 +305,7 @@ App
 ├── Transport                 play: PhraseStrip (the phrase note by note) above
 │                             play/pause · pattern · octaves | tempo | sound · volume
 └── ControlsPanel (drawer)
-    └── SetupControls         instrument · positions · display · keyboard
+    └── SetupControls         instrument · sound · positions · display · keyboard
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase

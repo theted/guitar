@@ -110,6 +110,19 @@ describe("useKeyboardShortcuts", () => {
       expect(useFormStore.getState().bpm).toBe(305);
     });
 
+    it("leaves arrows and Space to a fret reached with the keyboard", () => {
+      const togglePlay = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ togglePlay, stop: vi.fn(), panelOpen: false }));
+      const fret = document.createElement("div");
+      fret.setAttribute("role", "gridcell");
+      fret.tabIndex = 0;
+      focusVia(fret, "keyboard");
+      press({ key: "ArrowUp" }, fret);
+      press({ code: "Space" }, fret);
+      expect(useFormStore.getState().bpm).toBe(300);
+      expect(togglePlay).not.toHaveBeenCalled();
+    });
+
     it("stops on Escape from anywhere but a text field", () => {
       const stop = vi.fn();
       renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop, panelOpen: false }));

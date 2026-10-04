@@ -44,6 +44,8 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
   and synth voices
 - Picking a tuning sets its string count, and bass tunings sit an octave below guitar
 - Copy a link to the current key, scale, pattern and tempo
+- One shared room reverb that every note rings into, with a Room setting
+  (off / low / normal / high)
 
 ### Sound & visuals
 - A true-to-life neck: rosewood board, inlays, wound bass strings, frets that narrow towards the body
@@ -59,6 +61,9 @@ Guitar Scale Finder is a React-based educational tool that helps guitarists visu
 - `Escape` — stop
 - `↑` / `↓` — tempo
 - `←` / `→` — previous / next key
+- On the neck (Tab to it): arrows move between frets and strings, `Enter` plays
+  the note, `Shift` + arrow moves and plays, `Home` / `End` jump to the open
+  string / last fret
 
 ## Getting started
 

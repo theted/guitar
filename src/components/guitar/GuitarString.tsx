@@ -52,17 +52,32 @@ const dotText = (d: FretDescriptor, state: FretState, labelMode: LabelMode): str
   return intervalName(d.relativePc);
 };
 
+// What a screen reader hears for a fret: the note, what it is in the scale
+// (if the neck is showing that), and where it is
+const cellLabel = (d: FretDescriptor, state: FretState): string => {
+  const role =
+    state === "root" ? "root"
+    : state === "scale" || state === "muted" ? d.degreeName
+    : state === "chord-root" ? "chord root"
+    : state === "chord" ? "chord tone"
+    : null;
+  const where = d.fret === 0 ? "open string" : `fret ${d.fret}`;
+  return [pretty(d.label), role, where].filter(Boolean).join(", ");
+};
+
 type StringFretProps = {
   descriptor: FretDescriptor;
   /** Low-based string index (0 = lowest string), for positional flashes */
   stringIndex: number;
   onClick: (note: number, at: FretLocation) => void;
   labelMode: LabelMode;
+  /** The neck's one tab stop (roving tabindex, see GuitarNeck) */
+  tabStop: boolean;
 };
 
 // Memoized: ~150 instances render per fretboard; descriptor identity is stable
 // (useStringNotes memo) so unrelated store changes skip all of them.
-const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIndex, onClick, labelMode }) => {
+const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIndex, onClick, labelMode, tabStop }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -82,6 +97,11 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
       data-abs={descriptor.actualNote}
       data-state={state}
       data-outside={descriptor.inPosition === false ? "" : undefined}
+      data-string={stringIndex}
+      data-fret={descriptor.fret}
+      role="gridcell"
+      tabIndex={tabStop ? 0 : -1}
+      aria-label={cellLabel(descriptor, state)}
       title={`${pretty(descriptor.label)} (${intervalName(descriptor.relativePc)})`}
       className={descriptor.fret === 0 ? "fret fret-open" : "fret"}
       onClick={() => onClick(descriptor.actualNote, { stringIndex, fret: descriptor.fret })}
@@ -114,6 +134,8 @@ type Props = {
   selectedChordDegree?: number | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
+  /** The fret on this string that holds the neck's tab stop, if any */
+  tabStopFret?: number | null;
   onPlayNote?: PlayNoteFn;
 }
 
@@ -133,6 +155,7 @@ const GuitarString: React.FC<Props> = React.memo(({
   soundType = "marimba",
   selectedChordDegree = null,
   positionFrets = null,
+  tabStopFret = null,
   onPlayNote,
 }) => {
   const fretDescriptors = useStringNotes({
@@ -159,7 +182,12 @@ const GuitarString: React.FC<Props> = React.memo(({
   } as React.CSSProperties;
 
   return (
-    <div className="neck-string" style={style}>
+    <div
+      className="neck-string"
+      style={style}
+      role="row"
+      aria-label={`${pretty(fretDescriptors[0]?.label ?? "")} string`}
+    >
       {fretDescriptors.map((descriptor) => (
         <StringFret
           key={descriptor.fret}
@@ -167,6 +195,7 @@ const GuitarString: React.FC<Props> = React.memo(({
           stringIndex={stringIndex}
           onClick={handleFretClick}
           labelMode={labelMode}
+          tabStop={tabStopFret === descriptor.fret}
         />
       ))}
     </div>

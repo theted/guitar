@@ -12,7 +12,9 @@ export {
   stopVoicesStartingAfter,
   setMasterVolume,
   getMasterVolume,
+  setReverbLevel,
 } from "./context";
+export { REVERB_LEVELS, type ReverbSetting } from "./effects";
 
 export const playSemitoneAt = (
   semitoneFromE0: number,

@@ -20,9 +20,12 @@ export const MAX_POLYPHONY = 16;
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let reverbReturn: GainNode | null = null;
 let primed = false;
 /** 0–1, applied to the master bus. Kept outside the node so it survives a context restart. */
 let masterVolume = 1;
+/** The Room setting's level, applied to the reverb return bus. 1 is as the sounds were designed. */
+let reverbLevel = 1;
 
 /**
  * Get or create the AudioContext. Safe to call synchronously from a user-gesture
@@ -49,17 +52,46 @@ export const getMasterBus = (): GainNode => {
   return masterGain;
 };
 
+/** Move a bus level to `value` from wherever it is now, ramped so it never clicks */
+const rampTo = (ctx: AudioContext, param: AudioParam, value: number): void => {
+  const now = ctx.currentTime;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(param.value, now);
+  param.linearRampToValueAtTime(value, now + MASTER_VOLUME_RAMP_SEC);
+};
+
 /** Set the master volume (0–1). Ramped, so it never clicks. */
 export const setMasterVolume = (volume: number): void => {
   masterVolume = Math.min(1, Math.max(0, volume));
   if (!audioCtx || !masterGain) return;
-  const now = audioCtx.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-  masterGain.gain.linearRampToValueAtTime(masterVolume, now + MASTER_VOLUME_RAMP_SEC);
+  rampTo(audioCtx, masterGain.gain, masterVolume);
 };
 
 export const getMasterVolume = (): number => masterVolume;
+
+/**
+ * The reverb return bus: every shared reverb (effects.ts) feeds it, and it
+ * feeds the master bus, so volume and mute apply to tails too. Its level is
+ * the Room setting, which therefore reaches tails already ringing.
+ */
+export const getReverbBus = (): GainNode => {
+  const ctx = getAudioContext();
+  if (!reverbReturn) {
+    reverbReturn = ctx.createGain();
+    reverbReturn.gain.value = reverbLevel;
+    reverbReturn.connect(getMasterBus());
+  }
+  return reverbReturn;
+};
+
+/** Set how much reverb is heard (0 = none, 1 = as designed). Ramped, and free per note. */
+export const setReverbLevel = (level: number): void => {
+  reverbLevel = Number.isFinite(level) ? Math.max(0, level) : 1;
+  if (!audioCtx || !reverbReturn) return;
+  rampTo(audioCtx, reverbReturn.gain, reverbLevel);
+};
+
+export const getReverbLevel = (): number => reverbLevel;
 
 /**
  * Play a zero-gain oscillator for 10ms to flush the OS audio pipeline.

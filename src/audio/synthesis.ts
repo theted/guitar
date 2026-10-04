@@ -1,6 +1,6 @@
-import { activeVoices, voicesByNote, getMasterBus, MAX_POLYPHONY, type ActiveVoice } from "./context";
+import { activeVoices, voicesByNote, getMasterBus, getReverbLevel, MAX_POLYPHONY, type ActiveVoice } from "./context";
 import { VOICE_CLEANUP_EXTRA_MS } from "../constants";
-import { createReverb, createDistortion, createDelay } from "./effects";
+import { createDistortion, createDelay, getSharedReverb, reverbRouting } from "./effects";
 import type { EnvelopeConfig, SoundConfig } from "./presets";
 import { getPluckBuffer } from "./pluck";
 import {
@@ -127,34 +127,34 @@ export const synthesizeSound = (
   const masterTimes = envelopeTimes(startTime, duration, config.masterEnvelope);
   const endTime = masterTimes.end;
   const master = createEnvelopeGain(ctx, config.masterEnvelope, masterTimes);
-  master.connect(getMasterBus());
 
-  const nodesToDisconnect: AudioNode[] = [master];
+  // The enveloped voice goes out dry, and is sent into its room's shared
+  // reverb (effects.ts): the room's tail rings on after the voice has ended,
+  // and every note sounds in the same space
+  const routing = reverbRouting(config);
+  const dry = ctx.createGain();
+  dry.gain.value = routing.dry;
+  master.connect(dry);
+  dry.connect(getMasterBus());
+
+  // Only the voice's own nodes are ever disconnected — never the shared reverb
+  const nodesToDisconnect: AudioNode[] = [master, dry];
   const sources: AudioScheduledSourceNode[] = [];
   const shapedGains: ShapedGain[] = [
     { param: master.gain, envelope: config.masterEnvelope, times: masterTimes },
   ];
 
-  // Build effects chain from end to beginning (master ← reverb ← delay ← distortion ← filter)
-  let chainInput: AudioNode = master;
-
-  if (config.effects?.reverb) {
-    const reverb = createReverb(ctx, config.effects.reverb);
-    const wetGain = ctx.createGain();
-    const dryGain = ctx.createGain();
-    const mixGain = ctx.createGain();
-
-    nodesToDisconnect.push(reverb, wetGain, dryGain, mixGain);
-    wetGain.gain.value = config.effects.reverb.wet;
-    dryGain.gain.value = 1 - config.effects.reverb.wet;
-
-    mixGain.connect(reverb);
-    reverb.connect(wetGain);
-    wetGain.connect(master);
-    mixGain.connect(dryGain);
-    dryGain.connect(master);
-    chainInput = mixGain;
+  // With the Room setting off, nothing is sent: no reverb runs at all
+  if (routing.send > 0 && getReverbLevel() > 0) {
+    const send = ctx.createGain();
+    send.gain.value = routing.send;
+    master.connect(send);
+    send.connect(getSharedReverb(ctx, routing.room));
+    nodesToDisconnect.push(send);
   }
+
+  // Build the effects chain from end to beginning (master ← delay ← distortion ← filter)
+  let chainInput: AudioNode = master;
 
   if (config.effects?.delay) {
     const delayEffect = createDelay(ctx, config.effects.delay);

@@ -1,4 +1,7 @@
 import React, { useMemo } from "react";
+import { keyToOffset } from "@/music";
+import { mod12 } from "@/theory/pitch";
+import { nextCell, type NeckCell } from "./neckNavigation";
 import { useShallow } from "zustand/react/shallow";
 import GuitarString from "./GuitarString";
 import type { RenderedString } from "./hooks/useRenderedStrings";
@@ -80,8 +83,60 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
     return byString;
   }, [activePosition]);
 
+  // Keyboard: the neck is one tab stop. Until it's been used, the stop sits
+  // on the tonic of the lowest string; afterwards wherever it was left.
+  const [touched, setTouched] = React.useState<NeckCell | null>(null);
+  const rowOrder = useMemo(() => descriptors.map((d) => d.lowIndex), [descriptors]);
+  const cursor = useMemo<NeckCell>(() => {
+    if (touched && touched.stringIndex < descriptors.length) {
+      return { stringIndex: touched.stringIndex, fret: Math.min(touched.fret, frets) };
+    }
+    const lowest = descriptors.find((d) => d.lowIndex === 0);
+    const rootFret = lowest ? mod12(keyToOffset(keyy) - lowest.baseNote) : 0;
+    return { stringIndex: 0, fret: rootFret <= frets ? rootFret : 0 };
+  }, [touched, descriptors, frets, keyy]);
+
+  const cellAt = (container: HTMLElement, cell: NeckCell) =>
+    container.querySelector<HTMLElement>(`[data-string="${cell.stringIndex}"][data-fret="${cell.fret}"]`);
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = (event.target as HTMLElement).closest<HTMLElement>('[role="gridcell"]');
+    if (!target) return;
+    // Enter or Space plays the note under the cursor
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      target.click();
+      return;
+    }
+    const here = { stringIndex: Number(target.dataset.string), fret: Number(target.dataset.fret) };
+    const mirrored = getComputedStyle(event.currentTarget).direction === "rtl";
+    const next = nextCell(here, event.key, { rowOrder, frets, mirrored });
+    if (!next) return;
+    event.preventDefault();
+    setTouched(next);
+    const cell = cellAt(event.currentTarget, next);
+    cell?.focus();
+    // Shift + arrow moves and plays: hear your way along the neck
+    if (event.shiftKey) cell?.click();
+  };
+
+  // A fret focused any other way (a click, Tab) becomes the tab stop
+  const onFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.getAttribute("role") !== "gridcell") return;
+    const cell = { stringIndex: Number(target.dataset.string), fret: Number(target.dataset.fret) };
+    if (cell.stringIndex !== cursor.stringIndex || cell.fret !== cursor.fret) setTouched(cell);
+  };
+
   return (
-    <div className={reduceAnimations ? "neck reduce-motion" : "neck"}>
+    <div
+      className={reduceAnimations ? "neck reduce-motion" : "neck"}
+      role="grid"
+      aria-label="Fretboard. Arrow keys move, Enter plays the note."
+      onKeyDown={onKeyDown}
+      onFocus={onFocus}
+    >
       <Board
         frets={frets}
         columns={columns}
@@ -108,6 +163,7 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           labelMode={labelMode}
           soundType={soundType}
           selectedChordDegree={selectedChordDegree}
+          tabStopFret={cursor.stringIndex === descriptor.lowIndex ? cursor.fret : null}
           onPlayNote={onPlayNote}
         />
       ))}

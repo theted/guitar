@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { SwitchRow } from '@/components/ui/switch-row';
 import FieldLabel from '@/components/ui/field-label';
 import { tunings, concertOctave, isBassTuning, type TuningName } from '@/constants';
+import type { ReverbSetting } from '@/audio';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
 import { useFretboard } from '@/components/guitar/hooks/useFretboard';
@@ -38,6 +39,13 @@ const FLASH_HINTS: Record<FlashMode, string> = {
   all: 'The note in every octave, all over the neck.',
 };
 
+const ROOM_OPTIONS: ReadonlyArray<{ value: ReverbSetting; label: string }> = [
+  { value: 'off', label: 'Off' },
+  { value: 'low', label: 'Low' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'High' },
+];
+
 const SPAN_OPTIONS = [4, 5, 6].map((value) => ({ value, label: `${value} frets` }));
 
 // A tuning brings its string count, and moving between guitar and bass
@@ -54,6 +62,29 @@ const SHORTCUTS: Array<[string, string]> = [
   ['↑ ↓', 'Tempo up or down'],
   ['← →', 'Previous or next key'],
 ];
+
+// Once Tab has moved focus onto the neck
+const NECK_SHORTCUTS: Array<[string, string]> = [
+  ['Arrows', 'Move between frets and strings'],
+  ['Enter', 'Play the note'],
+  ['⇧ Arrow', 'Move and play'],
+  ['Home End', 'Open string, last fret'],
+];
+
+const ShortcutList: React.FC<{ items: Array<[string, string]> }> = ({ items }) => (
+  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
+    {items.map(([keys, action]) => (
+      <React.Fragment key={keys}>
+        <dt>
+          <kbd className="rounded-md bg-surface px-2 py-0.5 font-sans text-xs font-semibold text-ink ring-1 ring-inset ring-line">
+            {keys}
+          </kbd>
+        </dt>
+        <dd className="text-ink-2">{action}</dd>
+      </React.Fragment>
+    ))}
+  </dl>
+);
 
 // Set-once configuration: the instrument, and how the neck is drawn.
 // Everything used while practising lives on the page itself.
@@ -73,6 +104,7 @@ const SetupControls: React.FC = () => {
     leftHanded: state.leftHanded,
     trailLength: state.trailLength,
     reduceAnimations: state.reduceAnimations,
+    reverb: state.reverb,
   })));
 
 
@@ -135,6 +167,19 @@ const SetupControls: React.FC = () => {
           checked={s.lowAtBottom}
           onChange={(v) => setFormState({ lowAtBottom: v })}
         />
+      </Section>
+
+      <Section title="Sound">
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Room</FieldLabel>
+          <Segmented
+            aria-label="Room"
+            value={s.reverb}
+            onChange={(v) => setFormState({ reverb: v })}
+            options={ROOM_OPTIONS}
+          />
+          <p className="text-xs leading-snug text-ink-3">How much of the room you hear around each note.</p>
+        </div>
       </Section>
 
       <Section title="Positions">
@@ -205,18 +250,11 @@ const SetupControls: React.FC = () => {
       </Section>
 
       <Section title="Keyboard">
-        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
-          {SHORTCUTS.map(([keys, action]) => (
-            <React.Fragment key={keys}>
-              <dt>
-                <kbd className="rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-inset ring-line">
-                  {keys}
-                </kbd>
-              </dt>
-              <dd className="text-ink-2">{action}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
+        <ShortcutList items={SHORTCUTS} />
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-ink-3">On the neck, after tabbing to it</p>
+          <ShortcutList items={NECK_SHORTCUTS} />
+        </div>
       </Section>
     </div>
   );
