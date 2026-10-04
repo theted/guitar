@@ -285,6 +285,12 @@ doesn't swallow Space or the arrows (Space still plays); one reached by the
 keyboard (`:focus-visible`) keeps its native keys. Text fields, open pickers
 and the settings dialog get no shortcuts. Escape always stops.
 
+The neck is an ARIA grid (`GuitarNeck`) with one roving tab stop — the tonic
+of the lowest string until it's been used. `neckNavigation.ts` maps keys to
+cells by what's on screen (rows as drawn, mirrored for left-handed), Enter or
+Space plays the cell (it clicks it), Shift + arrow moves and plays. The global
+shortcuts leave a keyboard-focused `gridcell` alone.
+
 ## Component tree
 
 ```
@@ -299,7 +305,7 @@ App
 ├── Transport                 play: PhraseStrip (the phrase note by note) above
 │                             play/pause · pattern · octaves | tempo | sound · volume
 └── ControlsPanel (drawer)
-    └── SetupControls         instrument · positions · display · keyboard
+    └── SetupControls         instrument · sound · positions · display · keyboard
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase

@@ -63,6 +63,29 @@ const SHORTCUTS: Array<[string, string]> = [
   ['← →', 'Previous or next key'],
 ];
 
+// Once Tab has moved focus onto the neck
+const NECK_SHORTCUTS: Array<[string, string]> = [
+  ['Arrows', 'Move between frets and strings'],
+  ['Enter', 'Play the note'],
+  ['⇧ Arrow', 'Move and play'],
+  ['Home End', 'Open string, last fret'],
+];
+
+const ShortcutList: React.FC<{ items: Array<[string, string]> }> = ({ items }) => (
+  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
+    {items.map(([keys, action]) => (
+      <React.Fragment key={keys}>
+        <dt>
+          <kbd className="rounded-md bg-surface px-2 py-0.5 font-sans text-xs font-semibold text-ink ring-1 ring-inset ring-line">
+            {keys}
+          </kbd>
+        </dt>
+        <dd className="text-ink-2">{action}</dd>
+      </React.Fragment>
+    ))}
+  </dl>
+);
+
 // Set-once configuration: the instrument, and how the neck is drawn.
 // Everything used while practising lives on the page itself.
 const SetupControls: React.FC = () => {
@@ -227,18 +250,11 @@ const SetupControls: React.FC = () => {
       </Section>
 
       <Section title="Keyboard">
-        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
-          {SHORTCUTS.map(([keys, action]) => (
-            <React.Fragment key={keys}>
-              <dt>
-                <kbd className="rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-ink ring-1 ring-inset ring-line">
-                  {keys}
-                </kbd>
-              </dt>
-              <dd className="text-ink-2">{action}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
+        <ShortcutList items={SHORTCUTS} />
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-ink-3">On the neck, after tabbing to it</p>
+          <ShortcutList items={NECK_SHORTCUTS} />
+        </div>
       </Section>
     </div>
   );
