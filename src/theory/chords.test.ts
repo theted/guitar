@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { getDiatonicChords, getChordArpOffsets } from "./chords";
 import { intervalName } from "./intervals";
 import { getScalePitchClasses } from "@/music";
-import { scales } from "@/constants";
+import { scales, KEYS } from "@/constants";
 
 const chordsFor = (key: string, scale: keyof typeof scales) =>
   getDiatonicChords(key, getScalePitchClasses(scales[scale]));
@@ -65,6 +65,32 @@ describe("getDiatonicChords — other keys and scales", () => {
     expect(chords[2].roman).toBe("III+");
     expect(chords[4].roman).toBe("V");
     expect(chords[6].seventhName).toBe("G#dim7");
+  });
+
+  it("names flat-key minor chords from the display tonic, never with double flats", () => {
+    // Db minor is written as C# minor (it would need Fb, Bbb and Cb)
+    expect(chordsFor("db", "minor").map((c) => c.name)).toEqual([
+      "C#m", "D#dim", "E", "F#m", "G#m", "A", "B",
+    ]);
+    expect(chordsFor("ab", "minor").map((c) => c.name)).toEqual([
+      "G#m", "A#dim", "B", "C#m", "D#m", "E", "F#",
+    ]);
+    expect(chordsFor("db", "phrygian").map((c) => c.name)).toEqual([
+      "C#m", "D", "E", "F#m", "G#dim", "A", "Bm",
+    ]);
+  });
+
+  it("never names a mode's chords with a double flat in any key", () => {
+    // (Some exotic scales can't avoid one in either name of the tonic, e.g.
+    // Db harmonic major's Bbb; spelling.test.ts lists those.)
+    const modes = [
+      "major", "minor", "dorian", "phrygian", "lydian", "mixolydian", "locrian", "harmonic minor",
+    ] as const;
+    for (const scale of modes) {
+      for (const key of KEYS) {
+        for (const chord of chordsFor(key, scale)) expect(chord.name).not.toMatch(/bb/);
+      }
+    }
   });
 
   it("returns nothing for non-heptatonic scales", () => {
