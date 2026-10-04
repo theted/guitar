@@ -32,9 +32,9 @@ const focusedByKeyboard = (element: HTMLElement): boolean => {
 };
 
 /** Controls that use the arrow keys themselves */
-const ARROW_OWNERS = '[role="radio"], [role="slider"], [role="spinbutton"], [role="listbox"], [role="option"], [role="combobox"], input[type="range"]';
+const ARROW_OWNERS = '[role="radio"], [role="slider"], [role="spinbutton"], [role="listbox"], [role="option"], [role="combobox"], [role="gridcell"], input[type="range"]';
 /** Controls that act on Space themselves */
-const SPACE_OWNERS = 'button, [role="button"], [role="radio"], [role="switch"], [role="combobox"], [role="option"], a[href]';
+const SPACE_OWNERS = 'button, [role="button"], [role="radio"], [role="switch"], [role="combobox"], [role="option"], [role="gridcell"], a[href]';
 
 const targetOf = (event: KeyboardEvent): HTMLElement | null => {
   const target = event.target as HTMLElement | null;
