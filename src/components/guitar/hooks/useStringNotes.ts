@@ -3,6 +3,7 @@ import { getScalePitchClasses, keyToOffset } from "@/music";
 import { relativeTo } from "@/theory/pitch";
 import { getSpellingMap, formatNoteWithOctave } from "@/theory/spelling";
 import { getDiatonicChords } from "@/theory/chords";
+import { degreeNames } from "@/theory/intervals";
 import { scales } from "@/constants";
 import type { ScaleName } from "@/constants";
 
@@ -34,6 +35,8 @@ type FretDescriptor = {
   isBase: boolean;
   showScaleHighlight: boolean;
   degree: number | null;
+  /** How the scale reads this note: "1", "♭3", "♯4"… null outside the scale */
+  degreeName: string | null;
   /** null when no chord is selected; otherwise membership in the chord */
   chordTone: boolean | null;
   isChordRoot: boolean;
@@ -58,6 +61,7 @@ export const useStringNotes = ({
     const pitchClasses = getScalePitchClasses(scaleMap[scale]);
     const keyOffset = keyToOffset(keyy);
     const spellingMap = getSpellingMap(keyy, pitchClasses);
+    const names = degreeNames(pitchClasses);
 
     const chords = selectedChordDegree != null ? getDiatonicChords(keyy, pitchClasses) : [];
     const chord = selectedChordDegree != null ? chords[selectedChordDegree - 1] ?? null : null;
@@ -71,6 +75,7 @@ export const useStringNotes = ({
       const showScaleHighlight =
         highlightEnabled && isSelected && (!scaleHighlightBottomOnly || isBottom);
       const degree = isSelected ? pitchClasses.indexOf(relativePc) + 1 : null;
+      const degreeName = degree != null ? names[degree - 1] : null;
       const label = formatNoteWithOctave(actualNote, spellingMap);
       const chordTone = chordPcs ? chordPcs.has(relativePc) : null;
       const isChordRoot = chord != null && relativePc === chord.pcs[0];
@@ -85,6 +90,7 @@ export const useStringNotes = ({
         isBase,
         showScaleHighlight,
         degree,
+        degreeName,
         chordTone,
         isChordRoot,
         inPosition,

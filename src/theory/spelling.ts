@@ -1,5 +1,6 @@
 import type { PitchClass } from "@/types/music";
 import { mod12 } from "./pitch";
+import { degreeSteps } from "./intervals";
 
 // Enharmonic spelling layer. All pitch math elsewhere in the app stays in
 // E-rooted pitch classes (E = 0, matching the open low-E string); this module
@@ -106,7 +107,26 @@ export const getScaleSpelling = (
   }
   const useFlats = prefersFlats(tonic, null);
   const tonicSemitone = LETTER_SEMITONE[tonic.letter] + tonic.accidental;
-  return relativePcs.map((pc) => spellChromatic(tonicSemitone + pc, useFlats));
+  if (relativePcs.length > 7) {
+    return relativePcs.map((pc) => spellChromatic(tonicSemitone + pc, useFlats));
+  }
+  // Tier 2: smaller scales spell each note by the degree it's read as
+  // (blues ♭5 → Bb in E), falling back to the key's accidentals where that
+  // would need a double accidental or Cb/Fb/E#/B#
+  const tonicLetterIndex = LETTERS.indexOf(tonic.letter);
+  const steps = degreeSteps(relativePcs);
+  return relativePcs.map((pc, index) => {
+    const letter = LETTERS[(tonicLetterIndex + steps[index]) % 7];
+    const target = tonicSemitone + pc;
+    let accidental: number = mod12(target - LETTER_SEMITONE[letter]);
+    if (accidental > 6) accidental -= 12;
+    const awkward =
+      Math.abs(accidental) > 1 ||
+      (accidental === -1 && (letter === "C" || letter === "F")) ||
+      (accidental === 1 && (letter === "E" || letter === "B"));
+    if (awkward && pc !== 0) return spellChromatic(target, useFlats);
+    return { letter, accidental, pc: toAppPc(target) };
+  });
 };
 
 /**

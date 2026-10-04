@@ -106,3 +106,19 @@ describe("migrateFormState — v6", () => {
     expect(migrated).not.toHaveProperty("octaveHighlight");
   });
 });
+
+describe("migrateFormState — v7", () => {
+  it("moves the old two-octaves-up default to real guitar pitch", () => {
+    expect(migrateFormState({ startOctave: 6 }).startOctave).toBe(4);
+  });
+
+  it("keeps any other octave someone chose", () => {
+    expect(migrateFormState({ startOctave: 3 }).startOctave).toBe(3);
+    expect(migrateFormState({ startOctave: 5 }).startOctave).toBe(5);
+  });
+
+  it("keeps a stored sound, and starts new players on a steel-string guitar", () => {
+    expect(migrateFormState({ soundType: "marimba" }).soundType).toBe("marimba");
+    expect(migrateFormState({}).soundType).toBe("acoustic-steel");
+  });
+});

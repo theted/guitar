@@ -43,7 +43,8 @@ src/
 │   ├── context.ts              # AudioContext, master bus, voice registry
 │   ├── synthesis.ts            # Voice construction (oscillators, envelopes, FX chain)
 │   ├── effects.ts              # Reverb / distortion / delay nodes (cached)
-│   └── presets.ts              # SoundType and the 15 sound configs
+│   ├── pluck.ts                # Karplus-Strong plucked strings, rendered + cached
+│   └── presets.ts              # SoundType and the 19 sound configs
 ├── theory/
 │   ├── pitch.ts                # mod12, relativeTo — the pitch-class primitives
 │   ├── spelling.ts             # Enharmonic spelling (Bb vs A#) per key
@@ -89,6 +90,15 @@ src/
   `[0,2,4,5,7,9,11]`, relative to the tonic.
 - **Degrees are 1-based in the UI, 0-based in arrays**: `pcs[degree - 1]`.
 
+### 1b. Spelling and degrees
+
+Seven-note scales spell one letter per degree. Smaller scales spell each note
+by the degree it's read as (`degreeSteps` in `theory/intervals.ts`): ♭5 for the
+blues note, ♯4 when there's no 4th (lydian, whole tone), ♯5 when there's no 5th
+to flatten against; spellings needing Cb/Fb/E#/B# or doubles fall back to the
+key's accidentals. `degreeNames` (1 ♭3 4 ♭5 …) drives the legend and the
+"Degrees" label mode, so letters and labels always agree.
+
 ### 2. Fretboard geometry (`theory/positions.ts`, `hooks/useFretboard.ts`)
 
 `getStringBaseNotes(tuning, strings, startOctave)` returns the open-string
@@ -129,8 +139,21 @@ the catalog/grouping correspondence.
 ### 4. Audio (`audio/`)
 
 ```
-oscillators → layer gains → [filter] → [distortion] → [delay] → [reverb] → voice gain → master bus → destination
+oscillators → layer gains ┐
+plucked string buffer ─────┴→ [filter] → [distortion] → [delay] → [reverb] → voice gain → master bus → destination
 ```
+
+- **Plucked sounds** (the guitars and basses) set `pluck` instead of oscillator
+  `layers`: `pluck.ts` renders each note once by Karplus-Strong synthesis (a
+  noise burst circulating in a one-period delay line with a damping filter,
+  fractionally tuned, within 5 cents across the neck) and caches the buffer
+  per sound and pitch. A plucked note rings on for up to `pluck.length`
+  (three steps' worth), like a string you don't damp.
+- Voice stealing fades the old voice **at the new note's start time**, not
+  when the new note is scheduled (up to a lookahead window earlier).
+- The neck plays at real pitch: octave 4 (top string) is guitar, 2 is bass —
+  `concertOctave()` in `constants/tunings.ts`. Choosing a tuning sets its
+  string count and, between guitar and bass, its octave.
 
 - `playSemitoneAt(semitone, atTime, { duration, type })` is the only entry point.
 - Every voice connects to the **master bus** (`getMasterBus()`), not to
@@ -200,7 +223,7 @@ write with `setFormState`. Nothing needs to stop playback first: a change
 while a phrase plays (key, scale, chord, position, pattern, tempo, sound,
 tuning…) is picked up live — see below.
 
-Persistence is versioned (currently 6). `migrateFormState` keeps only fields
+Persistence is versioned (currently 7). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
 linger in localStorage, and maps renamed fields via `RENAMED_FIELDS`. Add to
 both when you rename or remove a setting, and bump the version.

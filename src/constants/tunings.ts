@@ -78,3 +78,9 @@ export const TUNING_GROUPS: ReadonlyArray<{
     tunings: ["DADGAD", "All Fourths", "New Standard", "Russian", "Ostrich", "DEAD"],
   },
 ];
+
+/** Bass tunings sound an octave below guitar */
+export const isBassTuning = (name: TuningName): boolean => name.startsWith("Bass");
+
+/** The octave that puts a tuning at its instrument's real pitch */
+export const concertOctave = (name: TuningName): number => (isBassTuning(name) ? 2 : 4);

@@ -18,3 +18,13 @@ describe("picker group metadata", () => {
     expect(new Set(grouped).size).toBe(grouped.length);
   });
 });
+
+describe("concert pitch", () => {
+  it("puts guitars at octave 4 and basses an octave lower", async () => {
+    const { concertOctave } = await import("./tunings");
+    expect(concertOctave("Standard")).toBe(4);
+    expect(concertOctave("7-String Standard")).toBe(4);
+    expect(concertOctave("Bass Standard")).toBe(2);
+    expect(concertOctave("Bass Drop D")).toBe(2);
+  });
+});

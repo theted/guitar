@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { setFormState, useFormStore } from "@/store";
+import { TEMPO, clampTempo } from "@/constants";
+import { KEYS_CHROMATIC } from "@/components/controls/options";
 
 type UseKeyboardShortcutsArgs = {
   togglePlay: () => void;
@@ -7,10 +9,6 @@ type UseKeyboardShortcutsArgs = {
   /** Suppress the global Escape-to-stop while a dialog handles Escape itself */
   panelOpen: boolean;
 };
-
-const BPM_STEP = 5;
-const BPM_MIN = 30;
-const BPM_MAX = 700;
 
 // Interactive elements handle their own key events (Space activates buttons,
 // arrows move sliders); the global shortcuts must not double-fire on them.
@@ -23,13 +21,19 @@ const targetHandlesKeys = (target: EventTarget | null): boolean => {
   return element.closest('[role="combobox"], [role="listbox"], [role="dialog"]') != null;
 };
 
-// Applies while playing, like the tempo slider
+// Both apply while playing, like the controls they stand in for
 const adjustBpm = (delta: number) => {
   const { bpm } = useFormStore.getState();
-  setFormState({ bpm: Math.min(BPM_MAX, Math.max(BPM_MIN, bpm + delta)) });
+  setFormState({ bpm: clampTempo(bpm + delta) });
 };
 
-// Global shortcuts: Space = play/pause, Escape = stop, arrows = BPM.
+const stepKey = (delta: number) => {
+  const index = KEYS_CHROMATIC.indexOf(useFormStore.getState().tone);
+  const next = (index + delta + KEYS_CHROMATIC.length) % KEYS_CHROMATIC.length;
+  setFormState({ tone: KEYS_CHROMATIC[next] });
+};
+
+// Global shortcuts: Space = play/pause, Escape = stop, ↑/↓ = tempo, ←/→ = key.
 export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboardShortcutsArgs) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -43,10 +47,16 @@ export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboar
         stop();
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        adjustBpm(BPM_STEP);
+        adjustBpm(TEMPO.STEP);
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
-        adjustBpm(-BPM_STEP);
+        adjustBpm(-TEMPO.STEP);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        stepKey(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        stepKey(-1);
       }
     };
 

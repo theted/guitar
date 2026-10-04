@@ -22,7 +22,7 @@ type Props = {
 
 const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: string }> = [
   { value: "note", label: "Notes", title: "Name each note (E, F♯, G…)" },
-  { value: "degree", label: "Degrees", title: "Number each note by its place in the scale (1–7)" },
+  { value: "degree", label: "Degrees", title: "Show each note's scale degree (1, ♭3, 5…)" },
   { value: "interval", label: "Intervals", title: "Show each note's interval from the root (P1, m3, P5…)" },
 ];
 

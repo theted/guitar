@@ -8,6 +8,7 @@ import { toneAnimationManager } from '@/lib/tone-animation';
 import { ensureAudioInitialized, setMasterVolume } from '@/audio';
 import { usePlayback } from '@/hooks/usePlayback';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useShareableUrl } from '@/hooks/useShareableUrl';
 
 const App: React.FC = () => {
   const [panelOpen, setPanelOpen] = React.useState(false);
@@ -37,6 +38,7 @@ const App: React.FC = () => {
   const { isPlaying, togglePlay, stopAllPlayback, playNote, events } = usePlayback();
 
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
+  useShareableUrl();
 
   return (
     <div className="flex h-dvh flex-col">

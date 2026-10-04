@@ -90,7 +90,7 @@ describe("other heptatonic scales", () => {
   });
 });
 
-describe("non-heptatonic scales (key-signature fallback)", () => {
+describe("non-heptatonic scales (spelled by degree)", () => {
   it("spells E minor pentatonic", () => {
     expect(spell("e", "pentatonic")).toEqual(["E", "G", "A", "B", "D"]);
   });
@@ -99,16 +99,17 @@ describe("non-heptatonic scales (key-signature fallback)", () => {
     expect(spell("bb", "pentatonic major")).toEqual(["Bb", "C", "D", "F", "G"]);
   });
 
-  it("spells C whole tone with sharps", () => {
-    expect(spell("c", "whole tone")).toEqual(["C", "D", "E", "F#", "G#", "A#"]);
+  it("spells C whole tone as 1 2 3 #4 #5 b7", () => {
+    expect(spell("c", "whole tone")).toEqual(["C", "D", "E", "F#", "G#", "Bb"]);
   });
 
-  it("spells F blues with flats", () => {
+  it("spells the blue note as a flat five", () => {
+    expect(spell("e", "blues")).toEqual(["E", "G", "A", "Bb", "B", "D"]);
+    expect(spell("a", "blues")).toEqual(["A", "C", "D", "Eb", "E", "G"]);
+  });
+
+  it("avoids Cb for the flat five of F blues", () => {
     expect(spell("f", "blues")).toEqual(["F", "Ab", "Bb", "B", "C", "Eb"]);
-  });
-
-  it("spells A blues with sharps", () => {
-    expect(spell("a", "blues")).toEqual(["A", "C", "D", "D#", "E", "G"]);
   });
 });
 

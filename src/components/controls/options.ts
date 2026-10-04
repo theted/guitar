@@ -27,11 +27,20 @@ export const KEYS_CHROMATIC: KeyName[] = [...KEYS].sort(
 
 export const SOUND_GROUPS: Array<{ label: string; options: Array<{ value: SoundType; label: string }> }> = [
   {
-    label: 'Guitar & bass',
+    label: 'Guitar',
     options: [
-      { value: 'guitar-clean', label: 'Clean guitar' },
-      { value: 'guitar-distorted', label: 'Distorted guitar' },
-      { value: 'bass', label: 'Bass' },
+      { value: 'acoustic-steel', label: 'Steel-string acoustic' },
+      { value: 'acoustic-nylon', label: 'Nylon-string classical' },
+      { value: 'guitar-clean', label: 'Electric, clean' },
+      { value: 'guitar-distorted', label: 'Electric, overdriven' },
+      { value: 'guitar-muted', label: 'Palm-muted, overdriven' },
+    ],
+  },
+  {
+    label: 'Bass',
+    options: [
+      { value: 'bass', label: 'Fingerstyle bass' },
+      { value: 'bass-picked', label: 'Picked bass' },
     ],
   },
   {
