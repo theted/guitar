@@ -5,7 +5,7 @@ import Transport from '@/components/Transport';
 import ControlsPanel from '@/components/controls/ControlsPanel';
 import { useFormStore } from '@/store';
 import { toneAnimationManager } from '@/lib/tone-animation';
-import { ensureAudioInitialized, setMasterVolume } from '@/audio';
+import { ensureAudioInitialized, setMasterVolume, setReverbLevel, REVERB_LEVELS } from '@/audio';
 import { usePlayback } from '@/hooks/usePlayback';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useShareableUrl } from '@/hooks/useShareableUrl';
@@ -34,6 +34,12 @@ const App: React.FC = () => {
   React.useEffect(() => {
     setMasterVolume(muted ? 0 : volume / 100);
   }, [volume, muted]);
+
+  // The Room setting is the reverb return level, so it reaches tails already ringing
+  const reverb = useFormStore((s) => s.reverb);
+  React.useEffect(() => {
+    setReverbLevel(REVERB_LEVELS[reverb]);
+  }, [reverb]);
 
   const { isPlaying, togglePlay, stopAllPlayback, playNote, events, maxOctaves } = usePlayback();
 

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { semitoneToFrequency, synthesizeSound } from './synthesis';
-import { activeVoices, voicesByNote, MAX_POLYPHONY } from './context';
+import { activeVoices, voicesByNote, MAX_POLYPHONY, setReverbLevel } from './context';
 import { envelopeTimes, SILENT } from './envelope';
+import { DEFAULT_ROOM_SEND } from './effects';
 import { SOUND_PRESETS, type SoundType } from './presets';
 import { VOICE_CLEANUP_EXTRA_MS, VOICE_STOP_RAMP_SEC } from '@/constants';
 
@@ -32,10 +33,15 @@ describe('semitoneToFrequency', () => {
 
 // ─── The voice graph, on a stand-in AudioContext that records automation ────
 
-// jsdom has no Web Audio; the master bus is the only thing needing a real context
+// jsdom has no Web Audio; the buses are the only things needing a real context
+const buses = vi.hoisted(() => {
+  const bus = () => ({ connect: () => {}, disconnect: () => {} });
+  return { master: bus(), reverb: bus() };
+});
 vi.mock('./context', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./context')>()),
-  getMasterBus: () => ({ connect: () => {}, disconnect: () => {} }),
+  getMasterBus: () => buses.master,
+  getReverbBus: () => buses.reverb,
 }));
 
 type Automation = { type: string; value?: number; time: number };
@@ -52,8 +58,14 @@ class FakeParam {
 }
 
 class FakeNode {
-  connect() {}
-  disconnect() {}
+  /** Where this node's output goes */
+  outputs = new Set<unknown>();
+  disconnected = false;
+  connect(target: unknown) { this.outputs.add(target); }
+  disconnect() {
+    this.disconnected = true;
+    this.outputs.clear();
+  }
 }
 
 class FakeSource extends FakeNode {
@@ -67,9 +79,12 @@ class FakeSource extends FakeNode {
   stop(time: number) { this.stopped = time; }
 }
 
+type FakeGain = FakeNode & { gain: FakeParam };
+
 const fakeContext = ({ cancelAndHold = true } = {}) => {
-  const gains: { gain: FakeParam }[] = [];
+  const gains: FakeGain[] = [];
   const sources: FakeSource[] = [];
+  const convolvers: FakeNode[] = [];
   const param = (value?: number) => {
     const p = new FakeParam(value);
     if (!cancelAndHold) Object.defineProperty(p, 'cancelAndHoldAtTime', { value: undefined });
@@ -94,16 +109,25 @@ const fakeContext = ({ cancelAndHold = true } = {}) => {
       return source;
     },
     createBiquadFilter: () => Object.assign(new FakeNode(), { type: '', frequency: param(), Q: param() }),
-    createConvolver: () => Object.assign(new FakeNode(), { buffer: null }),
+    createConvolver: () => {
+      const node = Object.assign(new FakeNode(), { buffer: null });
+      convolvers.push(node);
+      return node;
+    },
     createWaveShaper: () => Object.assign(new FakeNode(), { curve: null, oversample: 'none' }),
     createDelay: () => Object.assign(new FakeNode(), { delayTime: param() }),
     createBuffer: (_channels: number, length: number) => ({ getChannelData: () => new Float32Array(length) }),
   };
+  /** Gains with an envelope, master first then one per layer (effect gains only set a value) */
+  const envelopeNodes = () => gains.filter((node) => node.gain.events.length > 0);
   return {
     ctx,
     sources,
-    /** Gains with an envelope, master first then one per layer (effect gains only set a value) */
-    envelopes: () => gains.map((node) => node.gain).filter((gain) => gain.events.length > 0),
+    convolvers,
+    /** The gains feeding `target` */
+    gainsInto: (target: unknown) => gains.filter((node) => node.outputs.has(target)),
+    envelopeNodes,
+    envelopes: () => envelopeNodes().map((node) => node.gain),
     play: (sound: SoundType, start: number, duration: number, semitone = 0) =>
       synthesizeSound(
         ctx as unknown as AudioContext,
@@ -241,5 +265,83 @@ describe('synthesizeSound', () => {
     const [source] = audio.sources;
     expect(last(master.events)).toEqual({ type: 'exponential', value: SILENT, time: expect.closeTo(0.72, 9) });
     expect(source.stopped).toBeCloseTo(0.72, 9);
+  });
+});
+
+describe('the shared reverb', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    activeVoices.clear();
+    voicesByNote.clear();
+  });
+  afterEach(() => {
+    setReverbLevel(1);
+    vi.useRealTimers();
+  });
+
+  const close = (value: number) => expect.closeTo(value, 9);
+
+  it('sends every voice of a sound into one room, after the voice envelope', () => {
+    const audio = fakeContext();
+    audio.play('acoustic-steel', 0, 0.24, 0);
+    audio.play('acoustic-steel', 0.1, 0.24, 4);
+    expect(audio.convolvers).toHaveLength(1);
+    const [room] = audio.convolvers;
+    expect([...room.outputs]).toEqual([buses.reverb]);
+
+    // Each voice: envelope → dry (1 − wet) → master bus, and envelope → send (wet) → room.
+    // Fed from the envelope, a send is silent whenever its voice is.
+    const sends = audio.gainsInto(room);
+    const dries = audio.gainsInto(buses.master);
+    expect(sends.map((node) => node.gain.value)).toEqual([0.14, 0.14]);
+    expect(dries.map((node) => node.gain.value)).toEqual([close(0.86), close(0.86)]);
+    audio.envelopeNodes().forEach((master, i) => {
+      expect([...master.outputs]).toEqual([dries[i], sends[i]]);
+    });
+  });
+
+  it('puts sounds without a room of their own in the default room, at full level', () => {
+    const audio = fakeContext();
+    audio.play('sine', 0, 0.5, 0);
+    // The nylon guitar's room is the default room
+    audio.play('acoustic-nylon', 0, 0.5, 2);
+    audio.play('bells', 0, 0.5, 4);
+    expect(audio.convolvers).toHaveLength(2);
+    const [shared, bells] = audio.convolvers;
+    expect(audio.gainsInto(shared).map((node) => node.gain.value)).toEqual([DEFAULT_ROOM_SEND, 0.16]);
+    expect(audio.gainsInto(bells).map((node) => node.gain.value)).toEqual([0.3]);
+    expect(audio.gainsInto(buses.master).map((node) => node.gain.value)).toEqual([1, close(0.84), close(0.7)]);
+  });
+
+  it('lets the room ring on when a voice ends: only the voice’s own nodes are disconnected', () => {
+    const audio = fakeContext();
+    const voice = audio.play('acoustic-steel', 0, 1);
+    const [room] = audio.convolvers;
+    const [send] = audio.gainsInto(room);
+    const [dry] = audio.gainsInto(buses.master);
+
+    audio.ctx.currentTime = 0.5;
+    voice.stop();
+    vi.advanceTimersByTime(VOICE_STOP_RAMP_SEC * 1000 + 60);
+    expect(send.disconnected).toBe(true);
+    expect(dry.disconnected).toBe(true);
+    expect(room.disconnected).toBe(false);
+
+    // The next note goes into the same room, and rings out on its own
+    audio.play('acoustic-steel', 1, 1);
+    expect(audio.gainsInto(room)).toHaveLength(1);
+    vi.runAllTimers();
+    expect(audio.gainsInto(room)).toHaveLength(0);
+    expect(audio.convolvers).toEqual([room]);
+    expect(room.disconnected).toBe(false);
+    expect([...room.outputs]).toEqual([buses.reverb]);
+  });
+
+  it('sends nothing, and builds no reverb, with the room turned off', () => {
+    setReverbLevel(0);
+    const audio = fakeContext();
+    audio.play('synth-pad', 0, 1);
+    expect(audio.convolvers).toHaveLength(0);
+    expect(audio.gainsInto(buses.master).map((node) => node.gain.value)).toEqual([close(0.6)]);
   });
 });

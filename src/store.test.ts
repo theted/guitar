@@ -152,7 +152,37 @@ describe("sanitizeFormState", () => {
 
   it("keeps everything valid as it is", async () => {
     const { sanitizeFormState } = await import("./store");
-    const state = { ...migrateFormState({}), phraseMode: "thirds" as const, soundType: "bass" as const, strings: 7, bpm: 120 };
+    const state = { ...migrateFormState({}), phraseMode: "thirds" as const, soundType: "bass" as const, strings: 7, bpm: 120, reverb: "high" as const };
     expect(sanitizeFormState(state)).toEqual(state);
+  });
+
+  it("falls back to the normal room for a Room setting it doesn't know", async () => {
+    const { sanitizeFormState } = await import("./store");
+    const base = migrateFormState({});
+    expect(sanitizeFormState({ ...base, reverb: "cathedral" as never }).reverb).toBe("normal");
+    expect(sanitizeFormState({ ...base, reverb: "toString" as never }).reverb).toBe("normal");
+    expect(sanitizeFormState({ ...base, reverb: undefined as never }).reverb).toBe("normal");
+    expect(sanitizeFormState({ ...base, reverb: "off" }).reverb).toBe("off");
+  });
+});
+
+describe("the Room setting", () => {
+  it("starts at normal, and survives a migration", () => {
+    expect(migrateFormState({}).reverb).toBe("normal");
+    expect(migrateFormState({ reverb: "low" }).reverb).toBe("low");
+  });
+
+  it("is filled in for state stored before it existed, without a version bump", async () => {
+    const { useFormStore } = await import("./store");
+    const { reverb: _, ...stored } = { ...migrateFormState({}), bpm: 140 };
+    localStorage.setItem("formState", JSON.stringify({ state: stored, version: 7 }));
+    await useFormStore.persist.rehydrate();
+    expect(useFormStore.getState().bpm).toBe(140);
+    expect(useFormStore.getState().reverb).toBe("normal");
+
+    localStorage.setItem("formState", JSON.stringify({ state: { ...stored, reverb: "loud" }, version: 7 }));
+    await useFormStore.persist.rehydrate();
+    expect(useFormStore.getState().reverb).toBe("normal");
+    localStorage.removeItem("formState");
   });
 });
