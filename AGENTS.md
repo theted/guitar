@@ -154,8 +154,27 @@ the catalog/grouping correspondence.
 
 ```
 oscillators → layer gains ┐
-plucked string buffer ─────┴→ [filter] → [distortion] → [delay] → [reverb] → voice gain → master bus → destination
+plucked string buffer ─────┴→ [filter] → [distortion] → [delay] → voice envelope ┬→ dry ───────────────────────────────────────→ master bus → destination
+                                                                                 └→ send → shared room reverb → reverb return ┘
 ```
+
+- **Reverb is shared, one convolver per room** (`effects.ts`). A room
+  (`roomSize`/`damping`) is a single ConvolverNode, created the first time a
+  sound needs it and kept for the AudioContext's lifetime, feeding the reverb
+  return bus (`getReverbBus()` → master bus, so volume and mute apply to
+  tails). Voices *send* their enveloped output into it; `reverbRouting(config)`
+  decides how much, to which room. A sound with `effects.reverb` keeps its
+  designed balance (dry `1 − wet`, send `wet`); every other sound stays at dry
+  1 and sends `DEFAULT_ROOM_SEND` (0.1, ~32 dB under the dry sound) into
+  `DEFAULT_ROOM` (0.3 / 0.5, also the nylon guitar's room), so all sounds sit
+  in one space. Cleanup disconnects only the voice's own nodes (envelope, dry,
+  send), never a room, so a tail rings out after its voice has stopped (Stop
+  included). Never create a convolver per note.
+- **The Room setting** (`reverb` in the store: off / low / normal / high →
+  `REVERB_LEVELS` 0 / 0.5 / 1 / 1.8) is the reverb return level, applied from
+  `App` with `setReverbLevel` like the volume: ramped, nothing per note, and it
+  reaches tails already ringing. Normal is the balance the sounds were
+  designed with. At Off voices send nothing, so no reverb runs at all.
 
 - **Plucked sounds** (the guitars and basses) set `pluck` instead of oscillator
   `layers`: `pluck.ts` renders each note once by Karplus-Strong synthesis (a
@@ -170,12 +189,12 @@ plucked string buffer ─────┴→ [filter] → [distortion] → [delay
   string count and, between guitar and bass, its octave.
 
 - `playSemitoneAt(semitone, atTime, { duration, type })` is the only entry point.
-- Every voice connects to the **master bus** (`getMasterBus()`), not to
-  `destination`, so `setMasterVolume(0–1)` affects sounding notes and costs
-  nothing per note.
+- Every voice (and the reverb return) connects to the **master bus**
+  (`getMasterBus()`), not to `destination`, so `setMasterVolume(0–1)` affects
+  sounding notes and tails and costs nothing per note.
 - Voice stealing per pitch plus a hard `MAX_POLYPHONY` cap keep the node graph
-  bounded. Reverb impulses and distortion curves are cached — generating them
-  per note was measurably expensive.
+  bounded, and the rooms are shared. Reverb impulses and distortion curves are
+  cached — generating them per note was measurably expensive.
 - Frequency: `440 * 2^((semitone - 5) / 12)` (A4 is 5 semitones above E4).
 - Envelope ramps are exponential and never target zero or a negative time; a
   negative release time used to throw and silence the first playback entirely.

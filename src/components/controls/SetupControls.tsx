@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { SwitchRow } from '@/components/ui/switch-row';
 import FieldLabel from '@/components/ui/field-label';
 import { tunings, concertOctave, isBassTuning, type TuningName } from '@/constants';
+import type { ReverbSetting } from '@/audio';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
 import { useFretboard } from '@/components/guitar/hooks/useFretboard';
@@ -37,6 +38,13 @@ const FLASH_HINTS: Record<FlashMode, string> = {
   octave: 'Every fret with the same pitch, across strings.',
   all: 'The note in every octave, all over the neck.',
 };
+
+const ROOM_OPTIONS: ReadonlyArray<{ value: ReverbSetting; label: string }> = [
+  { value: 'off', label: 'Off' },
+  { value: 'low', label: 'Low' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'High' },
+];
 
 const SPAN_OPTIONS = [4, 5, 6].map((value) => ({ value, label: `${value} frets` }));
 
@@ -73,6 +81,7 @@ const SetupControls: React.FC = () => {
     leftHanded: state.leftHanded,
     trailLength: state.trailLength,
     reduceAnimations: state.reduceAnimations,
+    reverb: state.reverb,
   })));
 
 
@@ -135,6 +144,19 @@ const SetupControls: React.FC = () => {
           checked={s.lowAtBottom}
           onChange={(v) => setFormState({ lowAtBottom: v })}
         />
+      </Section>
+
+      <Section title="Sound">
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Room</FieldLabel>
+          <Segmented
+            aria-label="Room"
+            value={s.reverb}
+            onChange={(v) => setFormState({ reverb: v })}
+            options={ROOM_OPTIONS}
+          />
+          <p className="text-xs leading-snug text-ink-3">How much of the room you hear around each note.</p>
+        </div>
       </Section>
 
       <Section title="Positions">

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS, PHRASE_MODE_GROUPS, TEMPO } from './constants';
 import { SoundType } from './audio';
 import { SOUND_PRESETS } from './audio/presets';
+import { REVERB_LEVELS, type ReverbSetting } from './audio/effects';
 
 /** What the dots on the neck say */
 export type LabelMode = 'note' | 'degree' | 'interval';
@@ -35,6 +36,8 @@ export type FormState = {
   trailLength: number;
   labelMode: LabelMode;
   soundType: SoundType;
+  /** How much of the shared room is heard around each note */
+  reverb: ReverbSetting;
   startOctave: number;
   /** Show the scale on the lowest string only, so each tone appears once */
   singleStringScale: boolean;
@@ -73,6 +76,7 @@ const initial: FormState = {
   trailLength: 1200,
   labelMode: 'note',
   soundType: 'acoustic-steel',
+  reverb: 'normal',
   // The top string's octave: 4 puts high E at E4, a real guitar's pitch
   startOctave: 4,
   singleStringScale: false,
@@ -160,6 +164,7 @@ export const migrateFormState = (persisted: unknown): FormState => {
 const PHRASE_MODES = new Set<string>(PHRASE_MODE_GROUPS.flatMap((group) => group.modes.map((mode) => mode.value)));
 const LABEL_MODES = new Set<string>(['note', 'degree', 'interval']);
 const FLASH_MODES = new Set<string>(['fret', 'octave', 'all']);
+const REVERB_SETTINGS = new Set<string>(Object.keys(REVERB_LEVELS));
 
 const intIn = (value: unknown, min: number, max: number, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
@@ -181,6 +186,7 @@ export const sanitizeFormState = (state: FormState): FormState => {
   valid('soundType', typeof clean.soundType === 'string' && clean.soundType in SOUND_PRESETS);
   valid('labelMode', LABEL_MODES.has(clean.labelMode));
   valid('flashMode', FLASH_MODES.has(clean.flashMode));
+  valid('reverb', REVERB_SETTINGS.has(clean.reverb));
   clean.strings = intIn(clean.strings, 1, 12, initial.strings);
   clean.frets = intIn(clean.frets, 1, 36, initial.frets);
   clean.startOctave = intIn(clean.startOctave, 0, 9, initial.startOctave);
