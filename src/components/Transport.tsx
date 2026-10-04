@@ -1,12 +1,13 @@
 import React from 'react';
 import cx from 'classnames';
-import { ChevronUp, Minus, Pause, Play, Plus, Volume2, VolumeX } from 'lucide-react';
+import { ChevronUp, Minus, Pause, Play, Plus, Volume2, VolumeX, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Picker } from '@/components/ui/select';
 import { Segmented } from '@/components/ui/segmented';
 import { Slider } from '@/components/ui/slider';
 import { PATTERN_GROUPS, SOUND_GROUPS } from '@/components/controls/options';
 import { setFormState, useFormStore } from '@/store';
+import { useScalePositions } from '@/components/guitar/hooks/useScalePositions';
 import { TEMPO, clampTempo, type PhraseMode } from '@/constants';
 import type { SoundType } from '@/audio';
 
@@ -65,7 +66,7 @@ const TempoStep: React.FC<{ label: string; onClick: () => void; children: React.
 const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
   const {
     phraseMode, phraseOctaves, phraseDescend, phraseLoop, swing, bpm, soundType,
-    volume, muted, selectedPosition,
+    volume, muted,
   } = useFormStore(useShallow((state) => ({
     phraseMode: state.phraseMode,
     phraseOctaves: state.phraseOctaves,
@@ -76,17 +77,14 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
     soundType: state.soundType,
     volume: state.volume,
     muted: state.muted,
-    selectedPosition: state.selectedPosition,
   })));
 
   // On phones only play and pattern show until the rest is asked for
   const [expanded, setExpanded] = React.useState(false);
   const more = expanded ? undefined : 'max-sm:hidden';
-  // Position practice plays the box path directly; pattern and range don't apply
-  const positionActive = selectedPosition != null;
-  const positionHint = positionActive
-    ? `Playing position ${selectedPosition}. Deselect it to choose a pattern.`
-    : undefined;
+  // Position practice plays the box itself, so pattern and range don't apply:
+  // they make way for what is being practised and a way back to patterns
+  const { activePosition } = useScalePositions();
 
   return (
     <div className="inverse border-t border-line pb-[env(safe-area-inset-bottom)]">
@@ -104,16 +102,34 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
             : <Play className="ml-0.5 h-5 w-5" fill="currentColor" />}
         </button>
 
-        <Control label={positionActive ? `Position ${selectedPosition}` : 'Pattern'} className="w-48 grow sm:grow-0">
-          <Picker
-            value={phraseMode}
-            onValueChange={(v) => setFormState({ phraseMode: v as PhraseMode })}
-            groups={PATTERN_GROUPS}
-            aria-label="Pattern"
-            disabled={positionActive}
-            title={positionHint}
-          />
-        </Control>
+        {activePosition ? (
+          <Control label="Practising" className="w-48 grow sm:grow-0">
+            <div className="flex h-9 items-center justify-between gap-2 rounded-lg bg-surface pl-3 pr-1 ring-1 ring-inset ring-line">
+              <span className="truncate text-sm">
+                <span className="font-semibold">Position {activePosition.index}</span>
+                <span className="tabular text-ink-3">, frets {activePosition.lowFret}–{activePosition.highFret}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setFormState({ selectedPosition: null })}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-ink-2 transition-colors hover:bg-raised hover:text-ink"
+                aria-label="Stop practising this position and play patterns"
+                title="Back to patterns"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </Control>
+        ) : (
+          <Control label="Pattern" className="w-48 grow sm:grow-0">
+            <Picker
+              value={phraseMode}
+              onValueChange={(v) => setFormState({ phraseMode: v as PhraseMode })}
+              groups={PATTERN_GROUPS}
+              aria-label="Pattern"
+            />
+          </Control>
+        )}
 
         <button
           type="button"
@@ -126,16 +142,16 @@ const Transport: React.FC<TransportProps> = ({ isPlaying, onTogglePlay }) => {
           <ChevronUp className={cx('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
         </button>
 
-        <Control label="Octaves" className={more}>
-          <div className={positionActive ? 'pointer-events-none opacity-40' : undefined} title={positionHint}>
+        {!activePosition && (
+          <Control label="Octaves" className={more}>
             <Segmented
               aria-label="Octaves"
               value={phraseOctaves}
               onChange={(value) => setFormState({ phraseOctaves: value })}
               options={OCTAVE_OPTIONS}
             />
-          </div>
-        </Control>
+          </Control>
+        )}
 
         <div id="transport-more" className={cx('flex gap-1', more)}>
           <ToggleChip pressed={phraseDescend} onClick={() => setFormState({ phraseDescend: !phraseDescend })} title="Come back down after going up">

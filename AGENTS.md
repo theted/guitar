@@ -113,6 +113,10 @@ reads it from there rather than recomputing from the store.
 
 `getScalePositions` builds the classic box positions: every scale note inside a
 fixed fret window, anchored on each scale tone of the lowest string.
+Identical boxes are merged, so position *numbers* can differ between spans;
+changing the span keeps the box starting at the same fret (`positionAtFret`).
+While a position is selected the transport swaps Pattern and Octaves, which
+don't apply, for the box being practised and a way back to patterns.
 
 ### 3. Phrases (`phrases.ts`)
 
