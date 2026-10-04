@@ -42,6 +42,7 @@ src/
 │   ├── index.ts                # playSemitoneAt + re-exports
 │   ├── context.ts              # AudioContext, master bus, voice registry
 │   ├── synthesis.ts            # Voice construction (oscillators, envelopes, FX chain)
+│   ├── envelope.ts             # Envelope timing and stop plans, pure (tested without Web Audio)
 │   ├── effects.ts              # Reverb / distortion / delay nodes (cached)
 │   ├── pluck.ts                # Karplus-Strong plucked strings, rendered + cached
 │   └── presets.ts              # SoundType and the 19 sound configs
@@ -169,6 +170,20 @@ plucked string buffer ─────┴→ [filter] → [distortion] → [delay
 - Frequency: `440 * 2^((semitone - 5) / 12)` (A4 is 5 semitones above E4).
 - Envelope ramps are exponential and never target zero or a negative time; a
   negative release time used to throw and silence the first playback entirely.
+- **A voice lasts until its envelope is silent, not until its step ends**
+  (`envelopeTimes` in `envelope.ts`). The release fades over the tail of the
+  note but never starts before the decay is over and always runs its full
+  length, so a note lasts `max(duration, attack + decay + release)`: a short
+  bell rings for 2.4 s. Sources stop, and the voice leaves `activeVoices`, only
+  after that end.
+- A layer's envelope is the master one with the layer's overrides, and **every
+  level is scaled by `layer.gain`** (`layerEnvelope`) — attack and sustain
+  alike, so a quiet partial stays quiet.
+- `voice.stop(time)` (`stopPlan`): a voice that hasn't started by then never
+  sounds (gains held at `SILENT`, sources stopped at their start); a sounding
+  one fades linearly to zero over `VOICE_STOP_RAMP_SEC` as its sources stop;
+  one that has rung out is only unregistered. Envelope gains rest at `SILENT`,
+  never at the GainNode default of 1.
 
 Adding a sound: add the key to `SoundType` and a config to `SOUND_PRESETS`
 (both in `audio/presets.ts`), then add it to `SOUND_GROUPS` in
@@ -259,8 +274,18 @@ when it was due; voices scheduled after *now* are cancelled
 (`stopVoicesStartingAfter`) while sounding notes ring on, and the new phrase
 starts at that step on that beat (`startPhraseSession(…, startIndex)`). A tempo
 change takes effect from the next note; a key change carries on mid-run.
-`stopAllPlayback` (the player's `stop()` plus silencing fret clicks and
-flashes) is stable, safe while idle, and always leaves `isPlaying` false.
+A single pass on its last note carries on only if the change takes it further
+(`resumePoint`): Loop turned on goes round again, and a longer phrase plays on
+into its new steps, on the beat after the last step (a descending run that
+just landed on the tonic goes on from the loop's second note). A single pass
+that plays to its end lets its last notes ring out; only `stop()` (and a
+phrase becoming empty) silences them. `stopAllPlayback` (the player's `stop()`
+plus silencing fret clicks and flashes) is stable, safe while idle, and always
+leaves `isPlaying` false.
+
+With swing, an odd-length phrase holds its last note for the whole beat
+(long + short), so the phrase is a whole number of beats and every loop pass
+starts on the beat; there is still one event per displayed step.
 
 ## Performance notes
 

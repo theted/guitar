@@ -66,6 +66,28 @@ describe("usePhraseEvents timing", () => {
     }
   });
 
+  it("holds the last note of an odd swung phrase for the whole beat, so loops stay on the beat", () => {
+    // One octave of the major scale, up only: seven notes
+    for (const loop of [false, true]) {
+      const { events, loopDuration } = renderEvents({ swing: true, octaves: 1, descend: false, loop });
+      expect(events).toHaveLength(7);
+      const lastStep = loopDuration - events[events.length - 1].startTimeSec;
+      // A long step and the short one it would have been paired with
+      expect(lastStep).toBeCloseTo(0.2 * 2, 6);
+      expect(events[events.length - 1].durSec).toBeCloseTo(0.2 * 2 + 0.04, 6);
+      // Four whole beats of two steps: every pass starts on a downbeat
+      expect(loopDuration).toBeCloseTo(8 * 0.2, 6);
+      // Indices still number the notes as shown, one per note
+      events.forEach((event, i) => expect(event.index).toBe(i));
+    }
+  });
+
+  it("keeps an even swung phrase's last step short", () => {
+    const { events, loopDuration } = renderEvents({ swing: true, loop: true });
+    expect(events.length % 2).toBe(0);
+    expect(loopDuration).toBeCloseTo(events.length * 0.2, 6);
+  });
+
   it("starts every event from the phrase root", () => {
     const { events } = renderEvents({ rootAbs: 5, octaves: 1, descend: false });
     expect(events[0].abs).toBe(5);
