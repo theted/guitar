@@ -2,7 +2,6 @@ import React from "react";
 import { useShallow } from "zustand/react/shallow";
 import ChordStrip from "./ChordStrip";
 import PositionStrip from "./PositionStrip";
-import PhraseStrip from "./PhraseStrip";
 import GuitarNeck from "./GuitarNeck";
 import FretMarkers from "./FretMarkers";
 import { neckMinWidth } from "./geometry";
@@ -12,12 +11,9 @@ import { useFretboard } from "@/components/guitar/hooks/useFretboard";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 import { setFormState, useFormStore, type LabelMode } from "@/store";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
-import type { PhraseEvent } from "@/components/guitar/hooks/usePhraseEvents";
 
 type Props = {
   onPlayNote?: PlayNoteFn;
-  /** The phrase the play button will run, for the step-by-step strip */
-  phraseEvents: PhraseEvent[];
 };
 
 const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: string }> = [
@@ -26,9 +22,8 @@ const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: str
   { value: "interval", label: "Intervals", title: "Show each note's interval from the root (P1, m3, P5…)" },
 ];
 
-// How the scale is shown on the neck, the neck itself, and the phrase that
-// Play will run through it.
-const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
+// How the scale is shown on the neck, and the neck itself.
+const Guitar: React.FC<Props> = ({ onPlayNote }) => {
   const { lowAtBottom, labelMode, leftHanded } = useFormStore(useShallow((state) => ({
     lowAtBottom: state.lowAtBottom,
     labelMode: state.labelMode,
@@ -57,15 +52,14 @@ const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
   return (
     <section className="flex flex-col gap-4" aria-label="Fretboard">
       {/* On phones the neck comes first; these options follow it */}
-      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4 max-sm:order-last">
-        <div className="flex flex-wrap gap-x-8 gap-y-4">
-          <ChordStrip />
-          <PositionStrip />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-ink-3">Label notes with</span>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 max-sm:order-last">
+        <ChordStrip />
+        <PositionStrip />
+        <div className="flex items-center gap-3 sm:ml-auto">
+          <span className="shrink-0 text-xs font-medium text-ink-3">Labels</span>
           <Segmented
             aria-label="Label notes with"
+            size="sm"
             value={labelMode}
             onChange={(value) => setFormState({ labelMode: value })}
             options={LABEL_OPTIONS}
@@ -80,8 +74,6 @@ const Guitar: React.FC<Props> = ({ onPlayNote, phraseEvents }) => {
           <FretMarkers frets={frets} />
         </div>
       </div>
-
-      <PhraseStrip events={phraseEvents} />
     </section>
   );
 };

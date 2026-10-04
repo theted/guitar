@@ -71,6 +71,76 @@ describe("useKeyboardShortcuts", () => {
     expect(stop).not.toHaveBeenCalled();
   });
 
+  describe("on a focused control", () => {
+    // jsdom can't tell how focus arrived; stand in for :focus-visible
+    const focusVia = (element: HTMLElement, how: "mouse" | "keyboard") => {
+      const original = element.matches.bind(element);
+      element.matches = (selector: string) =>
+        selector === ":focus-visible" ? how === "keyboard" : original(selector);
+      document.body.appendChild(element);
+      element.focus();
+      return element;
+    };
+
+    it("plays on Space after a button was clicked, without clicking it again", () => {
+      const togglePlay = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ togglePlay, stop: vi.fn(), panelOpen: false }));
+      const button = focusVia(document.createElement("button"), "mouse");
+      const keyup = new KeyboardEvent("keyup", { code: "Space", bubbles: true, cancelable: true });
+      press({ code: "Space", cancelable: true }, button);
+      button.dispatchEvent(keyup);
+      expect(togglePlay).toHaveBeenCalledTimes(1);
+      expect(keyup.defaultPrevented).toBe(true);
+    });
+
+    it("leaves Space to a button reached with the keyboard", () => {
+      const togglePlay = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ togglePlay, stop: vi.fn(), panelOpen: false }));
+      press({ code: "Space" }, focusVia(document.createElement("button"), "keyboard"));
+      expect(togglePlay).not.toHaveBeenCalled();
+    });
+
+    it("leaves arrows to a keyboard-focused radio group, but not a clicked one", () => {
+      renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop: vi.fn(), panelOpen: false }));
+      const radio = document.createElement("button");
+      radio.setAttribute("role", "radio");
+      press({ key: "ArrowUp" }, focusVia(radio, "keyboard"));
+      expect(useFormStore.getState().bpm).toBe(300);
+      press({ key: "ArrowUp" }, focusVia(radio.cloneNode() as HTMLElement, "mouse"));
+      expect(useFormStore.getState().bpm).toBe(305);
+    });
+
+    it("stops on Escape from anywhere but a text field", () => {
+      const stop = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop, panelOpen: false }));
+      press({ key: "Escape" }, focusVia(document.createElement("button"), "keyboard"));
+      expect(stop).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("toggles once for a held Space", () => {
+    const togglePlay = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ togglePlay, stop: vi.fn(), panelOpen: false }));
+    press({ code: "Space" });
+    press({ code: "Space", repeat: true });
+    press({ code: "Space", repeat: true });
+    expect(togglePlay).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves an open picker's keys alone", () => {
+    const togglePlay = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ togglePlay, stop: vi.fn(), panelOpen: false }));
+    const listbox = document.createElement("div");
+    listbox.setAttribute("role", "listbox");
+    const option = document.createElement("div");
+    listbox.appendChild(option);
+    document.body.appendChild(listbox);
+    press({ code: "Space" }, option);
+    press({ key: "ArrowDown" }, option);
+    expect(togglePlay).not.toHaveBeenCalled();
+    expect(useFormStore.getState().bpm).toBe(300);
+  });
+
   it("ignores modified shortcuts and keyboard events from interactive targets", () => {
     const togglePlay = vi.fn();
     const stop = vi.fn();

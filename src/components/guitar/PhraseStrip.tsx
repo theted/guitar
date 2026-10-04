@@ -90,7 +90,7 @@ const PhraseStrip: React.FC<Props> = ({ events }) => {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="tabular shrink-0 text-xs font-medium text-ink-3">
+      <span className="tabular w-16 shrink-0 text-xs font-medium text-ink-3">
         {steps.length} notes
       </span>
       <div

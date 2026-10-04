@@ -17,8 +17,10 @@ type UseStringNotesArgs = {
   scaleMap?: ScaleMap;
   /** Master switch for marking scale notes at all */
   highlightEnabled: boolean;
-  scaleHighlightBottomOnly: boolean;
-  isBottom: boolean;
+  /** Mark the scale on the lowest string only */
+  lowestStringOnly: boolean;
+  /** This is the lowest-pitched string (whichever row it's drawn in) */
+  isLowest: boolean;
   /** 1-based diatonic chord degree to emphasize, or null */
   selectedChordDegree?: number | null;
   /** Frets of the active practice position on this string, null when off */
@@ -51,8 +53,8 @@ export const useStringNotes = ({
   keyy,
   scaleMap = scales,
   highlightEnabled,
-  scaleHighlightBottomOnly,
-  isBottom,
+  lowestStringOnly,
+  isLowest,
   selectedChordDegree = null,
   positionFrets = null,
 }: UseStringNotesArgs): FretDescriptor[] => {
@@ -73,7 +75,7 @@ export const useStringNotes = ({
       const isSelected = pitchClasses.includes(relativePc);
       const isBase = relativePc === 0;
       const showScaleHighlight =
-        highlightEnabled && isSelected && (!scaleHighlightBottomOnly || isBottom);
+        highlightEnabled && isSelected && (!lowestStringOnly || isLowest);
       const degree = isSelected ? pitchClasses.indexOf(relativePc) + 1 : null;
       const degreeName = degree != null ? names[degree - 1] : null;
       const label = formatNoteWithOctave(actualNote, spellingMap);
@@ -98,7 +100,7 @@ export const useStringNotes = ({
     }
 
     return descriptors;
-  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, scaleHighlightBottomOnly, isBottom, selectedChordDegree, positionFrets]);
+  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, lowestStringOnly, isLowest, selectedChordDegree, positionFrets]);
 };
 
 export type { FretDescriptor };

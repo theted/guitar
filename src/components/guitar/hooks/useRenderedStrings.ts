@@ -12,7 +12,6 @@ type RenderedString = {
   /** Index into the low→high string order (0 = lowest string) */
   lowIndex: number;
   baseNote: number;
-  isBottom: boolean;
 };
 
 type RenderedStringsResult = {
@@ -36,7 +35,6 @@ export const useRenderedStrings = ({
         renderIndex,
         lowIndex,
         baseNote: baseNotes[lowIndex],
-        isBottom: renderIndex === ordered.length - 1,
       };
     });
 

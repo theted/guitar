@@ -122,3 +122,37 @@ describe("migrateFormState — v7", () => {
     expect(migrateFormState({}).soundType).toBe("acoustic-steel");
   });
 });
+
+describe("sanitizeFormState", () => {
+  it("replaces values the app can't use with defaults", async () => {
+    const { sanitizeFormState } = await import("./store");
+    const base = migrateFormState({});
+    const clean = sanitizeFormState({
+      ...base,
+      phraseMode: "jazz-hands" as never,
+      soundType: "theremin" as never,
+      positionSpan: 9,
+      strings: 40,
+      frets: -3,
+      bpm: Number.NaN,
+      labelMode: "colours" as never,
+      selectedPosition: 0,
+      swing: "yes" as never,
+    });
+    expect(clean.phraseMode).toBe(base.phraseMode);
+    expect(clean.soundType).toBe(base.soundType);
+    expect(clean.positionSpan).toBe(5);
+    expect(clean.strings).toBe(12);
+    expect(clean.frets).toBe(1);
+    expect(clean.bpm).toBe(base.bpm);
+    expect(clean.labelMode).toBe("note");
+    expect(clean.selectedPosition).toBeNull();
+    expect(clean.swing).toBe(false);
+  });
+
+  it("keeps everything valid as it is", async () => {
+    const { sanitizeFormState } = await import("./store");
+    const state = { ...migrateFormState({}), phraseMode: "thirds" as const, soundType: "bass" as const, strings: 7, bpm: 120 };
+    expect(sanitizeFormState(state)).toEqual(state);
+  });
+});

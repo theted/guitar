@@ -24,6 +24,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    // Only this checkout's tests (agent worktrees can live under .claude/)
+    include: ['src/**/*.test.{ts,tsx}'],
     css: false,
     testTimeout: 15000,
     poolOptions: {

@@ -12,8 +12,8 @@ const renderStringNotes = (
       scale: "major",
       keyy: "e",
       highlightEnabled: true,
-      scaleHighlightBottomOnly: false,
-      isBottom: true,
+      lowestStringOnly: false,
+      isLowest: true,
       ...overrides,
     })
   ).result.current;
@@ -52,8 +52,8 @@ describe("useStringNotes", () => {
 
   it("suppresses scale highlights above the bottom string when requested", () => {
     const notes = renderStringNotes({
-      scaleHighlightBottomOnly: true,
-      isBottom: false,
+      lowestStringOnly: true,
+      isLowest: false,
     });
 
     expect(notes[0].isSelected).toBe(true);
