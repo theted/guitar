@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getScalePositions, getStringBaseNotes, type PositionNote } from "./positions";
 import { getScalePitchClasses, keyToOffset } from "@/music";
-import { scales, tunings } from "@/constants";
+import { scales, tones, tunings, concertOctave, type TuningName } from "@/constants";
 
 // Standard tuning E2 A2 D3 G3 B3 E4, abs semitones relative to E4 = 0
 const STANDARD = [-24, -19, -14, -9, -5, 0];
@@ -157,5 +157,78 @@ describe("getStringBaseNotes — base-tone layout", () => {
     expect(getStringBaseNotes(tunings.Standard, 8, 4)).toEqual([
       -41, -36, -24, -19, -14, -9, -5, 0,
     ]);
+  });
+});
+
+// Scientific pitch name of an abs semitone (E4 = 0, C4 = -4), sharps only like
+// the tuning catalog
+const pitchName = (abs: number): string =>
+  `${tones[((abs % 12) + 12) % 12].toUpperCase()}${Math.floor((abs + 52) / 12)}`;
+
+describe("getStringBaseNotes — every tuning at real pitch", () => {
+  // Open strings low to high at the tuning's concert octave (4 for guitar, 2
+  // for bass). Down-tuned guitars used to come out almost an octave high
+  // (D standard as D3–D5) because the top string was always placed at or
+  // above E4.
+  const expected: Record<TuningName, string> = {
+    Standard: "E2 A2 D3 G3 B3 E4",
+    "Eb Standard": "D#2 G#2 C#3 F#3 A#3 D#4",
+    "D Standard": "D2 G2 C3 F3 A3 D4",
+    "C Standard": "C2 F2 A#2 D#3 G3 C4",
+    "B Standard": "B1 E2 A2 D3 F#3 B3",
+    "A Standard": "A1 D2 G2 C3 E3 A3",
+    "Drop D": "D2 A2 D3 G3 B3 E4",
+    "Eb Drop D": "C#2 G#2 C#3 F#3 A#3 D#4",
+    "Drop C": "C2 G2 C3 F3 A3 D4",
+    "Drop B": "B1 F#2 B2 E3 G#3 C#4",
+    "Drop A": "A1 E2 A2 D3 F#3 B3",
+    "Open A": "E2 A2 C#3 E3 A3 E4",
+    "Open C": "C2 G2 C3 G3 C4 E4",
+    "Open D": "D2 A2 D3 F#3 A3 D4",
+    "Open E": "E2 B2 E3 G#3 B3 E4",
+    "Open G": "D2 G2 D3 G3 B3 D4",
+    DADGAD: "D2 A2 D3 G3 A3 D4",
+    "7-String Standard": "B1 E2 A2 D3 G3 B3 E4",
+    "7-String Drop A": "A1 E2 A2 D3 G3 B3 E4",
+    "8-String": "F#1 B1 E2 A2 D3 G3 B3 E4",
+    "Bass Standard": "E1 A1 D2 G2",
+    "Bass Drop D": "D1 A1 D2 G2",
+    "Bass Drop C": "C1 G1 C2 F2",
+    "All Fourths": "E2 A2 D3 G3 C4 F4",
+    "New Standard": "C2 G2 D3 A3 E4 G4",
+    Russian: "D2 G2 B2 E3 A3 D4",
+    // Six unison-class strings can only be stacked an octave apart under the
+    // strictly-ascending contract, so this one spans five octaves
+    Ostrich: "D-1 D0 D1 D2 D3 D4",
+    DEAD: "D3 E3 A3 D4",
+  };
+
+  it("covers every tuning in the catalog", () => {
+    expect(Object.keys(expected).sort()).toEqual(Object.keys(tunings).sort());
+  });
+
+  for (const [name, pitches] of Object.entries(expected) as [TuningName, string][]) {
+    it(`puts ${name} at ${pitches}`, () => {
+      const tuning = tunings[name];
+      const base = getStringBaseNotes(tuning, tuning.length, concertOctave(name));
+      expect(base.map(pitchName).join(" ")).toBe(pitches);
+    });
+  }
+
+  it("anchors the top string at exact abs values", () => {
+    const top = (name: TuningName) => {
+      const base = getStringBaseNotes(tunings[name], tunings[name].length, concertOctave(name));
+      return [base[0], base[base.length - 1]];
+    };
+    expect(top("Standard")).toEqual([-24, 0]); // E2, E4
+    expect(top("D Standard")).toEqual([-26, -2]); // D2, D4
+    expect(top("A Standard")).toEqual([-31, -7]); // A1, A3
+    expect(top("Bass Standard")).toEqual([-36, -21]); // E1, G2
+  });
+
+  it("keeps a whole tuning's shape when only the octave changes", () => {
+    const d4 = getStringBaseNotes(tunings["D Standard"], 6, 4);
+    expect(getStringBaseNotes(tunings["D Standard"], 6, 3)).toEqual(d4.map((n) => n - 12));
+    expect(getStringBaseNotes(tunings["D Standard"], 6, 5)).toEqual(d4.map((n) => n + 12));
   });
 });

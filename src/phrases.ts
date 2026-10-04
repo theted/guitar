@@ -2,212 +2,207 @@ import { PhraseMode } from './constants';
 import type { PitchClass, AbsSemitone } from './types/music';
 import { mod12 } from './theory/pitch';
 
-// Shared helper: degree sequence for the snake/motif-1232 overlapping-triplet pattern.
-// Pattern: 1-2-3-2-3-4-3-4-5-...
-const buildSnakeDegSeq = (n: number): number[] => {
-  if (n >= 3) {
-    const degs = [1, 2, 3, 2];
-    for (let d = 3; d <= n - 1; d += 1) {
-      degs.push(d, d + 1);
-      if (d < n - 1) degs.push(d);
-    }
-    return degs;
+// Every phrase is laid out over the scale stretched across the requested
+// octaves: degree 0 is the tonic, degree n × octaves the top tonic, and
+// degrees keep counting past an octave instead of restarting. That way a
+// pattern carries on across the octave seam the way a player practises it
+// (thirds: 1–3 … 6–8, 7–9, then 1–3 an octave up) instead of jumping back.
+type Span = {
+  /** Notes per octave */
+  n: number;
+  octaves: number;
+  /** Index of the top tonic: n × octaves */
+  top: number;
+  /** Semitones above the root of degree `i` (0-based, may pass the octave) */
+  at: (i: number) => number;
+};
+
+const makeSpan = (pcs: readonly number[], octaves: number): Span => {
+  const n = pcs.length;
+  return {
+    n,
+    octaves,
+    top: n * octaves,
+    at: (i) => pcs[((i % n) + n) % n] + 12 * Math.floor(i / n),
+  };
+};
+
+/**
+ * What a mode plays, and what "descend" adds to it:
+ * - `peak`: an ascent stopping short of the top tonic (so a loop doesn't
+ *   repeat it); descending adds the top tonic, then the ascent backwards.
+ * - `mirror`: descending plays the figure back from its last note, so the turn
+ *   is a step of the figure itself rather than a jump to a stray peak.
+ * - `complete`: the figure already comes back down; descending adds nothing.
+ */
+type Phrase = { notes: number[]; turn: 'peak' | 'mirror' | 'complete' };
+
+/** Degrees `from` up to (not including) `to` */
+const degrees = (span: Span, from: number, to: number): number[] =>
+  Array.from({ length: Math.max(0, to - from) }, (_, i) => span.at(from + i));
+
+// Plain run from the tonic up to the degree below the top tonic
+const run = (span: Span): Phrase => ({ notes: degrees(span, 0, span.top), turn: 'peak' });
+
+/**
+ * A degree pattern (offsets from its first degree) played from every degree in
+ * turn, continuing across octave seams, until its highest note is the top
+ * tonic: [0, 2] is thirds, [0, 1, 2] groups of three, [0, 2, 4] triads.
+ */
+const sequence = (span: Span, offsets: readonly number[]): number[] => {
+  const reach = Math.max(...offsets);
+  const notes: number[] = [];
+  for (let start = 0; start + reach <= span.top; start += 1) {
+    offsets.forEach((offset) => notes.push(span.at(start + offset)));
   }
-  return Array.from({ length: n }, (_, i) => i + 1);
+  return notes;
 };
 
-// Full ascending degree sequence 1..n
-const ascDegSeq = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1);
+const ascending = (span: Span, offsets: readonly number[]): Phrase => ({
+  notes: sequence(span, offsets),
+  turn: 'mirror',
+});
 
-// Expand a single-octave semitone array across multiple octaves, with optional descent
-const expandAcrossOctaves = (oneOct: number[], clampOct: number, desc: boolean): AbsSemitone[] => {
-  const asc: number[] = [];
-  for (let o = 0; o < clampOct; o += 1) asc.push(...oneOct.map((r) => r + o * 12));
-  if (!desc) return asc as AbsSemitone[];
-  const apex = oneOct.length > 0 ? clampOct * 12 + oneOct[0] : clampOct * 12;
-  return [...asc, apex, ...asc.slice().reverse()] as AbsSemitone[];
+/**
+ * A figure written for one octave (1-based degrees), played in each octave in
+ * turn: riffs move up an octave at a time rather than drifting through the
+ * scale.
+ */
+const perOctave = (span: Span, figure: readonly number[]): number[] => {
+  const notes: number[] = [];
+  for (let octave = 0; octave < span.octaves; octave += 1) {
+    figure.forEach((degree) => notes.push(span.at(octave * span.n + degree - 1)));
+  }
+  return notes;
 };
 
-// Each builder returns the single-octave semitone sequence for its phrase mode.
-// buildRelSequence handles octave expansion for all of them.
-type OctBuilder = (pcs: PitchClass[]) => number[];
+const riff = (span: Span, figure: readonly number[]): Phrase => ({
+  notes: perOctave(span, figure),
+  turn: 'mirror',
+});
 
-const modeBuilders: Record<PhraseMode, OctBuilder> = {
-  'full-scale': (pcs) => [...pcs],
+const oneTo = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1);
+
+const modeBuilders: Record<PhraseMode, (span: Span) => Phrase> = {
+  'full-scale': run,
   // The chord's tones arrive as the pcs (selected in usePlayback); ascend them
-  'chord-arp':  (pcs) => [...pcs],
+  'chord-arp': run,
 
-  'snake':      (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),
-  'motif-1232': (pcs) => buildSnakeDegSeq(pcs.length).map((d) => pcs[d - 1]),
+  // Overlapping groups of three: 1-2-3, 2-3-4, 3-4-5 …
+  'snake': (span) => (span.n >= 3 ? ascending(span, [0, 1, 2]) : run(span)),
+  'motif-1232': (span) => (span.n >= 3 ? ascending(span, [0, 1, 2]) : run(span)),
 
-  'snake-complex': (pcs) => {
-    const pattern0 = [0, 3, 2, 1, 2, 3, 2, 1, 4, 3, 2, 3];
-    const n = pcs.length;
-    return pattern0.map((z) => pcs[(z % n + n) % n]);
-  },
+  // A fixed motif on the lower five degrees, repeated an octave up
+  'snake-complex': (span) =>
+    riff(span, [1, 4, 3, 2, 3, 4, 3, 2, 5, 4, 3, 4].map((d) => ((d - 1) % span.n) + 1)),
 
-  'four-note-groups': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    if (n >= 4) {
-      for (let s = 1; s <= n - 3; s += 1) degs.push(s, s + 1, s + 2, s + 3);
-    } else {
-      degs.push(...ascDegSeq(n));
+  'four-note-groups': (span) => (span.n >= 4 ? ascending(span, [0, 1, 2, 3]) : run(span)),
+
+  'thirds': (span) => (span.n >= 3 ? ascending(span, [0, 2]) : run(span)),
+
+  'fourths': (span) => (span.n >= 4 ? ascending(span, [0, 3]) : run(span)),
+
+  'sixths': (span) => {
+    if (span.n < 6) return span.n >= 3 ? ascending(span, [0, 2]) : run(span);
+    // Every degree of the span with the sixth above it, so the line reaches a
+    // sixth past the top tonic rather than stopping three degrees in
+    const notes: number[] = [];
+    for (let degree = 0; degree < span.top; degree += 1) {
+      notes.push(span.at(degree), span.at(degree + 5));
     }
-    return degs.map((d) => pcs[d - 1]);
+    return { notes, turn: 'mirror' };
   },
 
-  'thirds': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
-    if (degs.length === 0) degs.push(...ascDegSeq(n));
-    return degs.map((d) => pcs[d - 1]);
+  'triads': (span) => (span.n >= 5 ? ascending(span, [0, 2, 4]) : run(span)),
+
+  'sevenths': (span) => {
+    if (span.n >= 7) return ascending(span, [0, 2, 4, 6]);
+    return span.n >= 5 ? ascending(span, [0, 2, 4]) : run(span);
   },
 
-  'fourths': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let s = 1; s + 3 <= n; s += 1) degs.push(s, s + 3);
-    if (degs.length === 0) degs.push(...ascDegSeq(n));
-    return degs.map((d) => pcs[d - 1]);
+  // Up and back down with the turning note played twice, for even picking
+  'alternate-picking': (span) => {
+    const up = degrees(span, 0, span.top);
+    return { notes: [...up, ...up.slice().reverse()], turn: 'complete' };
   },
 
-  'sixths': (pcs) => {
-    const n = pcs.length;
-    if (n >= 6) {
-      // Each degree with the sixth above it; when the upper note wraps past
-      // the octave it must sound an octave up to keep the line ascending.
-      const out: number[] = [];
-      for (let s = 0; s < n; s += 1) {
-        const upper = s + 5;
-        out.push(pcs[s], upper < n ? pcs[upper] : pcs[upper - n] + 12);
-      }
-      return out;
+  // Each octave's tonic against every other degree of that octave, the pedal
+  // moving up with the octave, back on the pedal at the end: 1 2 1 3 … 1 7 1
+  'pedal-tone': (span) => {
+    const figure = oneTo(span.n).slice(1).flatMap((d) => [1, d]);
+    const pedal = span.at((span.octaves - 1) * span.n);
+    return { notes: [...perOctave(span, figure.length ? figure : [1]), pedal], turn: 'mirror' };
+  },
+
+  'sequence-asc': (span) => (span.n >= 3 ? ascending(span, [0, 1, 2]) : run(span)),
+
+  // The same groups of three from the top tonic down: 8-7-6, 7-6-5 …
+  'sequence-desc': (span) => ({
+    notes: (span.n >= 3 ? sequence(span, [0, 1, 2]) : degrees(span, 0, span.top + 1)).reverse(),
+    turn: 'mirror',
+  }),
+
+  // Thirds, finishing with a step onto the top tonic
+  'skip-pattern': (span) => {
+    const notes: number[] = [];
+    for (let degree = 0; degree < span.top; degree += 1) {
+      notes.push(span.at(degree), span.at(Math.min(degree + 2, span.top)));
     }
-    const degs: number[] = [];
-    for (let s = 1; s + 2 <= n; s += 1) degs.push(s, s + 2);
-    if (degs.length === 0) degs.push(...ascDegSeq(n));
-    return degs.map((d) => pcs[d - 1]);
+    return { notes, turn: 'mirror' };
   },
 
-  'triads': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let s = 1; s + 4 <= n; s += 1) degs.push(s, s + 2, s + 4);
-    if (degs.length === 0) degs.push(...ascDegSeq(n));
-    return degs.map((d) => pcs[d - 1]);
+  // Every other degree of each octave up, then back down
+  'sweep-arp': (span) => {
+    const up = perOctave(span, oneTo(span.n).filter((d) => d % 2 === 1));
+    return { notes: [...up, ...up.slice(0, -1).reverse()], turn: 'complete' };
   },
 
-  'sevenths': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let s = 1; s + 6 <= n; s += 1) degs.push(s, s + 2, s + 4, s + 6);
-    if (degs.length === 0) {
-      for (let s = 1; s + 4 <= n; s += 1) degs.push(s, s + 2, s + 4);
-      if (degs.length === 0) degs.push(...ascDegSeq(n));
+  'neo-classical': (span) => {
+    const figure = [1, 2, 4, 5, 7].filter((d) => d <= span.n);
+    const up = perOctave(span, span.n >= 8 ? [...figure, span.n] : figure);
+    return { notes: [...up, ...perOctave(span, figure).reverse()], turn: 'complete' };
+  },
+
+  'power-chord': (span) => {
+    const fifth = Math.min(5, span.n);
+    const fourth = Math.min(4, span.n);
+    return riff(span, [1, 1, fifth, fifth, 1, 1, fifth, fifth, fourth, fourth, 1, 1]);
+  },
+
+  'djent-palm': (span) => {
+    const n = span.n;
+    const figure: number[] = [1, 1, 1];
+    if (n >= 6) figure.push(6);
+    figure.push(1, 1);
+    if (n >= 4) figure.push(4);
+    figure.push(1, 1);
+    if (n >= 5) figure.push(5);
+    figure.push(1, 1);
+    if (n >= 3) figure.push(3);
+    return riff(span, figure);
+  },
+
+  'polyrhythm': (span) => riff(span, Array.from({ length: 14 }, (_, i) => ((i % 7) % span.n) + 1)),
+
+  'breakdown-chug': (span) => {
+    const figure: number[] = [1, 1, 1, 1];
+    if (span.n >= 6) figure.push(6, 6);
+    if (span.n >= 4) figure.push(4, 4);
+    figure.push(1, 1, 1, 1);
+    return riff(span, figure);
+  },
+
+  'tremolo': (span) => riff(span, Array<number>(8).fill(1)),
+
+  'legato-cascade': (span) => {
+    const n = span.n;
+    const figure: number[] = [];
+    if (n >= 5) figure.push(1, 3, 5, 1, 3, 5);
+    if (n >= 6) figure.push(2, 4, 6, 2, 4, 6);
+    if (figure.length === 0) {
+      for (let d = 1; d <= Math.min(3, n); d += 1) figure.push(d, d, d);
     }
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'alternate-picking': (pcs) => {
-    const up = ascDegSeq(pcs.length);
-    return [...up, ...up.slice().reverse()].map((d) => pcs[d - 1]);
-  },
-
-  'pedal-tone': (pcs) => {
-    const degs: number[] = [1];
-    for (let d = 2; d <= pcs.length; d += 1) degs.push(d, 1);
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'sequence-asc': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let d = 1; d <= n - 2; d += 1) degs.push(d, d + 1, d + 2);
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'sequence-desc': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let d = n; d >= 3; d -= 1) degs.push(d, d - 1, d - 2);
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'skip-pattern': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let d = 1; d <= n - 1; d += 1) degs.push(d, d + 2 <= n ? d + 2 : d + 1);
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'sweep-arp': (pcs) => {
-    const up: number[] = [];
-    for (let d = 1; d <= pcs.length; d += 2) up.push(d);
-    return [...up, ...up.slice(0, -1).reverse()].map((d) => pcs[d - 1]);
-  },
-
-  'neo-classical': (pcs) => {
-    const n = pcs.length;
-    const pattern = [1, 2, 4, 5];
-    if (n >= 7) pattern.push(7);
-    const degs: number[] = [];
-    pattern.forEach((d) => { if (d <= n) degs.push(d); });
-    if (n >= 8) degs.push(n);
-    for (let i = pattern.length - 1; i >= 0; i -= 1) {
-      if (pattern[i] <= n) degs.push(pattern[i]);
-    }
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'power-chord': (pcs) => {
-    const n = pcs.length;
-    const fifth = n >= 5 ? 5 : n;
-    const fourth = n >= 4 ? 4 : n;
-    return [1, 1, fifth, fifth, 1, 1, fifth, fifth, fourth, fourth, 1, 1].map((d) => pcs[d - 1]);
-  },
-
-  'djent-palm': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [1, 1, 1];
-    if (n >= 6) degs.push(6);
-    degs.push(1, 1);
-    if (n >= 4) degs.push(4);
-    degs.push(1, 1);
-    if (n >= 5) degs.push(5);
-    degs.push(1, 1);
-    if (n >= 3) degs.push(3);
-    return degs.map((d) => pcs[Math.min(d, n) - 1]);
-  },
-
-  'polyrhythm': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    for (let i = 0; i < 14; i += 1) degs.push(((i % 7) % n) + 1);
-    return degs.map((d) => pcs[d - 1]);
-  },
-
-  'breakdown-chug': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [1, 1, 1, 1];
-    if (n >= 6) degs.push(6, 6);
-    if (n >= 4) degs.push(4, 4);
-    degs.push(1, 1, 1, 1);
-    return degs.map((d) => pcs[Math.min(d, n) - 1]);
-  },
-
-  'tremolo': (pcs) => Array<number>(8).fill(pcs[0]),
-
-  'legato-cascade': (pcs) => {
-    const n = pcs.length;
-    const degs: number[] = [];
-    if (n >= 5) degs.push(1, 3, 5, 1, 3, 5);
-    if (n >= 6) degs.push(2, 4, 6, 2, 4, 6);
-    if (degs.length === 0) {
-      for (let d = 1; d <= Math.min(3, n); d += 1) degs.push(d, d, d);
-    }
-    return degs.map((d) => pcs[Math.min(d, n) - 1]);
+    return riff(span, figure);
   },
 };
 
@@ -215,14 +210,26 @@ const modeBuilders: Record<PhraseMode, OctBuilder> = {
 const clampOctaves = (octaves: number): number =>
   Math.max(1, Math.min(5, Math.floor(octaves)));
 
+/**
+ * The phrase as semitones above its root, across `octaves` octaves, plus its
+ * way back when `withDesc` is on. No mode jumps between octaves: patterns
+ * continue across the octave seam, riffs move up an octave at a time, and the
+ * descent turns on the figure's own last note.
+ */
 export const buildRelSequence = (
   pcs: PitchClass[],
   mode: PhraseMode,
   octaves: number,
   withDesc = false,
 ): AbsSemitone[] => {
-  const oneOct = modeBuilders[mode]?.(pcs) ?? [];
-  return expandAcrossOctaves(oneOct, clampOctaves(octaves), withDesc);
+  const builder = modeBuilders[mode];
+  if (!builder || pcs.length === 0) return [];
+  const span = makeSpan(pcs, clampOctaves(octaves));
+  const { notes, turn } = builder(span);
+  if (!withDesc || turn === 'complete' || notes.length === 0) return notes as AbsSemitone[];
+  const back = notes.slice().reverse();
+  const descent = turn === 'peak' ? [span.at(span.top), ...back] : back.slice(1);
+  return [...notes, ...descent] as AbsSemitone[];
 };
 
 /**
@@ -239,8 +246,9 @@ export const getPhraseRootAbs = (keyOffset: number, lowestAbs: number): number =
  * the top fret. A phrase reaching past the neck can be heard but not seen.
  *
  * The span is measured from the sequence itself rather than as octaves × 12,
- * because some modes reach above their octave — `sixths` lifts a wrapped upper
- * note by twelve to keep the line ascending.
+ * because modes don't all stop at the same place: interval patterns end on the
+ * top tonic, `sixths` reaches a sixth past it, a plain ascent stops just below
+ * it.
  *
  * Always at least one octave: a neck too short for even that still gets a
  * phrase, just one that runs off the end.
