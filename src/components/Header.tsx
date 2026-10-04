@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { scales, type ScaleName } from '@/constants';
 import { getDiatonicChords } from '@/theory/chords';
 import { getScalePitchClasses } from '@/music';
+import { getDisplayTonic, formatNote } from '@/theory/spelling';
+import { pretty } from '@/lib/notation';
 
 type HeaderProps = {
   onOpenSettings: () => void;
@@ -32,6 +34,12 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     strings: state.strings,
   })));
 
+
+  // The title names the scale the way it's written: D♭ minor reads as C♯ minor
+  const titleTonic = React.useMemo(
+    () => pretty(formatNote(getDisplayTonic(tone, getScalePitchClasses(scales[scale])))),
+    [tone, scale]
+  );
 
   // One tab stop for the twelve keys; arrows move the selection, as in any
   // radio group (the global ←/→ shortcut does the same when nothing's focused)
@@ -121,7 +129,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
       {/* The scale's name, then its notes: one thing, read left to right */}
       <div className="flex flex-wrap items-end gap-x-12 gap-y-3">
         <h1 className="type-title flex min-w-0 items-baseline gap-[0.28em] text-[clamp(2rem,4.6vw,3.4rem)]">
-          <span>{keyLabel(tone)}</span>
+          <span title={titleTonic !== keyLabel(tone) ? `Written as ${titleTonic}, the usual name for this scale from ${keyLabel(tone)}` : undefined}>
+            {titleTonic}
+          </span>
           <Picker
             variant="title"
             value={scale}

@@ -166,10 +166,15 @@ const spellScale = (tonic: SpelledNote, relativePcs: readonly PitchClass[]) => {
 // Lower is easier to read: first how many notes are awkward on their degree's
 // letter (shown awkward, or respelled off their letter), then how many
 // accidentals are shown in all (a double counts twice)
+//
+// The blue note — a ♭5 squeezed between a natural 4th and 5th — is a passing
+// tone, conventionally written on whichever letter reads easily (E♭ blues: A
+// for B♭♭). Its awkwardness alone mustn't rename a key people know as E♭.
 const readingCost = (tonic: SpelledNote, relativePcs: readonly PitchClass[]): [number, number] => {
   const { literal, shown } = spellScale(tonic, relativePcs);
+  const bluesFive = relativePcs.includes(5 as PitchClass) && relativePcs.includes(7 as PitchClass);
   return [
-    literal.filter(isAwkward).length,
+    literal.filter((note, index) => isAwkward(note) && !(bluesFive && relativePcs[index] === 6)).length,
     shown.reduce((sum, note) => sum + Math.abs(note.accidental), 0),
   ];
 };
@@ -182,7 +187,8 @@ const readingCost = (tonic: SpelledNote, relativePcs: readonly PitchClass[]): [n
  * fewest awkward notes (doubles, Cb/Fb/E#/B#), then the fewest accidentals,
  * wins. Ties keep the key as given (E♭ minor stays E♭ minor, F♯ major stays
  * F♯ major). Natural keys never move: their enharmonics (Fb, B#…) are
- * themselves awkward.
+ * themselves awkward. A blues scale's ♭5 doesn't count (see readingCost), so
+ * E♭ blues stays E♭ blues while D♭ blues becomes C♯ blues.
  */
 export const getDisplayTonic = (
   keyName: string,

@@ -380,6 +380,13 @@ const UNAVOIDABLE: Record<string, string> = {
   "b major thirds": "B D# G",
 };
 
+// A clean spelling exists under the other name of the tonic, but convention
+// keeps the key's name and writes the blue note (♭5) on the letter that reads
+// easily: E♭ blues has an A, it doesn't become D♯ blues
+const BLUE_NOTE: Record<string, string> = {
+  "eb blues": "Eb Gb Ab A Bb Db",
+};
+
 describe("spelling sweep — every scale in every key", () => {
   for (const scale of Object.keys(scales) as ScaleName[]) {
     const pcs = getScalePitchClasses(scales[scale]);
@@ -396,6 +403,12 @@ describe("spelling sweep — every scale in every key", () => {
 
         // Every written note sounds the right pitch
         notes.forEach((name, i) => expect(pcOfName(name)).toBe(mod12(keyToOffset(key) + pcs[i])));
+
+        if (BLUE_NOTE[pair]) {
+          expect(notes.join(" ")).toBe(BLUE_NOTE[pair]);
+          expect(notes.filter(awkward)).toEqual([]);
+          return;
+        }
 
         const expected = UNAVOIDABLE[pair];
         if (!expected) {
@@ -423,5 +436,14 @@ describe("spelling sweep — every scale in every key", () => {
       (Object.keys(scales) as ScaleName[]).flatMap((scale) => KEYS.map((key) => `${key} ${scale}`))
     );
     for (const pair of Object.keys(UNAVOIDABLE)) expect(pairs.has(pair)).toBe(true);
+  });
+});
+
+describe("display tonic and the blue note", () => {
+  it("keeps E♭ blues, but renames D♭ blues where three notes would be awkward", () => {
+    const blues = getScalePitchClasses(scales.blues);
+    expect(formatNote(getDisplayTonic("eb", blues))).toBe("Eb");
+    expect(formatNote(getDisplayTonic("db", blues))).toBe("C#");
+    expect(formatNote(getDisplayTonic("ab", getScalePitchClasses(scales.pentatonic)))).toBe("G#");
   });
 });

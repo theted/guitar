@@ -31,3 +31,13 @@ describe('Header', () => {
     expect(screen.getByRole('combobox', { name: 'Scale' })).toHaveTextContent('Major');
   });
 });
+
+describe('Header title', () => {
+  it('names the scale the way it is written (D♭ minor reads as C♯ minor)', () => {
+    setFormState({ tone: 'db', scale: 'minor' });
+    render(<Header onOpenSettings={() => {}} />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('C♯');
+    // The key row still shows the key that was picked
+    expect(screen.getByRole('radio', { name: 'D♭' })).toHaveAttribute('aria-checked', 'true');
+  });
+});

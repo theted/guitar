@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { getScalePitchClasses, keyToOffset } from "@/music";
 import { relativeTo } from "@/theory/pitch";
-import { getSpellingMap, formatNoteWithOctave } from "@/theory/spelling";
+import { getSpellingMap, formatNoteWithOctave, getDegreeNames } from "@/theory/spelling";
 import { getDiatonicChords } from "@/theory/chords";
-import { degreeNames } from "@/theory/intervals";
 import { scales } from "@/constants";
 import type { ScaleName } from "@/constants";
 
@@ -63,7 +62,7 @@ export const useStringNotes = ({
     const pitchClasses = getScalePitchClasses(scaleMap[scale]);
     const keyOffset = keyToOffset(keyy);
     const spellingMap = getSpellingMap(keyy, pitchClasses);
-    const names = degreeNames(pitchClasses);
+    const names = getDegreeNames(keyy, pitchClasses);
 
     const chords = selectedChordDegree != null ? getDiatonicChords(keyy, pitchClasses) : [];
     const chord = selectedChordDegree != null ? chords[selectedChordDegree - 1] ?? null : null;
