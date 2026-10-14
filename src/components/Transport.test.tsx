@@ -17,7 +17,7 @@ describe('Transport octaves', () => {
 
 describe('Transport while practising a position', () => {
   beforeEach(() => {
-    setFormState({ scale: 'pentatonic', tone: 'a', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4, positionSpan: 5, selectedPosition: null });
+    setFormState({ scale: 'pentatonic', tone: 'a', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4, positionSpan: 5, selectedPosition: null, selectedChordDegree: null });
   });
 
   it('offers patterns and octaves when no position is selected', () => {
@@ -42,6 +42,44 @@ describe('Transport while practising a position', () => {
     renderTransport();
     fireEvent.click(screen.getByRole('button', { name: /play patterns/i }));
     expect(useFormStore.getState().selectedPosition).toBeNull();
+    expect(screen.getByRole('combobox', { name: 'Pattern' })).toBeInTheDocument();
+  });
+});
+
+describe('Transport while practising a chord', () => {
+  beforeEach(() => {
+    setFormState({
+      scale: 'major', tone: 'c', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4,
+      positionSpan: 5, selectedPosition: null, selectedChordDegree: 2, chordSevenths: true, arpShape: 'straight',
+    });
+  });
+
+  it('swaps the pattern for the chord and how to arpeggiate it', () => {
+    renderTransport();
+    expect(screen.queryByRole('combobox', { name: 'Pattern' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Arpeggio shape' })).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', { name: 'Octaves' })).toBeInTheDocument();
+    expect(screen.getByText('ii7')).toBeInTheDocument();
+    expect(screen.getByText('Dm7')).toBeInTheDocument();
+  });
+
+  it('plays the chord as it lies in a selected position', () => {
+    setFormState({ selectedPosition: 2 });
+    renderTransport();
+    expect(screen.queryByRole('combobox', { name: 'Arpeggio shape' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'Octaves' })).not.toBeInTheDocument();
+    expect(screen.getByText('Dm7')).toBeInTheDocument();
+    expect(screen.getByText('Position 2')).toBeInTheDocument();
+    // Letting go of the chord keeps the position
+    fireEvent.click(screen.getByRole('button', { name: /whole position/i }));
+    expect(useFormStore.getState().selectedChordDegree).toBeNull();
+    expect(useFormStore.getState().selectedPosition).toBe(2);
+  });
+
+  it('goes back to patterns in one click', () => {
+    renderTransport();
+    fireEvent.click(screen.getByRole('button', { name: /play patterns/i }));
+    expect(useFormStore.getState().selectedChordDegree).toBeNull();
     expect(screen.getByRole('combobox', { name: 'Pattern' })).toBeInTheDocument();
   });
 });

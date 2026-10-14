@@ -65,6 +65,26 @@ describe("AudioScheduler", () => {
     });
   });
 
+  it("strums a chord low to high, a gap between notes, each lighting as it sounds", () => {
+    audio.currentTime = 10;
+    const onUiNote = vi.fn();
+
+    scheduler.strumNow([0, 4, 7], 30, 900, "sine", onUiNote);
+
+    // All scheduled at once, after the usual lookahead, 30 ms apart
+    const calls = audio.playSemitoneAt.mock.calls;
+    expect(calls.map(([abs]) => abs)).toEqual([0, 4, 7]);
+    [10.03, 10.06, 10.09].forEach((when, i) => expect(calls[i][1]).toBeCloseTo(when, 6));
+    expect(calls[0][2]).toEqual({ duration: 0.9, type: "sine" });
+
+    audio.currentTime = 10.065;
+    vi.advanceTimersByTime(16);
+    expect(onUiNote.mock.calls.map(([abs]) => abs)).toEqual([0, 4]);
+    audio.currentTime = 10.1;
+    vi.advanceTimersByTime(16);
+    expect(onUiNote.mock.calls.map(([abs]) => abs)).toEqual([0, 4, 7]);
+  });
+
   it("skips stale phrase audio instead of scheduling catch-up bursts", () => {
     audio.currentTime = 10;
 

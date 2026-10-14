@@ -179,14 +179,39 @@ describe("the Room setting", () => {
   it("is filled in for state stored before it existed, without a version bump", async () => {
     const { useFormStore } = await import("./store");
     const { reverb: _, ...stored } = { ...migrateFormState({}), bpm: 140 };
-    localStorage.setItem("formState", JSON.stringify({ state: stored, version: 7 }));
+    localStorage.setItem("formState", JSON.stringify({ state: stored, version: 8 }));
     await useFormStore.persist.rehydrate();
     expect(useFormStore.getState().bpm).toBe(140);
     expect(useFormStore.getState().reverb).toBe("normal");
 
-    localStorage.setItem("formState", JSON.stringify({ state: { ...stored, reverb: "loud" }, version: 7 }));
+    localStorage.setItem("formState", JSON.stringify({ state: { ...stored, reverb: "loud" }, version: 8 }));
     await useFormStore.persist.rehydrate();
     expect(useFormStore.getState().reverb).toBe("normal");
     localStorage.removeItem("formState");
+  });
+});
+
+describe("chord practice settings", () => {
+  it("turns a stored Chord arpeggio pattern into practising that chord", () => {
+    expect(migrateFormState({ phraseMode: "chord-arp", selectedChordDegree: 4 })).toMatchObject({
+      phraseMode: "full-scale",
+      selectedChordDegree: 4,
+    });
+    // With no chord selected, it played the tonic chord
+    expect(migrateFormState({ phraseMode: "chord-arp" })).toMatchObject({
+      phraseMode: "full-scale",
+      selectedChordDegree: 1,
+    });
+    expect(migrateFormState({ phraseMode: "thirds" }).selectedChordDegree).toBeNull();
+  });
+
+  it("starts with triads played straight, and falls back to that", async () => {
+    const { sanitizeFormState } = await import("./store");
+    const base = migrateFormState({});
+    expect(base).toMatchObject({ chordSevenths: false, arpShape: "straight" });
+    expect(sanitizeFormState({ ...base, arpShape: "zigzag" as never }).arpShape).toBe("straight");
+    expect(sanitizeFormState({ ...base, arpShape: "rolling" }).arpShape).toBe("rolling");
+    expect(sanitizeFormState({ ...base, chordSevenths: "yes" as never }).chordSevenths).toBe(false);
+    expect(sanitizeFormState({ ...base, labelMode: "chord" }).labelMode).toBe("chord");
   });
 });

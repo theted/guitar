@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import GuitarString from '@/components/guitar/GuitarString';
 import { scales } from '@/constants';
+import { selectChord } from '@/components/guitar/hooks/useSelectedChord';
 
 // Every fret is titled with its full name and interval, e.g. "B♭4 (P4)"
 const fret = (name: string) => screen.getByTitle(new RegExp(`^${name} `));
@@ -45,9 +46,18 @@ describe('GuitarString highlighting', () => {
     expect(fret('G4').textContent).toBe('m3');
   });
 
+  it('labels from the chord root in chord mode, falling back to degrees', () => {
+    // E major's ii7 is F♯m7; G♯ is its 9th, and the scale's 3rd
+    const props = { ...baseProps, scale: 'major' as const, note: 4, frets: 0, labelMode: 'chord' as const };
+    const { rerender } = render(<GuitarString {...props} chord={selectChord('e', 'major', 2, true)} />);
+    expect(fret('G♯4').textContent).toBe('9');
+    rerender(<GuitarString {...props} />);
+    expect(fret('G♯4').textContent).toBe('3');
+  });
+
   it('highlights a selected chord and steps the rest of the scale back', () => {
     // E major, IV chord = A C# E; open A string: A (root) A# (off) B (scale)
-    render(<GuitarString {...baseProps} scale="major" note={5} frets={2} selectedChordDegree={4} />);
+    render(<GuitarString {...baseProps} scale="major" note={5} frets={2} chord={selectChord('e', 'major', 4, false)} />);
     expect(fret('A4')).toHaveAttribute('data-state', 'chord-root');
     expect(fret('A♯4')).toHaveAttribute('data-state', 'off');
     expect(fret('B4')).toHaveAttribute('data-state', 'muted');

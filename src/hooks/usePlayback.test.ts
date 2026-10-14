@@ -3,7 +3,7 @@ import { usePlayback } from '@/hooks/usePlayback';
 import { setFormState } from '@/store';
 import { scheduler } from '@/scheduler';
 import { stopAllAudio, stopVoicesStartingAfter } from '@/audio';
-import { AUDIO_LOOKAHEAD_SEC } from '@/constants';
+import { AUDIO_LOOKAHEAD_SEC, STRUM_GAP_MS, STRUM_NOTE_MS } from '@/constants';
 import { toneAnimationManager } from '@/lib/tone-animation';
 
 // No Web Audio in jsdom: the scheduler and audio layer are stand-ins
@@ -17,6 +17,7 @@ vi.mock('@/audio', () => ({
 vi.mock('@/scheduler', () => ({
   scheduler: {
     startPhraseSession: vi.fn(() => 1),
+    strumNow: vi.fn(),
     stopSession: vi.fn(),
     stopAll: vi.fn(),
   },
@@ -227,5 +228,76 @@ describe('usePlayback next-note cue', () => {
     expect(cueAt).not.toHaveBeenCalled();
     expect(cueTone).not.toHaveBeenCalled();
     expect(cueStep).not.toHaveBeenCalled();
+  });
+});
+
+// Standard tuning at octave 4: the lowest C on the neck is abs -16 (low E
+// string, fret 8). C major's ii is D F A, 2 / 5 / 9 semitones above it.
+describe('usePlayback chord practice', () => {
+  beforeEach(() => {
+    audioNow = 0;
+    vi.clearAllMocks();
+    setFormState({
+      scale: 'major', tone: 'c', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4,
+      flashMode: 'fret', phraseMode: 'thirds', phraseOctaves: 1, phraseDescend: false, phraseLoop: false,
+      selectedPosition: null, positionSpan: 5, selectedChordDegree: 2, chordSevenths: false,
+      arpShape: 'straight', bpm: 300, swing: false, soundType: 'marimba',
+    });
+  });
+  afterEach(() => {
+    setFormState({ selectedChordDegree: null, selectedPosition: null });
+  });
+
+  const played = (result: { current: ReturnType<typeof usePlayback> }) =>
+    result.current.events.map((event) => event.abs);
+
+  it('arpeggiates the chord instead of the pattern', () => {
+    const { result } = renderHook(() => usePlayback());
+    expect(played(result)).toEqual([-14, -11, -7]);
+  });
+
+  it('adds the 7th, and follows the shape', () => {
+    setFormState({ chordSevenths: true });
+    const { result } = renderHook(() => usePlayback());
+    expect(played(result)).toEqual([-14, -11, -7, -4]);
+    act(() => setFormState({ arpShape: 'skips' }));
+    expect(played(result)).toEqual([-14, -7, -11, -4, -7, -2]);
+  });
+
+  it('goes back to the pattern when the chord is let go', () => {
+    const { result } = renderHook(() => usePlayback());
+    act(() => setFormState({ selectedChordDegree: null }));
+    // Thirds in C: C E, D F, E G …
+    expect(played(result).slice(0, 4)).toEqual([-16, -12, -14, -11]);
+  });
+
+  it("plays only the chord's tones in a selected position, where they lie", () => {
+    // Position 2 spans frets 1–5; D F A in it, string by string
+    setFormState({ selectedPosition: 2 });
+    const { result } = renderHook(() => usePlayback());
+    expect(result.current.events.map((event) => [event.stringIndex, event.fret])).toEqual([
+      [0, 1], [0, 5], [1, 5], [2, 3], [3, 2], [4, 3], [5, 1], [5, 5],
+    ]);
+    expect(played(result)).toEqual([-23, -19, -14, -11, -7, -2, 1, 5]);
+  });
+
+  it('strums a picked chord from its root to the octave, low to high', async () => {
+    const { result } = renderHook(() => usePlayback());
+    await act(async () => { await result.current.strumChord(5); });
+    // G B D G
+    expect(scheduler.strumNow).toHaveBeenCalledWith(
+      [-9, -5, -2, 3], STRUM_GAP_MS, STRUM_NOTE_MS, 'marimba', expect.any(Function)
+    );
+    act(() => setFormState({ chordSevenths: true }));
+    await act(async () => { await result.current.strumChord(5); });
+    // G B D F G
+    expect(vi.mocked(scheduler.strumNow).mock.calls[1][0]).toEqual([-9, -5, -2, 1, 3]);
+  });
+
+  it('leaves a running arpeggio to move on to the chord by itself', async () => {
+    const { result } = renderHook(() => usePlayback());
+    await act(async () => { await result.current.togglePlay(); });
+    await act(async () => { await result.current.strumChord(5); });
+    expect(scheduler.strumNow).not.toHaveBeenCalled();
   });
 });

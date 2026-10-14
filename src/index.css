@@ -326,6 +326,16 @@
   color: transparent;
   font-size: 0;
 }
+/* Chord labels name the rest of the scale as the chord's tensions (9, 11,
+   13): the rings grow to carry the name, still hollow so the chord leads */
+.neck[data-labels="chord"] .fret:not(.fret-open)[data-state="muted"]:not([data-outside]) .fret-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-width: 1.5px;
+  opacity: 0.75;
+  color: var(--bone);
+  font-size: 0.66rem;
+}
 /* Outside the practised position, keep the tonic findable */
 .fret[data-outside][data-state="root"] .fret-dot { border-color: var(--tonic); opacity: 0.8; }
 .fret[data-outside][data-state="off"] .fret-dot { visibility: hidden; }

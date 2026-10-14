@@ -8,6 +8,7 @@ import { intervalName } from "@/theory/intervals";
 import type { FretLocation } from "@/theory/fingering";
 import type { LabelMode } from "@/store";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
+import type { SelectedChord } from "./hooks/useSelectedChord";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
 
 type ScaleDefinition = typeof baseScales;
@@ -48,6 +49,8 @@ const withoutOctave = (label: string) => label.replace(/-?\d+$/, "");
 
 const dotText = (d: FretDescriptor, state: FretState, labelMode: LabelMode): string => {
   if (state === "off" || labelMode === "note") return pretty(withoutOctave(d.label));
+  // Without a selected chord, chord labels fall back to the scale's degrees
+  if (labelMode === "chord") return d.chordLabel ?? d.degreeName ?? "";
   if (labelMode === "degree") return d.degreeName ?? "";
   return intervalName(d.relativePc);
 };
@@ -133,7 +136,8 @@ type Props = {
   isLowest?: boolean;
   labelMode?: LabelMode;
   soundType?: SoundType;
-  selectedChordDegree?: number | null;
+  /** The chord being practised, or null */
+  chord?: SelectedChord | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
   /** The fret on this string that holds the neck's tab stop, if any */
@@ -155,7 +159,7 @@ const GuitarString: React.FC<Props> = React.memo(({
   isLowest = false,
   labelMode = "note",
   soundType = "marimba",
-  selectedChordDegree = null,
+  chord = null,
   positionFrets = null,
   tabStopFret = null,
   onPlayNote,
@@ -169,7 +173,7 @@ const GuitarString: React.FC<Props> = React.memo(({
     highlightEnabled,
     lowestStringOnly,
     isLowest,
-    selectedChordDegree,
+    chord,
     positionFrets,
   });
 

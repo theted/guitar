@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { scales, KEYS, PHRASE_MODE_GROUPS } from './constants';
-import type { PhraseMode } from './constants';
+import { scales, KEYS, PHRASE_MODE_GROUPS, ARP_SHAPES } from './constants';
+import type { ArpShape, PhraseMode } from './constants';
 import { getScalePitchClasses, keyToOffset } from './music';
 import { buildRelSequence, getPhraseRootAbs, getPlayableOctaves } from './phrases';
 
@@ -268,13 +268,6 @@ describe('exact phrase sequences', () => {
     ]);
   });
 
-  it('chord-arp ascends the supplied tones like full-scale', () => {
-    const chordPcs = [0, 4, 7] as ReturnType<typeof majorPcs>;
-    expect(buildRelSequence(chordPcs, 'chord-arp', 2, false)).toEqual(
-      buildRelSequence(chordPcs, 'full-scale', 2, false)
-    );
-  });
-
   it('octave expansion lifts each pass by 12 semitones', () => {
     const one = buildRelSequence(majorPcs(), 'full-scale', 1, false);
     const two = buildRelSequence(majorPcs(), 'full-scale', 2, false);
@@ -299,7 +292,6 @@ const maxLeap = (seq: readonly number[]) =>
 describe('octave expansion never jumps', () => {
   const MAJOR: Record<PhraseMode, [number, number]> = {
     'full-scale': [2, 2],
-    'chord-arp': [2, 2], // fed the whole scale here; see the triad case below
     'snake': [2, 2],
     'snake-complex': [5, 7],
     'motif-1232': [2, 2],
@@ -326,7 +318,6 @@ describe('octave expansion never jumps', () => {
 
   const PENTATONIC: Record<PhraseMode, [number, number]> = {
     'full-scale': [3, 3],
-    'chord-arp': [3, 3],
     'snake': [3, 3],
     'snake-complex': [7, 7],
     'motif-1232': [3, 3],
@@ -374,8 +365,52 @@ describe('octave expansion never jumps', () => {
   it('a chord arpeggio climbs from the fifth to the next root, never further', () => {
     const triad = [0, 4, 7] as ReturnType<typeof majorPcs>;
     [1, 2, 3].forEach((octaves) => {
-      expect(maxLeap(buildRelSequence(triad, 'chord-arp', octaves, true))).toBe(5);
+      expect(maxLeap(buildRelSequence(triad, 'straight', octaves, true))).toBe(5);
     });
+  });
+});
+
+// Arpeggio shapes run over a chord's tones, stacked from its root (see
+// getChordArpOffsets): C major's I chord, as a triad and as Cmaj7
+describe('arpeggio shapes', () => {
+  const TRIAD = [0, 4, 7] as ReturnType<typeof majorPcs>;
+  const SEVENTH = [0, 4, 7, 11] as ReturnType<typeof majorPcs>;
+
+  const ONE_OCTAVE: Record<ArpShape, { triad: number[]; seventh: number[] }> = {
+    straight: { triad: [0, 4, 7], seventh: [0, 4, 7, 11] },
+    inversions: {
+      triad: [0, 4, 7, 4, 7, 12],
+      seventh: [0, 4, 7, 4, 7, 11, 7, 11, 12],
+    },
+    rolling: {
+      triad: [0, 4, 7, 4, 4, 7, 12, 7],
+      seventh: [0, 4, 7, 4, 4, 7, 11, 7, 7, 11, 12, 11],
+    },
+    skips: { triad: [0, 7, 4, 12], seventh: [0, 7, 4, 11, 7, 12] },
+    pedal: { triad: [0, 4, 0, 7, 0], seventh: [0, 4, 0, 7, 0, 11, 0] },
+  };
+
+  it('covers every shape the picker offers, once', () => {
+    expect(ARP_SHAPES.map((shape) => shape.value).sort()).toEqual(Object.keys(ONE_OCTAVE).sort());
+  });
+
+  (Object.keys(ONE_OCTAVE) as ArpShape[]).forEach((shape) => {
+    it(`${shape} over a triad and a 7th chord`, () => {
+      expect(buildRelSequence(TRIAD, shape, 1, false)).toEqual(ONE_OCTAVE[shape].triad);
+      expect(buildRelSequence(SEVENTH, shape, 1, false)).toEqual(ONE_OCTAVE[shape].seventh);
+    });
+  });
+
+  it('carries inversions on across the octave', () => {
+    expect(buildRelSequence(TRIAD, 'inversions', 2, false)).toEqual([
+      0, 4, 7, 4, 7, 12, 7, 12, 16, 12, 16, 19, 16, 19, 24,
+    ]);
+  });
+
+  it('descends the way the scale patterns do', () => {
+    // A straight run turns on the top root; a figure plays back from its last note
+    expect(buildRelSequence(TRIAD, 'straight', 1, true)).toEqual([0, 4, 7, 12, 7, 4, 0]);
+    expect(buildRelSequence(TRIAD, 'inversions', 1, true)).toEqual([0, 4, 7, 4, 7, 12, 7, 4, 7, 4, 0]);
   });
 });
 

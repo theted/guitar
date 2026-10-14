@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useStringNotes } from "./useStringNotes";
+import { selectChord } from "./useSelectedChord";
 
 const renderStringNotes = (
   overrides: Partial<Parameters<typeof useStringNotes>[0]> = {}
@@ -75,13 +76,35 @@ describe("useStringNotes", () => {
       frets: 7,
       scale: "major",
       keyy: "c",
-      selectedChordDegree: 1,
+      chord: selectChord("c", "major", 1, false),
     });
 
     expect(notes[0]).toMatchObject({ label: "C5", chordTone: true, isChordRoot: true });
     expect(notes[2]).toMatchObject({ label: "D5", chordTone: false, isChordRoot: false });
     expect(notes[4]).toMatchObject({ label: "E5", chordTone: true, isChordRoot: false });
     expect(notes[7]).toMatchObject({ label: "G5", chordTone: true, isChordRoot: false });
+  });
+
+  it("adds the 7th and names every scale note from the chord's root", () => {
+    // C major's ii7 is Dm7 (D F A C); E, G and B are its 9th, 11th and 13th.
+    // C string, frets 0–11: C C# D D# E F F# G G# A A# B
+    const notes = renderStringNotes({
+      note: 8,
+      frets: 11,
+      scale: "major",
+      keyy: "c",
+      chord: selectChord("c", "major", 2, true),
+    });
+
+    expect(notes.map((note) => note.chordTone)).toEqual([
+      true, false, true, false, false, true, false, false, false, true, false, false,
+    ]);
+    expect(notes.map((note) => note.isChordRoot)).toEqual([
+      false, false, true, false, false, false, false, false, false, false, false, false,
+    ]);
+    expect(notes.map((note) => note.chordLabel)).toEqual([
+      "♭7", null, "R", null, "9", "♭3", null, "11", null, "5", null, "13",
+    ]);
   });
 
   it("tracks active position membership by fret", () => {
@@ -97,6 +120,7 @@ describe("useStringNotes", () => {
     const notes = renderStringNotes();
 
     expect(notes[0].chordTone).toBeNull();
+    expect(notes[0].chordLabel).toBeNull();
     expect(notes[0].inPosition).toBeNull();
   });
 });

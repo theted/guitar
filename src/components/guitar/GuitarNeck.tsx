@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import GuitarString from "./GuitarString";
 import type { RenderedString } from "./hooks/useRenderedStrings";
 import { useScalePositions } from "./hooks/useScalePositions";
+import { useSelectedChord } from "./hooks/useSelectedChord";
 import { neckColumns, inlayAt } from "./geometry";
 import { useFormStore } from "@/store";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
@@ -56,7 +57,7 @@ const Board: React.FC<BoardProps> = React.memo(({ frets, columns, box }) => (
 const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote }) => {
   const {
     scale, keyy, highlightEnabled, singleStringScale, reduceAnimations, labelMode,
-    soundType, selectedChordDegree,
+    soundType,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     keyy: state.tone,
@@ -65,8 +66,8 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
     reduceAnimations: state.reduceAnimations,
     labelMode: state.labelMode,
     soundType: state.soundType,
-    selectedChordDegree: state.selectedChordDegree,
   })));
+  const chord = useSelectedChord();
 
   const { activePosition } = useScalePositions();
   const columns = useMemo(() => neckColumns(frets), [frets]);
@@ -132,6 +133,7 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
   return (
     <div
       className={reduceAnimations ? "neck reduce-motion" : "neck"}
+      data-labels={labelMode}
       role="grid"
       aria-label="Fretboard. Arrow keys move, Enter plays the note."
       onKeyDown={onKeyDown}
@@ -162,7 +164,7 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
           isLowest={descriptor.lowIndex === 0}
           labelMode={labelMode}
           soundType={soundType}
-          selectedChordDegree={selectedChordDegree}
+          chord={chord}
           tabStopFret={cursor.stringIndex === descriptor.lowIndex ? cursor.fret : null}
           onPlayNote={onPlayNote}
         />

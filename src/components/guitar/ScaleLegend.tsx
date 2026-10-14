@@ -7,6 +7,7 @@ import { pretty } from '@/lib/notation';
 import { scales } from '@/constants';
 import { useFormStore } from '@/store';
 import ScaleDegree from './ScaleDegree';
+import { useSelectedChord } from './hooks/useSelectedChord';
 
 // The scale's notes with their intervals; each lights up as it sounds.
 const ScaleLegend: React.FC = () => {
@@ -17,6 +18,7 @@ const ScaleLegend: React.FC = () => {
     }))
   );
 
+  const chord = useSelectedChord();
   const keyOffset = useMemo(() => keyToOffset(keyy), [keyy]);
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
   const degrees = useMemo(() => getDegreeNames(keyy, pitchClasses), [keyy, pitchClasses]);
@@ -35,6 +37,7 @@ const ScaleLegend: React.FC = () => {
           interval={intervalName(pc)}
           abs={keyOffset + pc}
           isTonic={index === 0}
+          inChord={chord ? chord.tones.includes(pc) : undefined}
         />
       ))}
     </ol>

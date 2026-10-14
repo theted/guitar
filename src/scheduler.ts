@@ -225,6 +225,29 @@ class AudioScheduler {
     this.scheduleNoteAt(sid, absSemitone, start, durSec, soundType);
   }
 
+  /**
+   * A chord, low note first, one note every `gapMs` like a pick across the
+   * strings. Each note gets its own UI callback as it sounds.
+   */
+  strumNow(
+    abses: readonly number[],
+    gapMs: number,
+    durationMs: number,
+    soundType: SoundType,
+    onUiNote: UiCallback,
+  ): void {
+    if (abses.length === 0) return;
+    let pending = abses.length;
+    const sid = this.startSession((abs, dur) => {
+      onUiNote(abs, dur);
+      pending -= 1;
+      if (pending === 0) this.stopSession(sid);
+    });
+    const start = getCurrentTime() + AUDIO_LOOKAHEAD_SEC;
+    const durSec = Math.max(0.05, durationMs / 1000);
+    abses.forEach((abs, i) => this.scheduleNoteAt(sid, abs, start + (i * gapMs) / 1000, durSec, soundType));
+  }
+
   private _ensureLegacyRaf(s: Session): void {
     if (s.rafId != null) return;
     const step = () => {

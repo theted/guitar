@@ -52,7 +52,7 @@ const App: React.FC = () => {
     setReverbLevel(REVERB_LEVELS[reverb]);
   }, [reverb]);
 
-  const { isPlaying, togglePlay, stopAllPlayback, playNote, events, maxOctaves } = usePlayback();
+  const { isPlaying, togglePlay, stopAllPlayback, playNote, strumChord, events, maxOctaves } = usePlayback();
 
   useKeyboardShortcuts({ togglePlay, stop: stopAllPlayback, panelOpen });
   useShareableUrl();
@@ -64,7 +64,7 @@ const App: React.FC = () => {
           <Header onOpenSettings={() => setPanelOpen(true)} />
           {/* The neck sits in the middle of whatever room is left */}
           <div className="flex flex-1 flex-col justify-center">
-            <Guitar onPlayNote={playNote} />
+            <Guitar onPlayNote={playNote} onStrumChord={strumChord} />
           </div>
         </div>
       </main>

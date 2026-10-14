@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import type { PhraseMode } from "@/constants";
-import { buildRelSequence } from "@/phrases";
+import { buildRelSequence, type Pattern } from "@/phrases";
 import type { PlaybackEvent } from "@/scheduler";
 import type { PositionNote } from "@/theory/positions";
 import { fingerSequence } from "@/theory/fingering";
@@ -14,7 +13,7 @@ export type PhraseEvent = PlaybackEvent;
 
 interface UsePhraseEventsArgs {
   pitchClasses: number[];
-  mode: PhraseMode;
+  mode: Pattern;
   octaves: number;
   descend: boolean;
   stepMs: number;

@@ -66,7 +66,7 @@ src/
 │   ├── controls/               # Settings drawer (SetupControls) + shared option lists
 │   ├── guitar/                 # The neck, its toolbar, and the phrase strip (shown in Transport)
 │   │   ├── geometry.ts         # Fret spacing and inlay positions
-│   │   └── hooks/              # Fretboard geometry + phrase event hooks
+│   │   └── hooks/              # Fretboard geometry, phrase events, the selected chord
 │   └── ui/                     # Picker (Radix select), segmented, stepper, switch, slider, swatches
 ├── lib/tone-animation.ts       # Flash registry (frets, legend, phrase steps)
 ├── lib/notation.ts             # pretty(): "Bb" → "B♭" for display only
@@ -150,6 +150,24 @@ is unreachable in the UI), then add a builder to `modeBuilders`. The exhaustive
 `Record` makes a missing builder a type error. `constants/groups.test.ts` guards
 the catalog/grouping correspondence.
 
+### 3b. Chord practice (`theory/chords.ts`, `useSelectedChord`)
+
+Heptatonic scales get diatonic chords, as triads or (Triads | 7ths,
+`chordSevenths`) 7th chords. Selecting one in the `ChordStrip` makes it what
+Play practises, the way selecting a position does: the transport swaps
+Pattern for an "Arpeggio" chip and a Shape picker (`arpShape`), and the phrase
+is built from the chord's tones (`getChordArpOffsets`) with an `ArpShape`
+builder (`arpBuilders` in `phrases.ts`; `buildRelSequence` takes a scale
+`PhraseMode` or an `ArpShape`). With a position selected too, the box path is
+filtered to the chord's tones: its shape in that position. Picking a chord
+while idle strums it (`strumChord` → `scheduler.strumNow`).
+
+`useSelectedChord()` is the one source of the selected chord — tones, root and
+`chordRelativeNames` labels (R ♭3 5 ♭7, the rest of the scale as 9 11 13) —
+for the neck, legend, transport and playback. The "Chord" label mode is
+offered only while a chord is selected; a stored `chord` reads as Degrees
+otherwise.
+
 ### 4. Audio (`audio/`)
 
 ```
@@ -224,6 +242,7 @@ Chris Wilson's "two clocks" pattern, with one public entry point per use case:
 ```ts
 scheduler.startPhraseSession(events, onUiNote, soundType, loopDurationSec?) // → sessionId
 scheduler.triggerNow(abs, durationMs, soundType, onUiNote)                  // fret clicks
+scheduler.strumNow(abses, gapMs, durationMs, soundType, onUiNote)          // a picked chord
 scheduler.stopSession(id) / scheduler.stopAll()
 ```
 
@@ -288,7 +307,7 @@ write with `setFormState`. Nothing needs to stop playback first: a change
 while a phrase plays (key, scale, chord, position, pattern, tempo, sound,
 tuning…) is picked up live — see below.
 
-Persistence is versioned (currently 7). `migrateFormState` keeps only fields
+Persistence is versioned (currently 8). `migrateFormState` keeps only fields
 that still exist in `initial`, so settings dropped in a past version don't
 linger in localStorage, and maps renamed fields via `RENAMED_FIELDS`. Add to
 both when you rename or remove a setting, and bump the version.
@@ -315,13 +334,14 @@ shortcuts leave a keyboard-focused `gridcell` alone.
 App
 ├── Header                    what: key row · title/scale picker · ScaleLegend (flashes)
 ├── Guitar                    how it's shown
-│   ├── ChordStrip            diatonic chords (heptatonic scales only)
+│   ├── ChordStrip            diatonic chords, Triads | 7ths (heptatonic scales only)
 │   ├── PositionStrip         position boxes
-│   ├── label mode            notes / degrees / intervals
+│   ├── label mode            notes / degrees / intervals (/ chord, with a chord selected)
 │   ├── GuitarNeck → Board + GuitarString → StringFret
 │   └── FretMarkers           fret numbers
 ├── Transport                 play: PhraseStrip (the phrase note by note) above
 │                             play/pause · pattern · octaves | tempo | sound · volume
+│                             (a chord: arpeggio · shape; a position: the box)
 └── ControlsPanel (drawer)
     └── SetupControls         instrument · sound · positions · display · keyboard
 ```
@@ -382,7 +402,7 @@ body. Wood, nut, wires and inlays are a single `Board` layer behind the strings.
 
 ## Testing
 
-22 test files, ~260 tests, all under `src/` next to what they test, plus
+39 test files, ~880 tests, all under `src/` next to what they test, plus
 `src/integration/` for cross-module behaviour. `vitest` + Testing Library +
 jsdom. On Node 22+ the test workers run with `--no-experimental-webstorage`
 (`vite.config.ts`); otherwise Node's own empty `localStorage` shadows jsdom's. jsdom has no

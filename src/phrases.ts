@@ -1,4 +1,4 @@
-import { PhraseMode } from './constants';
+import type { ArpShape, PhraseMode } from './constants';
 import type { PitchClass, AbsSemitone } from './types/music';
 import { mod12 } from './theory/pitch';
 
@@ -85,8 +85,6 @@ const oneTo = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1
 
 const modeBuilders: Record<PhraseMode, (span: Span) => Phrase> = {
   'full-scale': run,
-  // The chord's tones arrive as the pcs (selected in usePlayback); ascend them
-  'chord-arp': run,
 
   // Overlapping groups of three: 1-2-3, 2-3-4, 3-4-5 …
   'snake': (span) => (span.n >= 3 ? ascending(span, [0, 1, 2]) : run(span)),
@@ -206,6 +204,22 @@ const modeBuilders: Record<PhraseMode, (span: Span) => Phrase> = {
   },
 };
 
+// Arpeggios of a selected chord: the span is the chord's tones (usePlayback
+// passes them as the pcs), so a "degree" here is a chord tone, and offsets
+// that walk the scale elsewhere walk the chord: [0, 1, 2] is R 3 5, 3 5 R …
+const arpBuilders: Record<ArpShape, (span: Span) => Phrase> = {
+  straight: run,
+  inversions: (span) => ascending(span, [0, 1, 2]),
+  rolling: (span) => ascending(span, [0, 1, 2, 1]),
+  skips: (span) => ascending(span, [0, 2]),
+  pedal: modeBuilders['pedal-tone'],
+};
+
+/** A scale pattern, or an arpeggio shape for a chord */
+export type Pattern = PhraseMode | ArpShape;
+
+const builders: Record<Pattern, (span: Span) => Phrase> = { ...modeBuilders, ...arpBuilders };
+
 /** The UI offers 1–5 octaves; anything else is out of contract */
 const clampOctaves = (octaves: number): number =>
   Math.max(1, Math.min(5, Math.floor(octaves)));
@@ -218,11 +232,11 @@ const clampOctaves = (octaves: number): number =>
  */
 export const buildRelSequence = (
   pcs: PitchClass[],
-  mode: PhraseMode,
+  mode: Pattern,
   octaves: number,
   withDesc = false,
 ): AbsSemitone[] => {
-  const builder = modeBuilders[mode];
+  const builder = builders[mode];
   if (!builder || pcs.length === 0) return [];
   const span = makeSpan(pcs, clampOctaves(octaves));
   const { notes, turn } = builder(span);
@@ -255,7 +269,7 @@ export const getPhraseRootAbs = (keyOffset: number, lowestAbs: number): number =
  */
 export const getPlayableOctaves = (
   pcs: PitchClass[],
-  mode: PhraseMode,
+  mode: Pattern,
   requested: number,
   withDesc: boolean,
   rootAbs: number,
