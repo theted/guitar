@@ -59,11 +59,13 @@ src/
 │   └── index.ts                # the import surface: `from "@/constants"`
 ├── hooks/
 │   ├── usePlayback.ts          # Playback orchestration (owns the phrase)
-│   └── useKeyboardShortcuts.ts # Space / Escape / arrow keys
+│   ├── useKeyboardShortcuts.ts # Space / Escape / arrow keys / ?
+│   └── useModalDialog.ts       # Escape, focus trap and focus return for the dialogs
 ├── components/
 │   ├── Header.tsx              # Key row, title (= scale picker), scale legend
 │   ├── Transport.tsx           # Bottom bar: play, pattern, octaves, tempo, sound, volume
-│   ├── controls/               # Settings drawer (SetupControls) + shared option lists
+│   ├── HelpDialog.tsx          # The help page: what everything does, and the keys
+│   ├── controls/               # Settings drawer (SetupControls), shared option and shortcut lists
 │   ├── guitar/                 # The neck, its toolbar, and the phrase strip (shown in Transport)
 │   │   ├── geometry.ts         # Fret spacing and inlay positions
 │   │   └── hooks/              # Fretboard geometry, phrase events, the selected chord
@@ -320,7 +322,9 @@ falls back to its default instead of breaking the page.
 Shortcuts listen in the capture phase. A control focused by a *mouse click*
 doesn't swallow Space or the arrows (Space still plays); one reached by the
 keyboard (`:focus-visible`) keeps its native keys. Text fields, open pickers
-and the settings dialog get no shortcuts. Escape always stops.
+and the dialogs (settings, help) get no shortcuts. Escape always stops. `?`
+opens help. The shortcut lists shown in Settings and Help live in
+`controls/shortcuts.tsx`; keep them in step with the handlers.
 
 The neck is an ARIA grid (`GuitarNeck`) with one roving tab stop — the tonic
 of the lowest string until it's been used. `neckNavigation.ts` maps keys to
@@ -342,8 +346,9 @@ App
 ├── Transport                 play: PhraseStrip (the phrase note by note) above
 │                             play/pause · pattern · octaves | tempo | sound · volume
 │                             (a chord: arpeggio · shape; a position: the box)
-└── ControlsPanel (drawer)
-    └── SetupControls         instrument · sound · positions · display · keyboard
+├── ControlsPanel (drawer)
+│   └── SetupControls         instrument · sound · positions · display · keyboard
+└── HelpDialog                the help page, from the header's Help button or ?
 ```
 
 `usePlayback()` lives in `App` and owns everything about playback: the phrase
