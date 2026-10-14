@@ -3,6 +3,7 @@ import { getScalePitchClasses, keyToOffset } from "@/music";
 import { relativeTo } from "@/theory/pitch";
 import { getSpellingMap, formatNoteWithOctave, getDegreeNames } from "@/theory/spelling";
 import type { SelectedChord } from "./useSelectedChord";
+import type { PlayedOn } from "../phraseCoverage";
 import { scales } from "@/constants";
 import type { ScaleName } from "@/constants";
 
@@ -24,6 +25,8 @@ type UseStringNotesArgs = {
   chord?: SelectedChord | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
+  /** Frets the phrase plays on this string and which way, null when not fading */
+  playedFrets?: ReadonlyMap<number, PlayedOn> | null;
 };
 
 type FretDescriptor = {
@@ -45,6 +48,8 @@ type FretDescriptor = {
   chordLabel: string | null;
   /** null when no position is selected; otherwise membership in the box */
   inPosition: boolean | null;
+  /** Which way through the phrase this fret is played, "none" if never; null when not fading */
+  played: PlayedOn | "none" | null;
 };
 
 export const useStringNotes = ({
@@ -58,6 +63,7 @@ export const useStringNotes = ({
   isLowest,
   chord = null,
   positionFrets = null,
+  playedFrets = null,
 }: UseStringNotesArgs): FretDescriptor[] => {
   return useMemo(() => {
     const descriptors: FretDescriptor[] = [];
@@ -82,6 +88,7 @@ export const useStringNotes = ({
       const isChordRoot = chord != null && relativePc === chord.root;
       const chordLabel = chord?.labels.get(relativePc) ?? null;
       const inPosition = positionFrets ? positionFrets.has(fret) : null;
+      const played = playedFrets ? playedFrets.get(fret) ?? "none" : null;
 
       descriptors.push({
         fret,
@@ -97,11 +104,12 @@ export const useStringNotes = ({
         isChordRoot,
         chordLabel,
         inPosition,
+        played,
       });
     }
 
     return descriptors;
-  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, lowestStringOnly, isLowest, chord, positionFrets]);
+  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, lowestStringOnly, isLowest, chord, positionFrets, playedFrets]);
 };
 
 export type { FretDescriptor };

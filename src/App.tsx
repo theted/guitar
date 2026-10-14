@@ -68,7 +68,7 @@ const App: React.FC = () => {
           <Header onOpenSettings={() => setPanelOpen(true)} onOpenHelp={openHelp} />
           {/* The neck sits in the middle of whatever room is left */}
           <div className="flex flex-1 flex-col justify-center">
-            <Guitar onPlayNote={playNote} onStrumChord={strumChord} />
+            <Guitar onPlayNote={playNote} onStrumChord={strumChord} events={events} />
           </div>
         </div>
       </main>

@@ -9,6 +9,7 @@ import type { FretLocation } from "@/theory/fingering";
 import type { LabelMode } from "@/store";
 import { useStringNotes, type FretDescriptor } from "./hooks/useStringNotes";
 import type { SelectedChord } from "./hooks/useSelectedChord";
+import type { PlayedOn } from "./phraseCoverage";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
 
 type ScaleDefinition = typeof baseScales;
@@ -100,6 +101,7 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
       data-abs={descriptor.actualNote}
       data-state={state}
       data-outside={descriptor.inPosition === false ? "" : undefined}
+      data-played={descriptor.played ?? undefined}
       data-string={stringIndex}
       data-fret={descriptor.fret}
       role="gridcell"
@@ -140,6 +142,8 @@ type Props = {
   chord?: SelectedChord | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
+  /** Frets the phrase plays on this string and which way, null when not fading */
+  playedFrets?: ReadonlyMap<number, PlayedOn> | null;
   /** The fret on this string that holds the neck's tab stop, if any */
   tabStopFret?: number | null;
   onPlayNote?: PlayNoteFn;
@@ -161,6 +165,7 @@ const GuitarString: React.FC<Props> = React.memo(({
   soundType = "marimba",
   chord = null,
   positionFrets = null,
+  playedFrets = null,
   tabStopFret = null,
   onPlayNote,
 }) => {
@@ -175,6 +180,7 @@ const GuitarString: React.FC<Props> = React.memo(({
     isLowest,
     chord,
     positionFrets,
+    playedFrets,
   });
 
   const handleFretClick = useFretClick({ soundType, onPlayNote });

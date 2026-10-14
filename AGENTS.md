@@ -302,6 +302,20 @@ never interrupts a flash. On frets it's a ring that closes in and lands on the
 beat (`cueKeyframes`); on phrase steps it's an outline. Elements without that
 child aren't cued: the legend shows what is playing, not where to play next.
 
+**Fade notes the phrase won't play** (`fadeUnplayed`, off by default) turns
+the scale notes playback won't light into hollow rings, like those outside a
+position. `phraseCoverage` (`guitar/phraseCoverage.ts`) mirrors `playNote`:
+a fingered event covers its fret, any other its pitch, or with "every octave"
+its pitch class. It also records which way through the phrase each fret is
+played. The phrase turns at its first note farthest from where it started
+(`phraseTurn`): the top of a run up, the bottom of Sequence down. `GuitarNeck`
+recomputes it only when the phrase changes and each fret carries
+`data-played` (`up` / `down` / `both` / `none`). While playing, `playNote`
+sets `data-direction` on the neck (`toneAnimationManager.setDirection`) and
+CSS fades the other way's frets, so nothing re-renders as the phrase turns;
+stopped, the neck shows both. Faded notes keep their colour as a ring: amber
+for the tonic, teal for a chord tone.
+
 ### 7. State (`store.ts`)
 
 One persisted Zustand store. Read with selectors (`useShallow` for objects),
@@ -407,7 +421,7 @@ body. Wood, nut, wires and inlays are a single `Board` layer behind the strings.
 
 ## Testing
 
-39 test files, ~880 tests, all under `src/` next to what they test, plus
+41 test files, ~900 tests, all under `src/` next to what they test, plus
 `src/integration/` for cross-module behaviour. `vitest` + Testing Library +
 jsdom. On Node 22+ the test workers run with `--no-experimental-webstorage`
 (`vite.config.ts`); otherwise Node's own empty `localStorage` shadows jsdom's. jsdom has no

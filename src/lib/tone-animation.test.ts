@@ -293,3 +293,19 @@ describe("next-note cue", () => {
     expect(animation.cancel).toHaveBeenCalled();
   });
 });
+
+describe("phrase direction", () => {
+  it("marks the registered neck with which way the phrase is going, and clears it", () => {
+    const neck = document.createElement("div");
+    toneAnimationManager.setNeck(neck);
+    toneAnimationManager.setDirection("up");
+    expect(neck.dataset.direction).toBe("up");
+    toneAnimationManager.setDirection("down");
+    expect(neck.dataset.direction).toBe("down");
+    toneAnimationManager.setDirection(null);
+    expect(neck).not.toHaveAttribute("data-direction");
+    toneAnimationManager.setNeck(null);
+    // Nothing registered: nothing to mark, and no error
+    toneAnimationManager.setDirection("up");
+  });
+});

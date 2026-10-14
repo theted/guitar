@@ -249,7 +249,7 @@ const HelpDialog: React.FC<HelpDialogProps> = ({ open, onClose }) => {
                 ['Instrument', <>{TUNING_COUNT} tunings for guitar, extended-range guitar and bass, 1 to 12 strings and up to 36 frets. Pitch sets the octave: 4 is real guitar pitch, 2 real bass. Left-handed mirrors the neck, and the low string can sit at the bottom, as in tab, or the top.</>],
                 ['Sound', <>Room: how much reverb is heard around each note.</>],
                 ['Positions', <>Hand span: 4, 5 or 6 frets per position.</>],
-                ['Display', <>Hide the scale to test yourself on a bare neck, or show it on the lowest string only. Reduce motion, show the next note, and choose what lights up when a note plays (one fret, the same pitch, or every octave), for how long and in what colour.</>],
+                ['Display', <>Hide the scale to test yourself on a bare neck, or show it on the lowest string only. Reduce motion, show the next note, fade the notes a phrase won't play (showing the way up, then the way down, as it plays), and choose what lights up when a note plays (one fret, the same pitch, or every octave), for how long and in what colour.</>],
               ]} />
             </Section>
 

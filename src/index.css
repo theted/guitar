@@ -313,10 +313,16 @@
   color: var(--chord-ink);
   box-shadow: 0 0 0 2px var(--wood-deep), 0 0 0 4px var(--chord), 0 1px 3px 4px rgb(0 0 0 / 0.35);
 }
-/* Scale tones outside the selected chord stay visible but step back: hollow
-   rings, so they can't be mistaken for the (filled) inlays */
+/* Scale tones outside the selected chord, the practised position or the
+   phrase stay visible but step back: hollow rings, so they can't be mistaken
+   for the (filled) inlays. The phrase fades what it won't play at all and,
+   while playing, what only the other way through it plays (data-direction,
+   set by playback). */
 .fret[data-state="muted"] .fret-dot,
-.fret[data-outside]:not([data-state="off"]) .fret-dot {
+.fret[data-outside]:not([data-state="off"]) .fret-dot,
+.fret[data-played="none"]:not([data-state="off"]) .fret-dot,
+.neck[data-direction="up"] .fret[data-played="down"]:not([data-state="off"]) .fret-dot,
+.neck[data-direction="down"] .fret[data-played="up"]:not([data-state="off"]) .fret-dot {
   background: none;
   box-shadow: none;
   width: 0.8rem;
@@ -338,6 +344,19 @@
 }
 /* Outside the practised position, keep the tonic findable */
 .fret[data-outside][data-state="root"] .fret-dot { border-color: var(--tonic); opacity: 0.8; }
+/* A note the phrase won't play keeps the colour that says what it is */
+.fret[data-played="none"][data-state="root"] .fret-dot,
+.neck[data-direction="up"] .fret[data-played="down"][data-state="root"] .fret-dot,
+.neck[data-direction="down"] .fret[data-played="up"][data-state="root"] .fret-dot {
+  border-color: var(--tonic);
+  opacity: 0.8;
+}
+.fret[data-played="none"][data-state^="chord"] .fret-dot,
+.neck[data-direction="up"] .fret[data-played="down"][data-state^="chord"] .fret-dot,
+.neck[data-direction="down"] .fret[data-played="up"][data-state^="chord"] .fret-dot {
+  border-color: var(--chord);
+  opacity: 0.8;
+}
 .fret[data-outside][data-state="off"] .fret-dot { visibility: hidden; }
 /* Tones outside the scale: no dot, the name only on hover */
 .fret[data-state="off"] .fret-dot {
@@ -348,7 +367,10 @@
 .fret[data-state="off"]:hover .fret-dot { opacity: 1; }
 /* Open strings always name themselves: that's the tuning, at a glance */
 .fret-open[data-state="off"] .fret-dot,
-.fret-open[data-state="muted"] .fret-dot {
+.fret-open[data-state="muted"] .fret-dot,
+.fret-open[data-played="none"]:not([data-state="off"]) .fret-dot,
+.neck[data-direction="up"] .fret-open[data-played="down"]:not([data-state="off"]) .fret-dot,
+.neck[data-direction="down"] .fret-open[data-played="up"]:not([data-state="off"]) .fret-dot {
   border: 0;
   font-size: 0.78rem;
   color: var(--ink-2);

@@ -77,6 +77,7 @@ const SetupControls: React.FC = () => {
     trailLength: state.trailLength,
     glowColor: state.glowColor,
     showNextNote: state.showNextNote,
+    fadeUnplayed: state.fadeUnplayed,
     reduceAnimations: state.reduceAnimations,
     reverb: state.reverb,
   })));
@@ -200,6 +201,13 @@ const SetupControls: React.FC = () => {
             hint="A ring closes in on the next fret, landing as it plays."
             checked={s.showNextNote}
             onChange={(v) => setFormState({ showNextNote: v })}
+          />
+          <SwitchRow
+            id="fadeUnplayed"
+            label="Fade notes the phrase won't play"
+            hint="Follows what lights up. While playing: the way up, then the way down."
+            checked={s.fadeUnplayed}
+            onChange={(v) => setFormState({ fadeUnplayed: v })}
           />
         </div>
         <div className="flex flex-col gap-1.5">
