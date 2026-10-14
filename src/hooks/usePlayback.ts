@@ -65,18 +65,21 @@ export const usePlayback = () => {
     const flashMs = reduceAnimations
       ? durationMs
       : Math.max(trailLength, durationMs);
+    // A phrase note is the one being played until the next step starts; it
+    // then dims, so at a fast tempo the current note stands out from the trail
+    const holdMs = event?.stepSec !== undefined ? Math.round(event.stepSec * 1000) : durationMs;
     const existing = playingTimersRef.current[absSemitone];
     if (existing) window.clearTimeout(existing);
     if (event?.stringIndex !== undefined && event.fret !== undefined) {
       // A fingered phrase or position practice: light up exactly the fret to play
-      toneAnimationManager.flashAt(event.stringIndex, event.fret, flashMs);
+      toneAnimationManager.flashAt(event.stringIndex, event.fret, flashMs, holdMs);
     } else if (at && mode === "fret") {
-      toneAnimationManager.flashAt(at.stringIndex, at.fret, flashMs);
+      toneAnimationManager.flashAt(at.stringIndex, at.fret, flashMs, holdMs);
     } else {
-      toneAnimationManager.flashTone(absSemitone, flashMs);
+      toneAnimationManager.flashTone(absSemitone, flashMs, holdMs);
     }
     // Phrase notes also advance the phrase strip
-    if (event) toneAnimationManager.flashStep(event.index, flashMs);
+    if (event) toneAnimationManager.flashStep(event.index, flashMs, holdMs);
     const tid = window.setTimeout(() => {
       delete playingTimersRef.current[absSemitone];
     }, flashMs);

@@ -64,6 +64,8 @@ describe("usePhraseEvents timing", () => {
     for (let i = 0; i + 1 < gaps.length; i += 2) {
       expect(gaps[i]).toBeCloseTo(gaps[i + 1] * 2, 6);
     }
+    // Each step knows how long it lasts, so the UI can light it that long
+    gaps.forEach((gap, i) => expect(events[i].stepSec).toBeCloseTo(gap, 6));
   });
 
   it("holds the last note of an odd swung phrase for the whole beat, so loops stay on the beat", () => {

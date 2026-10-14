@@ -29,6 +29,17 @@ const App: React.FC = () => {
     toneAnimationManager.setMode(flashMode === 'all' ? 'pitch-class' : 'octave-specific');
   }, [flashMode]);
 
+  const reduceAnimations = useFormStore((s) => s.reduceAnimations);
+  React.useEffect(() => {
+    toneAnimationManager.setReducedMotion(reduceAnimations);
+  }, [reduceAnimations]);
+
+  // The glow colour is a CSS token, so changing it re-renders nothing
+  const glowColor = useFormStore((s) => s.glowColor);
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--glow', glowColor);
+  }, [glowColor]);
+
   const volume = useFormStore((s) => s.volume);
   const muted = useFormStore((s) => s.muted);
   React.useEffect(() => {

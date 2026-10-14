@@ -5,8 +5,9 @@ import { Segmented } from '@/components/ui/segmented';
 import { Stepper } from '@/components/ui/stepper';
 import { Slider } from '@/components/ui/slider';
 import { SwitchRow } from '@/components/ui/switch-row';
+import { Swatches } from '@/components/ui/swatches';
 import FieldLabel from '@/components/ui/field-label';
-import { tunings, concertOctave, isBassTuning, type TuningName } from '@/constants';
+import { tunings, concertOctave, isBassTuning, GLOW_COLORS, type TuningName } from '@/constants';
 import type { ReverbSetting } from '@/audio';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
@@ -103,6 +104,7 @@ const SetupControls: React.FC = () => {
     flashMode: state.flashMode,
     leftHanded: state.leftHanded,
     trailLength: state.trailLength,
+    glowColor: state.glowColor,
     reduceAnimations: state.reduceAnimations,
     reverb: state.reverb,
   })));
@@ -246,6 +248,15 @@ const SetupControls: React.FC = () => {
             aria-valuetext={`${s.trailLength} milliseconds`}
           />
           <p className="text-xs leading-snug text-ink-3">How long a played note stays lit.</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <FieldLabel>Glow colour</FieldLabel>
+          <Swatches
+            aria-label="Glow colour"
+            value={s.glowColor}
+            onChange={(v) => setFormState({ glowColor: v })}
+            options={GLOW_COLORS}
+          />
         </div>
       </Section>
 

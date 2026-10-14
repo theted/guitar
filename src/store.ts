@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS, PHRASE_MODE_GROUPS, TEMPO } from './constants';
+import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS, PHRASE_MODE_GROUPS, TEMPO, DEFAULT_GLOW_COLOR } from './constants';
 import { SoundType } from './audio';
 import { SOUND_PRESETS } from './audio/presets';
 import { REVERB_LEVELS, type ReverbSetting } from './audio/effects';
@@ -34,6 +34,8 @@ export type FormState = {
   phraseLoop: boolean;
   reduceAnimations: boolean;
   trailLength: number;
+  /** Colour of a played note's glow, as #rrggbb */
+  glowColor: string;
   labelMode: LabelMode;
   soundType: SoundType;
   /** How much of the shared room is heard around each note */
@@ -74,6 +76,7 @@ const initial: FormState = {
   phraseLoop: false,
   reduceAnimations: prefersReducedMotion,
   trailLength: 1200,
+  glowColor: DEFAULT_GLOW_COLOR,
   labelMode: 'note',
   soundType: 'acoustic-steel',
   reverb: 'normal',
@@ -187,6 +190,7 @@ export const sanitizeFormState = (state: FormState): FormState => {
   valid('labelMode', LABEL_MODES.has(clean.labelMode));
   valid('flashMode', FLASH_MODES.has(clean.flashMode));
   valid('reverb', REVERB_SETTINGS.has(clean.reverb));
+  valid('glowColor', typeof clean.glowColor === 'string' && /^#[0-9a-f]{6}$/i.test(clean.glowColor));
   clean.strings = intIn(clean.strings, 1, 12, initial.strings);
   clean.frets = intIn(clean.frets, 1, 36, initial.frets);
   clean.startOctave = intIn(clean.startOctave, 0, 9, initial.startOctave);
