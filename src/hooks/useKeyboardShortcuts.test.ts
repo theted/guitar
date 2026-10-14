@@ -35,6 +35,24 @@ describe("useKeyboardShortcuts", () => {
     expect(stop).not.toHaveBeenCalled();
   });
 
+  it("opens help on ?, but not while a dialog is open or while typing", () => {
+    const openHelp = vi.fn();
+    const { rerender } = renderHook(
+      ({ panelOpen }) => useKeyboardShortcuts({ togglePlay: vi.fn(), stop: vi.fn(), panelOpen, openHelp }),
+      { initialProps: { panelOpen: false } }
+    );
+    press({ key: "?", shiftKey: true });
+    expect(openHelp).toHaveBeenCalledTimes(1);
+
+    const input = document.createElement("input");
+    document.body.append(input);
+    press({ key: "?", shiftKey: true }, input);
+    input.remove();
+    rerender({ panelOpen: true });
+    press({ key: "?", shiftKey: true });
+    expect(openHelp).toHaveBeenCalledTimes(1);
+  });
+
   it("adjusts BPM with arrow keys and clamps to supported bounds", () => {
     renderHook(() => useKeyboardShortcuts({ togglePlay: vi.fn(), stop: vi.fn(), panelOpen: false }));
 
@@ -45,9 +63,9 @@ describe("useKeyboardShortcuts", () => {
     press({ key: "ArrowDown" });
     expect(useFormStore.getState().bpm).toBe(30);
 
-    setFormState({ bpm: 999 });
+    setFormState({ bpm: 1300 });
     press({ key: "ArrowUp" });
-    expect(useFormStore.getState().bpm).toBe(999);
+    expect(useFormStore.getState().bpm).toBe(1300);
   });
 
   it("steps through the keys chromatically with ← and →, wrapping around", () => {

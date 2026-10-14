@@ -1,61 +1,16 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import SetupControls from './SetupControls';
+import { useModalDialog } from '@/hooks/useModalDialog';
 
 interface ControlsPanelProps {
   open: boolean;
   onClose: () => void;
 }
 
-const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-
 const ControlsPanel: React.FC<ControlsPanelProps> = ({ open, onClose }) => {
   const panelRef = React.useRef<HTMLElement | null>(null);
-  const restoreFocusRef = React.useRef<HTMLElement | null>(null);
-
-  // Close on Escape, trap Tab inside the dialog
-  React.useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      // An open picker inside the drawer closes itself on Escape (and marks
-      // the event handled); only an unhandled Escape closes the drawer
-      if (e.key === 'Escape' && e.defaultPrevented) return;
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab' || !panelRef.current) return;
-      const focusable = Array.from(
-        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((el) => !el.hasAttribute('disabled'));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [open, onClose]);
-
-  // Move focus into the dialog on open, restore it on close
-  React.useEffect(() => {
-    if (open) {
-      restoreFocusRef.current = document.activeElement as HTMLElement | null;
-      const firstFocusable = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-      firstFocusable?.focus();
-    } else {
-      restoreFocusRef.current?.focus?.();
-      restoreFocusRef.current = null;
-    }
-  }, [open]);
+  useModalDialog(panelRef, open, onClose);
 
   return (
     <>

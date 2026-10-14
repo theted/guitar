@@ -24,6 +24,13 @@ describe('Header', () => {
     expect(screen.getByRole('radio', { name: 'B♭' })).toHaveAttribute('aria-checked', 'true');
   });
 
+  it('opens help from its button', () => {
+    const onOpenHelp = vi.fn();
+    render(<Header onOpenSettings={() => {}} onOpenHelp={onOpenHelp} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Help' }));
+    expect(onOpenHelp).toHaveBeenCalledTimes(1);
+  });
+
   it('titles the page with the key and scale', () => {
     renderHeader();
     const title = screen.getByRole('heading', { level: 1 });

@@ -8,6 +8,8 @@ type UseKeyboardShortcutsArgs = {
   stop: () => void;
   /** Suppress the global shortcuts while the settings dialog is open */
   panelOpen: boolean;
+  /** Open the help page, on ? */
+  openHelp?: () => void;
 };
 
 const TEXT_INPUT_TYPES = new Set(["text", "search", "number", "email", "url", "tel", "password"]);
@@ -53,10 +55,11 @@ export const stepKey = (delta: number) => {
   setFormState({ tone: KEYS_CHROMATIC[next] });
 };
 
-// Global shortcuts: Space = play/pause, Escape = stop, ↑/↓ = tempo, ←/→ = key.
+// Global shortcuts: Space = play/pause, Escape = stop, ↑/↓ = tempo, ←/→ = key,
+// ? = help.
 // Listened for in the capture phase so Space can still mean play/pause on a
 // control that was merely clicked, before that control acts on it.
-export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboardShortcutsArgs) => {
+export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen, openHelp }: UseKeyboardShortcutsArgs) => {
   useEffect(() => {
     // The Space that started a play toggle must not also click the focused button on keyup
     let swallowSpaceKeyUp = false;
@@ -85,6 +88,12 @@ export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboar
         return;
       }
 
+      if (event.key === "?" && openHelp) {
+        event.preventDefault();
+        openHelp();
+        return;
+      }
+
       const arrow = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" }[event.key];
       if (!arrow) return;
       if (target?.closest(ARROW_OWNERS) && focusedByKeyboard(target)) return;
@@ -108,5 +117,5 @@ export const useKeyboardShortcuts = ({ togglePlay, stop, panelOpen }: UseKeyboar
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("keyup", onKeyUp, true);
     };
-  }, [togglePlay, stop, panelOpen]);
+  }, [togglePlay, stop, panelOpen, openHelp]);
 };

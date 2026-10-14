@@ -11,6 +11,7 @@ import { tunings, concertOctave, isBassTuning, GLOW_COLORS, type TuningName } fr
 import type { ReverbSetting } from '@/audio';
 import { setFormState, useFormStore, type FlashMode } from '@/store';
 import { TUNING_GROUP_OPTIONS } from './options';
+import { SHORTCUTS, NECK_SHORTCUTS, ShortcutList } from './shortcuts';
 import { useFretboard } from '@/components/guitar/hooks/useFretboard';
 import { computePositions, positionAtFret, useScalePositions } from '@/components/guitar/hooks/useScalePositions';
 
@@ -56,36 +57,6 @@ const tuningChange = (from: TuningName, to: TuningName) => ({
   strings: tunings[to].length,
   ...(isBassTuning(from) !== isBassTuning(to) && { startOctave: concertOctave(to) }),
 });
-
-const SHORTCUTS: Array<[string, string]> = [
-  ['Space', 'Play or pause'],
-  ['Esc', 'Stop'],
-  ['↑ ↓', 'Tempo up or down'],
-  ['← →', 'Previous or next key'],
-];
-
-// Once Tab has moved focus onto the neck
-const NECK_SHORTCUTS: Array<[string, string]> = [
-  ['Arrows', 'Move between frets and strings'],
-  ['Enter', 'Play the note'],
-  ['⇧ Arrow', 'Move and play'],
-  ['Home End', 'Open string, last fret'],
-];
-
-const ShortcutList: React.FC<{ items: Array<[string, string]> }> = ({ items }) => (
-  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
-    {items.map(([keys, action]) => (
-      <React.Fragment key={keys}>
-        <dt>
-          <kbd className="rounded-md bg-surface px-2 py-0.5 font-sans text-xs font-semibold text-ink ring-1 ring-inset ring-line">
-            {keys}
-          </kbd>
-        </dt>
-        <dd className="text-ink-2">{action}</dd>
-      </React.Fragment>
-    ))}
-  </dl>
-);
 
 // Set-once configuration: the instrument, and how the neck is drawn.
 // Everything used while practising lives on the page itself.

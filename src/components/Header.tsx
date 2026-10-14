@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Link2, SlidersHorizontal } from 'lucide-react';
+import { Check, CircleHelp, Link2, SlidersHorizontal } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Picker } from '@/components/ui/select';
 import ScaleLegend from '@/components/guitar/ScaleLegend';
@@ -15,6 +15,7 @@ import { pretty } from '@/lib/notation';
 
 type HeaderProps = {
   onOpenSettings: () => void;
+  onOpenHelp?: () => void;
 };
 
 // A scale without diatonic chords drops the chord selection, rather than
@@ -26,7 +27,7 @@ const scaleChange = (tone: string, scale: ScaleName) =>
 
 // Everything about *what* is on the neck: the key, the scale, and the notes
 // that make it up. The title is the scale picker itself.
-const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenHelp }) => {
   const { scale, tone, tuningName, strings } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
@@ -72,6 +73,19 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
           Guitar Scale Finder
         </span>
         <div className="flex items-center gap-1">
+          {onOpenHelp && (
+            <button
+              type="button"
+              onClick={onOpenHelp}
+              className="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm text-ink-2 transition-colors hover:bg-surface hover:text-ink"
+              aria-label="Help"
+              title="How it works (?)"
+              aria-keyshortcuts="?"
+            >
+              <CircleHelp className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Help</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={copyLink}
