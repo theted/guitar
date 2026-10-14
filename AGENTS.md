@@ -272,6 +272,15 @@ colour is the `--glow` token, set from the Glow colour setting in `App`. The
 legend and phrase steps tint by blending (multiply on light, screen on dark),
 so the preset colours are saturated rather than pale.
 
+The next note of a phrase is **cued** while the current one plays (the
+Show the next note setting, on by default). `playNote` looks up the step after
+it (`phraseRef` in `usePlayback`; after the last step it wraps to the first
+when looping) and calls `cueAt` / `cueTone` / `cueStep` for the current step's
+length. A cue animates a second child, `<span className="tone-cue" />`, so it
+never interrupts a flash. On frets it's a ring that closes in and lands on the
+beat (`cueKeyframes`); on phrase steps it's an outline. Elements without that
+child aren't cued: the legend shows what is playing, not where to play next.
+
 ### 7. State (`store.ts`)
 
 One persisted Zustand store. Read with selectors (`useShallow` for objects),

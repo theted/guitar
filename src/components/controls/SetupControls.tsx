@@ -105,6 +105,7 @@ const SetupControls: React.FC = () => {
     leftHanded: state.leftHanded,
     trailLength: state.trailLength,
     glowColor: state.glowColor,
+    showNextNote: state.showNextNote,
     reduceAnimations: state.reduceAnimations,
     reverb: state.reverb,
   })));
@@ -221,6 +222,13 @@ const SetupControls: React.FC = () => {
             hint="Short flashes, no hover movement."
             checked={s.reduceAnimations}
             onChange={(v) => setFormState({ reduceAnimations: v })}
+          />
+          <SwitchRow
+            id="showNextNote"
+            label="Show the next note"
+            hint="A ring closes in on the next fret, landing as it plays."
+            checked={s.showNextNote}
+            onChange={(v) => setFormState({ showNextNote: v })}
           />
         </div>
         <div className="flex flex-col gap-1.5">

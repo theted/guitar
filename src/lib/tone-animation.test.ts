@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { toneAnimationManager, flashKeyframes } from "./tone-animation";
+import { toneAnimationManager, flashKeyframes, cueKeyframes } from "./tone-animation";
 
 // jsdom has no Web Animations API; record calls per overlay element
 const animateMock = vi.fn(function (this: HTMLElement) {
@@ -216,5 +216,80 @@ describe("flash hold", () => {
     toneAnimationManager.setReducedMotion(false);
     const [keyframes] = animateMock.mock.calls[0] as unknown as [Keyframe[]];
     expect(keyframes).toEqual(flashKeyframes(1200, 100, false));
+  });
+});
+
+describe("next-note cue", () => {
+  // A fret (or step) with both children, as the components render them
+  const withCue = (): HTMLElement => {
+    const el = document.createElement("div");
+    el.innerHTML = '<span class="tone-overlay"></span><span class="tone-cue"></span>';
+    document.body.append(el);
+    registered.push(el);
+    return el;
+  };
+  const animated = () => animateMock.mock.contexts as HTMLElement[];
+
+  it("closes a ring in on the note, landing as it plays", () => {
+    expect(cueKeyframes(true)).toEqual([
+      { offset: 0, opacity: 0, transform: "translateZ(0) scale(1.8)" },
+      { offset: 0.25, opacity: 0.6, transform: "translateZ(0) scale(1.6)" },
+      { offset: 1, opacity: 1, transform: "translateZ(0) scale(1)" },
+    ]);
+  });
+
+  it("just fades in without motion", () => {
+    expect(cueKeyframes(false).map((f) => [f.offset, f.opacity])).toEqual([[0, 0], [0.15, 0.8], [1, 0.8]]);
+    expect(cueKeyframes(false).every((f) => f.transform === "translateZ(0)")).toBe(true);
+  });
+
+  it("cueAt animates the targeted fret's cue, not its glow", () => {
+    const fret = withCue();
+    toneAnimationManager.applyToneClass(fret, 0, { fret: { stringIndex: 5, fret: 0 } });
+    toneAnimationManager.cueAt(5, 0, 200);
+    expect(animated()).toEqual([fret.querySelector(".tone-cue")]);
+    const [keyframes, options] = animateMock.mock.calls[0] as unknown as [Keyframe[], KeyframeAnimationOptions];
+    expect(keyframes).toEqual(cueKeyframes(true));
+    expect(options.duration).toBe(200);
+  });
+
+  it("cueTone follows the mode, and leaves out elements without a cue", () => {
+    const legend = document.createElement("div");
+    legend.innerHTML = '<span class="tone-overlay"></span>';
+    document.body.append(legend);
+    registered.push(legend);
+    toneAnimationManager.applyToneClass(legend, 0, { anyOctave: true });
+    const e4 = withCue();
+    toneAnimationManager.applyToneClass(e4, 0);
+    const e5 = withCue();
+    toneAnimationManager.applyToneClass(e5, 12);
+
+    toneAnimationManager.setMode("octave-specific");
+    toneAnimationManager.cueTone(0, 200);
+    expect(animated()).toEqual([e4.querySelector(".tone-cue")]);
+
+    animateMock.mockClear();
+    toneAnimationManager.setMode("pitch-class");
+    toneAnimationManager.cueTone(0, 200);
+    expect(animated()).toEqual([e4.querySelector(".tone-cue"), e5.querySelector(".tone-cue")]);
+  });
+
+  it("cueStep marks a phrase step without moving it", () => {
+    const step = withCue();
+    toneAnimationManager.registerStep(step, 3);
+    toneAnimationManager.cueStep(3, 200);
+    expect(animated()).toEqual([step.querySelector(".tone-cue")]);
+    const [keyframes] = animateMock.mock.calls[0] as unknown as [Keyframe[]];
+    expect(keyframes).toEqual(cueKeyframes(false));
+    toneAnimationManager.clearStep(step);
+  });
+
+  it("stopAll cancels a running cue", () => {
+    const fret = withCue();
+    toneAnimationManager.applyToneClass(fret, 0, { fret: { stringIndex: 5, fret: 0 } });
+    toneAnimationManager.cueAt(5, 0, 200);
+    const animation = animateMock.mock.results[0].value as { cancel: ReturnType<typeof vi.fn> };
+    toneAnimationManager.stopAll();
+    expect(animation.cancel).toHaveBeenCalled();
   });
 });

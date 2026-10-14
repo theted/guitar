@@ -156,6 +156,15 @@
 @media (prefers-color-scheme: dark) {
   .tone-overlay { mix-blend-mode: screen; }
 }
+/* The cue on the next note: a ring in the glow colour (see cueKeyframes) */
+.tone-cue {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px var(--glow);
+  opacity: 0;
+}
 
 /* ─── The neck ──────────────────────────────────────────────────────────── */
 .neck {
@@ -375,6 +384,16 @@
     transparent 72%
   );
   box-shadow: 0 0 18px 6px color-mix(in srgb, var(--glow) 45%, transparent);
+}
+/* Cue: a ring just outside the dot, edged dark so it reads on the wood and
+   on a pale dot alike; it closes in from wider as the note comes up */
+.fret > .tone-cue {
+  inset: auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 2px solid var(--glow);
+  box-shadow: 0 0 0 1px rgb(20 16 12 / 0.6), inset 0 0 0 1px rgb(20 16 12 / 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {
