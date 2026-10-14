@@ -2,9 +2,10 @@ import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
-import { getDiatonicChords, getChordArpOffsets } from "@/theory/chords";
+import { getDiatonicChords, getChordArpOffsets, chordTones } from "@/theory/chords";
+import { relativeTo } from "@/theory/pitch";
 import { getPhraseRootAbs, getPlayableOctaves } from "@/phrases";
-import { scales } from "@/constants";
+import { scales, STRUM_GAP_MS, STRUM_NOTE_MS } from "@/constants";
 import type { PitchClass } from "@/types";
 import { scheduler } from "@/scheduler";
 import { stopAllAudio, ensureAudioInitialized } from "@/audio";
@@ -13,7 +14,8 @@ import { usePhraseEvents, type PhraseEvent } from "@/components/guitar/hooks/use
 import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 import { useFretboard } from "@/components/guitar/hooks/useFretboard";
-import type { FretLocation } from "@/theory/fingering";
+import { useSelectedChord } from "@/components/guitar/hooks/useSelectedChord";
+import { fingerSequence, type FretLocation } from "@/theory/fingering";
 
 export type PlayNoteFn = (
   absSemitone: number,
@@ -28,19 +30,19 @@ export type PlayNoteFn = (
 // player session, fretboard note flashes and the global stop signal.
 export const usePlayback = () => {
   const {
-    scale, tone, phraseMode, bpm, swing, phraseOctaves, phraseDescend,
-    phraseLoop, soundType, selectedChordDegree, flashMode,
+    scale, tone, phraseMode, arpShape, bpm, swing, phraseOctaves, phraseDescend,
+    phraseLoop, soundType, flashMode,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     tone: state.tone,
     phraseMode: state.phraseMode,
+    arpShape: state.arpShape,
     bpm: state.bpm,
     swing: state.swing,
     phraseOctaves: state.phraseOctaves,
     phraseDescend: state.phraseDescend,
     phraseLoop: state.phraseLoop,
     soundType: state.soundType,
-    selectedChordDegree: state.selectedChordDegree,
     flashMode: state.flashMode,
   })));
 
@@ -104,15 +106,14 @@ export const usePlayback = () => {
   const pitchClasses = useMemo(() => getScalePitchClasses(scales[scale]), [scale]);
   const stepMs = Math.round(60000 / Math.max(1, bpm));
 
-  // Chord arpeggio mode plays the selected diatonic chord's tones (the tonic
-  // chord when none is selected) through the regular phrase machinery.
-  const phrasePitchClasses = useMemo(() => {
-    if (phraseMode !== "chord-arp") return pitchClasses;
-    const chords = getDiatonicChords(tone, pitchClasses);
-    const chord = (selectedChordDegree != null ? chords[selectedChordDegree - 1] : null) ?? chords[0];
-    if (!chord) return pitchClasses;
-    return getChordArpOffsets(chord);
-  }, [phraseMode, tone, pitchClasses, selectedChordDegree]);
+  // A selected chord is what Play practises: its tones, arpeggiated in the
+  // chosen shape, through the regular phrase machinery
+  const chord = useSelectedChord();
+  const phrasePitchClasses = useMemo(
+    () => (chord ? getChordArpOffsets(chord.tones) : pitchClasses),
+    [chord, pitchClasses]
+  );
+  const pattern = chord ? arpShape : phraseMode;
 
   // Phrases are laid out on the neck that is actually on screen: they start at
   // the lowest tonic available and span no further than the top fret.
@@ -127,32 +128,38 @@ export const usePlayback = () => {
     () =>
       getPlayableOctaves(
         phrasePitchClasses as PitchClass[],
-        phraseMode,
+        pattern,
         phraseOctaves,
         phraseDescend,
         rootAbs,
         highest
       ),
-    [phrasePitchClasses, phraseMode, phraseOctaves, phraseDescend, rootAbs, highest]
+    [phrasePitchClasses, pattern, phraseOctaves, phraseDescend, rootAbs, highest]
   );
   // The most this neck can hold, so the octave picker can say so
   const maxOctaves = useMemo(
-    () => getPlayableOctaves(phrasePitchClasses as PitchClass[], phraseMode, 5, phraseDescend, rootAbs, highest),
-    [phrasePitchClasses, phraseMode, phraseDescend, rootAbs, highest]
+    () => getPlayableOctaves(phrasePitchClasses as PitchClass[], pattern, 5, phraseDescend, rootAbs, highest),
+    [phrasePitchClasses, pattern, phraseDescend, rootAbs, highest]
   );
 
-  // Position practice replaces the abstract phrase with the box's fret path
+  // Position practice replaces the abstract phrase with the box's fret path;
+  // with a chord selected too, only the chord's tones in the box: its shape there
   const { activePosition } = useScalePositions();
+  const path = useMemo(() => {
+    if (!activePosition) return null;
+    if (!chord) return activePosition.notes;
+    return activePosition.notes.filter((note) => chord.tones.includes(relativeTo(note.abs, keyOffset)));
+  }, [activePosition, chord, keyOffset]);
 
   const { events, loopDuration } = usePhraseEvents({
     pitchClasses: phrasePitchClasses,
-    mode: phraseMode,
+    mode: pattern,
     octaves: playableOctaves,
     descend: phraseDescend,
     stepMs,
     swing,
     rootAbs,
-    path: activePosition?.notes ?? null,
+    path,
     neck,
     loop: phraseLoop,
   });
@@ -190,5 +197,28 @@ export const usePlayback = () => {
     onTogglePlay();
   }, [isPlaying, onTogglePlay]);
 
-  return { isPlaying, togglePlay, stopAllPlayback, playNote, events, maxOctaves };
+  // Picking a chord sounds it: root to octave, low to high, fingered like a
+  // phrase so the frets light up. Not while playing — a running arpeggio
+  // already moves on to the new chord.
+  const strumChord = useCallback(async (degree: number) => {
+    if (isPlaying) return;
+    const { chordSevenths, flashMode: mode, soundType: sound } = useFormStore.getState();
+    const picked = getDiatonicChords(tone, pitchClasses)[degree - 1];
+    if (!picked) return;
+    const offsets = getChordArpOffsets(chordTones(picked, chordSevenths));
+    const notes = [...offsets, offsets[0] + 12].map((offset) => rootAbs + offset);
+    const fingering = mode === "fret" ? fingerSequence(notes, baseNotes, frets) : [];
+    const locations = new Map(notes.map((abs, i) => [abs, fingering[i] ?? undefined]));
+    try {
+      await ensureAudioInitialized();
+    } catch (error) {
+      console.error("Failed to initialize audio:", error);
+      return;
+    }
+    scheduler.strumNow(notes, STRUM_GAP_MS, STRUM_NOTE_MS, sound, (abs, durMs) =>
+      playNote(abs, durMs, undefined, locations.get(abs))
+    );
+  }, [isPlaying, tone, pitchClasses, rootAbs, baseNotes, frets, playNote]);
+
+  return { isPlaying, togglePlay, stopAllPlayback, playNote, strumChord, events, maxOctaves };
 };

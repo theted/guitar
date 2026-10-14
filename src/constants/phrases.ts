@@ -21,8 +21,22 @@ export type PhraseMode =
   | "polyrhythm"
   | "breakdown-chug"
   | "tremolo"
-  | "legato-cascade"
-  | "chord-arp";
+  | "legato-cascade";
+
+/**
+ * How a selected chord is arpeggiated. These run over the chord's tones only
+ * (2 or 3 notes to the octave… 3 or 4), so they are kept apart from the scale
+ * patterns rather than offered for both.
+ */
+export type ArpShape = "straight" | "inversions" | "rolling" | "skips" | "pedal";
+
+export const ARP_SHAPES: ReadonlyArray<{ value: ArpShape; label: string; title: string }> = [
+  { value: "straight", label: "Straight", title: "R 3 5 R 3 5 …" },
+  { value: "inversions", label: "Inversions", title: "R 3 5 · 3 5 R · 5 R 3 …" },
+  { value: "rolling", label: "Rolling", title: "R 3 5 3 · 3 5 R 5 · 5 R 3 R …" },
+  { value: "skips", label: "Skips", title: "R 5 · 3 R · 5 3 …" },
+  { value: "pedal", label: "Root pedal", title: "R 3 R 5 R 3 R 5 …" },
+];
 
 // Display metadata for the phrase picker, grouped by playing style.
 export const PHRASE_MODE_GROUPS: ReadonlyArray<{
@@ -50,7 +64,6 @@ export const PHRASE_MODE_GROUPS: ReadonlyArray<{
   {
     label: "Arpeggios",
     modes: [
-      { value: "chord-arp", label: "Chord arpeggio" },
       { value: "triads", label: "Triads" },
       { value: "sevenths", label: "Sevenths" },
       { value: "sweep-arp", label: "Sweep arpeggio" },

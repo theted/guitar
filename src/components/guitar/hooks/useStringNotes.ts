@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { getScalePitchClasses, keyToOffset } from "@/music";
 import { relativeTo } from "@/theory/pitch";
 import { getSpellingMap, formatNoteWithOctave, getDegreeNames } from "@/theory/spelling";
-import { getDiatonicChords } from "@/theory/chords";
+import type { SelectedChord } from "./useSelectedChord";
 import { scales } from "@/constants";
 import type { ScaleName } from "@/constants";
 
@@ -20,8 +20,8 @@ type UseStringNotesArgs = {
   lowestStringOnly: boolean;
   /** This is the lowest-pitched string (whichever row it's drawn in) */
   isLowest: boolean;
-  /** 1-based diatonic chord degree to emphasize, or null */
-  selectedChordDegree?: number | null;
+  /** The chord being practised (see useSelectedChord), or null */
+  chord?: SelectedChord | null;
   /** Frets of the active practice position on this string, null when off */
   positionFrets?: Set<number> | null;
 };
@@ -41,6 +41,8 @@ type FretDescriptor = {
   /** null when no chord is selected; otherwise membership in the chord */
   chordTone: boolean | null;
   isChordRoot: boolean;
+  /** The note named from the chord's root (R, ♭3, 9 …); null with no chord or outside the scale */
+  chordLabel: string | null;
   /** null when no position is selected; otherwise membership in the box */
   inPosition: boolean | null;
 };
@@ -54,7 +56,7 @@ export const useStringNotes = ({
   highlightEnabled,
   lowestStringOnly,
   isLowest,
-  selectedChordDegree = null,
+  chord = null,
   positionFrets = null,
 }: UseStringNotesArgs): FretDescriptor[] => {
   return useMemo(() => {
@@ -64,9 +66,7 @@ export const useStringNotes = ({
     const spellingMap = getSpellingMap(keyy, pitchClasses);
     const names = getDegreeNames(keyy, pitchClasses);
 
-    const chords = selectedChordDegree != null ? getDiatonicChords(keyy, pitchClasses) : [];
-    const chord = selectedChordDegree != null ? chords[selectedChordDegree - 1] ?? null : null;
-    const chordPcs = chord ? new Set<number>(chord.pcs) : null;
+    const chordPcs = chord ? new Set<number>(chord.tones) : null;
 
     for (let fret = 0; fret <= frets; fret += 1) {
       const actualNote = note + fret;
@@ -79,7 +79,8 @@ export const useStringNotes = ({
       const degreeName = degree != null ? names[degree - 1] : null;
       const label = formatNoteWithOctave(actualNote, spellingMap);
       const chordTone = chordPcs ? chordPcs.has(relativePc) : null;
-      const isChordRoot = chord != null && relativePc === chord.pcs[0];
+      const isChordRoot = chord != null && relativePc === chord.root;
+      const chordLabel = chord?.labels.get(relativePc) ?? null;
       const inPosition = positionFrets ? positionFrets.has(fret) : null;
 
       descriptors.push({
@@ -94,12 +95,13 @@ export const useStringNotes = ({
         degreeName,
         chordTone,
         isChordRoot,
+        chordLabel,
         inPosition,
       });
     }
 
     return descriptors;
-  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, lowestStringOnly, isLowest, selectedChordDegree, positionFrets]);
+  }, [note, frets, scale, keyy, scaleMap, highlightEnabled, lowestStringOnly, isLowest, chord, positionFrets]);
 };
 
 export type { FretDescriptor };

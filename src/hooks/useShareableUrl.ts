@@ -42,8 +42,9 @@ export const useShareableUrl = () => {
     const open = () => {
       const fromUrl = readUrlHash(window.location.hash);
       if (Object.keys(fromUrl).length === 0) return;
-      // A link to a pattern plays that pattern, not a position practised here before
-      setFormState(fromUrl.phraseMode ? { ...fromUrl, selectedPosition: null } : fromUrl);
+      // A link to a pattern plays that pattern, not a position or chord
+      // practised here before
+      setFormState(fromUrl.phraseMode ? { ...fromUrl, selectedPosition: null, selectedChordDegree: null } : fromUrl);
     };
     open();
 

@@ -9,11 +9,14 @@ import { Segmented } from "@/components/ui/segmented";
 import { useRenderedStrings } from "@/components/guitar/hooks/useRenderedStrings";
 import { useFretboard } from "@/components/guitar/hooks/useFretboard";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
+import { useSelectedChord } from "@/components/guitar/hooks/useSelectedChord";
 import { setFormState, useFormStore, type LabelMode } from "@/store";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
 
 type Props = {
   onPlayNote?: PlayNoteFn;
+  /** Sound a chord when it's picked (see usePlayback) */
+  onStrumChord?: (degree: number) => void;
 };
 
 const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: string }> = [
@@ -22,8 +25,14 @@ const LABEL_OPTIONS: ReadonlyArray<{ value: LabelMode; label: string; title: str
   { value: "interval", label: "Intervals", title: "Show each note's interval from the root (P1, m3, P5…)" },
 ];
 
+const CHORD_LABEL_OPTION = {
+  value: "chord" as const,
+  label: "Chord",
+  title: "Name each note from the chord's root: its tones R, 3, 5, 7 and the rest of the scale as 9, 11, 13",
+};
+
 // How the scale is shown on the neck, and the neck itself.
-const Guitar: React.FC<Props> = ({ onPlayNote }) => {
+const Guitar: React.FC<Props> = ({ onPlayNote, onStrumChord }) => {
   const { lowAtBottom, labelMode, leftHanded } = useFormStore(useShallow((state) => ({
     lowAtBottom: state.lowAtBottom,
     labelMode: state.labelMode,
@@ -32,6 +41,12 @@ const Guitar: React.FC<Props> = ({ onPlayNote }) => {
   const { baseNotes, frets } = useFretboard();
 
   const { descriptors } = useRenderedStrings({ baseNotes, lowAtBottom });
+
+  // Chord labels only mean something while a chord is selected; without one
+  // a stored "chord" choice reads as degrees (see dotText)
+  const chord = useSelectedChord();
+  const labelOptions = chord ? [...LABEL_OPTIONS, CHORD_LABEL_OPTION] : LABEL_OPTIONS;
+  const shownLabelMode = !chord && labelMode === "chord" ? "degree" : labelMode;
 
   // Picking a position brings it into view when the neck is scrolled sideways
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -53,16 +68,16 @@ const Guitar: React.FC<Props> = ({ onPlayNote }) => {
     <section className="flex flex-col gap-4" aria-label="Fretboard">
       {/* On phones the neck comes first; these options follow it */}
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 max-sm:order-last">
-        <ChordStrip />
+        <ChordStrip onStrumChord={onStrumChord} />
         <PositionStrip />
         <div className="flex items-center gap-3 sm:ml-auto">
           <span className="shrink-0 text-xs font-medium text-ink-3">Labels</span>
           <Segmented
             aria-label="Label notes with"
             size="sm"
-            value={labelMode}
+            value={shownLabelMode}
             onChange={(value) => setFormState({ labelMode: value })}
-            options={LABEL_OPTIONS}
+            options={labelOptions}
           />
         </div>
       </div>

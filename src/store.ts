@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, scales, tunings, KEYS, PHRASE_MODE_GROUPS, TEMPO, DEFAULT_GLOW_COLOR } from './constants';
+import { DEFAULTS, ScaleName, TuningName, KeyName, PhraseMode, ArpShape, scales, tunings, KEYS, PHRASE_MODE_GROUPS, ARP_SHAPES, TEMPO, DEFAULT_GLOW_COLOR } from './constants';
 import { SoundType } from './audio';
 import { SOUND_PRESETS } from './audio/presets';
 import { REVERB_LEVELS, type ReverbSetting } from './audio/effects';
 
-/** What the dots on the neck say */
-export type LabelMode = 'note' | 'degree' | 'interval';
+/** What the dots on the neck say; 'chord' names them from the selected chord's root */
+export type LabelMode = 'note' | 'degree' | 'interval' | 'chord';
 
 /** What lights up when a note plays: its fret, that pitch everywhere, or every octave */
 export type FlashMode = 'fret' | 'octave' | 'all';
@@ -45,8 +45,12 @@ export type FormState = {
   startOctave: number;
   /** Show the scale on the lowest string only, so each tone appears once */
   singleStringScale: boolean;
-  /** 1-based degree of the highlighted diatonic chord, or null for none */
+  /** 1-based degree of the diatonic chord being practised, or null for none */
   selectedChordDegree: number | null;
+  /** Chords as four-note 7th chords rather than triads */
+  chordSevenths: boolean;
+  /** How Play arpeggiates the selected chord */
+  arpShape: ArpShape;
   /** 1-based scale position being practiced, or null for off */
   selectedPosition: number | null;
   /** Hand-span window width in frets for position boxes */
@@ -87,6 +91,8 @@ const initial: FormState = {
   startOctave: 4,
   singleStringScale: false,
   selectedChordDegree: null,
+  chordSevenths: false,
+  arpShape: 'straight',
   selectedPosition: null,
   positionSpan: 5,
 };
@@ -128,6 +134,10 @@ const RENAMED_FIELDS: Record<string, keyof FormState> = {
 // two octaves high — harmless on a marimba, a toy-like ukulele with real
 // plucked strings — so a stored 6 is taken as that default and moved to 4.
 
+// v8 replaced the "Chord arpeggio" pattern with chord practice: selecting a
+// chord is what makes Play arpeggiate it. A stored chord-arp pattern played
+// the selected chord, or the tonic chord with none, so that chord is selected.
+
 // Migrates persisted state from older app versions; runs when the stored
 // version is below the current one.
 export const migrateFormState = (persisted: unknown): FormState => {
@@ -141,6 +151,10 @@ export const migrateFormState = (persisted: unknown): FormState => {
   }
   if (stored.startOctave === 6) known.startOctave = 4;
   if (stored.octaveHighlight === true && !('flashMode' in stored)) known.flashMode = 'octave';
+  if (stored.phraseMode === 'chord-arp') {
+    known.phraseMode = initial.phraseMode;
+    known.selectedChordDegree = stored.selectedChordDegree ?? 1;
+  }
   for (const [oldKey, newKey] of Object.entries(RENAMED_FIELDS)) {
     if (oldKey in stored && !(newKey in stored)) known[newKey] = stored[oldKey];
   }
@@ -168,7 +182,8 @@ export const migrateFormState = (persisted: unknown): FormState => {
 };
 
 const PHRASE_MODES = new Set<string>(PHRASE_MODE_GROUPS.flatMap((group) => group.modes.map((mode) => mode.value)));
-const LABEL_MODES = new Set<string>(['note', 'degree', 'interval']);
+const LABEL_MODES = new Set<string>(['note', 'degree', 'interval', 'chord']);
+const ARP_SHAPE_VALUES = new Set<string>(ARP_SHAPES.map((shape) => shape.value));
 const FLASH_MODES = new Set<string>(['fret', 'octave', 'all']);
 const REVERB_SETTINGS = new Set<string>(Object.keys(REVERB_LEVELS));
 
@@ -191,6 +206,7 @@ export const sanitizeFormState = (state: FormState): FormState => {
   valid('phraseMode', PHRASE_MODES.has(clean.phraseMode));
   valid('soundType', typeof clean.soundType === 'string' && clean.soundType in SOUND_PRESETS);
   valid('labelMode', LABEL_MODES.has(clean.labelMode));
+  valid('arpShape', ARP_SHAPE_VALUES.has(clean.arpShape));
   valid('flashMode', FLASH_MODES.has(clean.flashMode));
   valid('reverb', REVERB_SETTINGS.has(clean.reverb));
   valid('glowColor', typeof clean.glowColor === 'string' && /^#[0-9a-f]{6}$/i.test(clean.glowColor));
@@ -204,7 +220,7 @@ export const sanitizeFormState = (state: FormState): FormState => {
   valid('positionSpan', [4, 5, 6].includes(clean.positionSpan));
   valid('selectedPosition', clean.selectedPosition === null || (Number.isInteger(clean.selectedPosition) && clean.selectedPosition! >= 1));
   valid('selectedChordDegree', clean.selectedChordDegree === null || (Number.isInteger(clean.selectedChordDegree) && clean.selectedChordDegree! >= 1 && clean.selectedChordDegree! <= 7));
-  for (const key of ['lowAtBottom', 'highlightEnabled', 'swing', 'muted', 'phraseDescend', 'phraseLoop', 'reduceAnimations', 'singleStringScale', 'leftHanded', 'showNextNote'] as const) {
+  for (const key of ['lowAtBottom', 'highlightEnabled', 'swing', 'muted', 'phraseDescend', 'phraseLoop', 'reduceAnimations', 'singleStringScale', 'leftHanded', 'showNextNote', 'chordSevenths'] as const) {
     valid(key, typeof clean[key] === 'boolean');
   }
   return clean;
@@ -217,7 +233,7 @@ export const useFormStore = create<FormState>()(
     }),
     {
       name: 'formState',
-      version: 7,
+      version: 8,
       migrate: (persisted) => migrateFormState(persisted),
       // Current-version state skips migrate, so validate it on the way in too
       merge: (persisted, current) => sanitizeFormState({ ...current, ...(persisted as Partial<FormState>) }),

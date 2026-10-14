@@ -48,11 +48,12 @@ describe('shareable URL', () => {
     }
   });
 
-  it('plays a linked pattern rather than a stored position', () => {
-    setFormState({ selectedPosition: 3 });
+  it('plays a linked pattern rather than a stored position or chord', () => {
+    setFormState({ selectedPosition: 3, selectedChordDegree: 2 });
     window.history.replaceState(null, '', '#key=c&scale=major&pattern=thirds');
     renderHook(() => useShareableUrl());
     expect(useFormStore.getState().selectedPosition).toBeNull();
+    expect(useFormStore.getState().selectedChordDegree).toBeNull();
     expect(useFormStore.getState().phraseMode).toBe('thirds');
   });
 

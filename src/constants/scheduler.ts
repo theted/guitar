@@ -25,3 +25,9 @@ export const VOICE_MIN_STOP_SEC = 0.01;
 
 /** Ramp time (seconds) for master volume changes, so dragging the slider doesn't click */
 export const MASTER_VOLUME_RAMP_SEC = 0.02;
+
+/** Gap (ms) between the notes of a strummed chord, low to high, like a pick across the strings */
+export const STRUM_GAP_MS = 30;
+
+/** How long (ms) each note of a strummed chord is held */
+export const STRUM_NOTE_MS = 900;

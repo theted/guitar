@@ -1,4 +1,4 @@
-import { SCALE_GROUPS, TUNING_GROUPS, PHRASE_MODE_GROUPS, KEYS, type KeyName } from "@/constants";
+import { SCALE_GROUPS, TUNING_GROUPS, PHRASE_MODE_GROUPS, ARP_SHAPES, KEYS, type KeyName } from "@/constants";
 import type { SoundType } from "@/audio";
 import { keyToOffset } from "@/music";
 import { mod12 } from "@/theory/pitch";
@@ -76,3 +76,7 @@ export const PATTERN_GROUPS: PickerGroup[] = PHRASE_MODE_GROUPS.map((group) => (
   label: group.label,
   options: group.modes.map((mode) => ({ value: mode.value, label: mode.label })),
 }));
+
+export const ARP_SHAPE_GROUPS: PickerGroup[] = [
+  { options: ARP_SHAPES.map((shape) => ({ value: shape.value, label: shape.label })) },
+];

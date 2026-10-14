@@ -1,7 +1,7 @@
 export { scales, SCALE_GROUPS, SCALE_LABELS, type ScaleName } from "./scales";
 export { tones, KEYS, type Tone, type KeyName } from "./tones";
 export { tunings, TUNING_GROUPS, isBassTuning, concertOctave, type TuningName } from "./tunings";
-export { PHRASE_MODE_GROUPS, type PhraseMode } from "./phrases";
+export { PHRASE_MODE_GROUPS, ARP_SHAPES, type PhraseMode, type ArpShape } from "./phrases";
 export { DEFAULTS, TEMPO, clampTempo } from "./defaults";
 export * from "./scheduler";
 export * from "./animation";

@@ -10,6 +10,8 @@ type ScaleDegreeProps = {
   interval?: string;
   abs: number;
   isTonic: boolean;
+  /** A chord is selected and this note is in it: marked like the neck marks it */
+  inChord?: boolean;
 };
 
 const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
@@ -18,6 +20,7 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
   interval,
   abs,
   isTonic,
+  inChord,
 }) => {
   const ref = React.useRef<HTMLLIElement | null>(null);
 
@@ -42,7 +45,8 @@ const ScaleDegree: React.FC<ScaleDegreeProps> = React.memo(({
       <span
         className={cx(
           "absolute inset-x-1.5 bottom-0 h-1 rounded-full",
-          isTonic ? "bg-tonic" : "bg-line"
+          // A selected chord takes over the colouring, as on the neck
+          inChord !== undefined ? (inChord ? "bg-chord" : "bg-line") : isTonic ? "bg-tonic" : "bg-line"
         )}
         aria-hidden
       />
