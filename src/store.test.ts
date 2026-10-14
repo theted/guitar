@@ -138,6 +138,7 @@ describe("sanitizeFormState", () => {
       labelMode: "colours" as never,
       selectedPosition: 0,
       swing: "yes" as never,
+      glowColor: "orange",
     });
     expect(clean.phraseMode).toBe(base.phraseMode);
     expect(clean.soundType).toBe(base.soundType);
@@ -148,11 +149,12 @@ describe("sanitizeFormState", () => {
     expect(clean.labelMode).toBe("note");
     expect(clean.selectedPosition).toBeNull();
     expect(clean.swing).toBe(false);
+    expect(clean.glowColor).toBe(base.glowColor);
   });
 
   it("keeps everything valid as it is", async () => {
     const { sanitizeFormState } = await import("./store");
-    const state = { ...migrateFormState({}), phraseMode: "thirds" as const, soundType: "bass" as const, strings: 7, bpm: 120, reverb: "high" as const };
+    const state = { ...migrateFormState({}), phraseMode: "thirds" as const, soundType: "bass" as const, strings: 7, bpm: 999, reverb: "high" as const, glowColor: "#123abc" };
     expect(sanitizeFormState(state)).toEqual(state);
   });
 

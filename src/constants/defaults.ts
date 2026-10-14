@@ -11,6 +11,6 @@ export const DEFAULTS = {
 };
 
 /** Tempo range in bpm, and the step for −/+ and the arrow keys */
-export const TEMPO = { MIN: 30, MAX: 700, STEP: 5 } as const;
+export const TEMPO = { MIN: 30, MAX: 999, STEP: 5 } as const;
 
 export const clampTempo = (bpm: number): number => Math.min(TEMPO.MAX, Math.max(TEMPO.MIN, bpm));

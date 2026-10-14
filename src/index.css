@@ -34,6 +34,8 @@
   --string-plain: #d4d8dc;
   --string-wound: #b7a584;
   --flash: #fff4c7;
+  /* A played note's glow; the setting overrides it (App) */
+  --glow: #ffc94a;
 
   --font: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
@@ -146,7 +148,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: var(--tonic);
+  background: var(--glow);
   mix-blend-mode: multiply;
   opacity: 0;
   contain: layout style paint;
@@ -358,15 +360,21 @@
 .fret:hover .fret-dot { transform: scale(1.08); }
 .fret:active .fret-dot { transform: scale(0.94); }
 
-/* Flash: a warm glow the size of a dot, whether or not a dot is showing */
+/* Flash: a glow the size of a dot, whether or not a dot is showing, with a
+   near-white centre so it reads on the wood and on any dot colour */
 .fret > .tone-overlay {
   inset: auto;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
   mix-blend-mode: normal;
-  background: radial-gradient(circle, var(--flash) 0 42%, rgb(255 214 120 / 0.55) 62%, transparent 72%);
-  box-shadow: 0 0 18px 6px rgb(255 200 90 / 0.45);
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--glow) 40%, white) 0 42%,
+    color-mix(in srgb, var(--glow) 60%, transparent) 62%,
+    transparent 72%
+  );
+  box-shadow: 0 0 18px 6px color-mix(in srgb, var(--glow) 45%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

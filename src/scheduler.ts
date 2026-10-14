@@ -34,6 +34,8 @@ export type PlaybackEvent = {
   /** Set when the event targets one specific fretboard location */
   stringIndex?: number;
   fret?: number;
+  /** Time until the next step: how long the UI shows this as the note being played */
+  stepSec?: number;
 };
 
 type UiCallback = (absSemitone: number, durationMs: number, event?: PlaybackEvent) => void;

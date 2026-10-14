@@ -10,7 +10,7 @@ describe('shareable URL', () => {
 
   it('ignores anything it does not recognise', () => {
     expect(readUrlHash('#key=h&scale=nope&pattern=jazz&bpm=fast')).toEqual({});
-    expect(readUrlHash('#bpm=5000').bpm).toBe(700);
+    expect(readUrlHash('#bpm=5000').bpm).toBe(999);
     expect(readUrlHash('')).toEqual({});
   });
 

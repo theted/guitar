@@ -12,6 +12,10 @@
  *  - 'octave-specific': only elements at the exact octave flash. Elements
  *    registered with `anyOctave` opt out — they stand for a pitch class rather
  *    than a sounding pitch, so they flash in both modes.
+ *
+ * A flash has two parts (see `flashKeyframes`): the note being played is lit
+ * at full strength for its step, then drops to a dim trail that fades out. At
+ * a fast tempo many notes glow at once, and only the current one is bright.
  */
 import { TONE_ANIMATION_DEFAULT_DURATION_MS } from '../constants';
 import { mod12 } from '../theory/pitch';
@@ -29,13 +33,42 @@ type RegisterOptions = {
   anyOctave?: boolean;
 };
 
-const FLASH_KEYFRAMES = [
-  { opacity: 0.9, transform: 'translateZ(0)' },
-  { opacity: 0, transform: 'translateZ(0)' },
-];
+/** A note once the next one has started: still there, as the path behind */
+const TRAIL_OPACITY = 0.35;
+/** How fast the played note drops to the trail when its step ends */
+const DROP_MS = 60;
+/** Frets pop in, so each new note catches the eye, and shrink into the trail */
+const POP_MS = 120;
+const POP_SCALE = 1.3;
+const TRAIL_SCALE = 0.7;
+
+/**
+ * Keyframes for one flash lasting `durationMs`, of which the first `holdMs`
+ * is the note being played. `pop` adds the size changes (frets only, and not
+ * when animations are reduced).
+ */
+export const flashKeyframes = (durationMs: number, holdMs: number, pop: boolean): Keyframe[] => {
+  const total = Math.max(1, durationMs);
+  const hold = Math.min(Math.max(0, holdMs), total);
+  const frame = (ms: number, opacity: number, scale: number, easing = 'linear'): Keyframe => ({
+    offset: Math.round((ms / total) * 1e4) / 1e4,
+    opacity,
+    transform: pop ? `translateZ(0) scale(${scale})` : 'translateZ(0)',
+    easing,
+  });
+  const settle = Math.min(POP_MS, hold);
+  const frames = [frame(0, 1, POP_SCALE, 'ease-out'), frame(settle, 1, 1)];
+  if (hold > settle) frames.push(frame(hold, 1, 1));
+  frames[frames.length - 1].easing = 'ease-out';
+  // Without time left for a trail, the played note just fades at the end
+  if (hold + DROP_MS < total) frames.push(frame(hold + DROP_MS, TRAIL_OPACITY, TRAIL_SCALE));
+  frames.push(frame(total, 0, TRAIL_SCALE));
+  return frames;
+};
 
 class ToneAnimationManager {
   private mode: AnimationMode = 'pitch-class';
+  private reducedMotion = false;
   // "pc{pc}-oct{octave}" → elements at that exact pitch
   private byExactPitch = new Map<string, Set<HTMLElement>>();
   // pitch class (0-11) → elements in any octave
@@ -55,6 +88,11 @@ class ToneAnimationManager {
 
   setMode(mode: AnimationMode): void {
     this.mode = mode;
+  }
+
+  /** Flashes keep their brightness steps but drop the size changes */
+  setReducedMotion(reduced: boolean): void {
+    this.reducedMotion = reduced;
   }
 
   private registryKey(pitchClass: number, octave: number): string {
@@ -173,14 +211,20 @@ class ToneAnimationManager {
   /**
    * Flash exactly one fretboard location — the fret a note is played on.
    * Displays that stand for the pitch class (the scale legend) light up too.
+   * `holdMs` is how long the note is the one being played (its step).
    */
-  flashAt(stringIndex: number, fret: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS): void {
+  flashAt(
+    stringIndex: number,
+    fret: number,
+    durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS,
+    holdMs = 0
+  ): void {
     const element = this.byFret.get(this.fretKey(stringIndex, fret));
     if (!element) return;
-    this.flashElement(element, durationMs);
+    this.flashElement(element, durationMs, holdMs);
     const pc = element.dataset.tonePc;
     if (pc !== undefined) {
-      this.byPitchClassAlways.get(parseInt(pc, 10))?.forEach((el) => this.flashElement(el, durationMs));
+      this.byPitchClassAlways.get(parseInt(pc, 10))?.forEach((el) => this.flashElement(el, durationMs, holdMs));
     }
   }
 
@@ -193,10 +237,10 @@ class ToneAnimationManager {
   }
 
   /** Flash the element showing step `index` of the current phrase. */
-  flashStep(index: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS): void {
+  flashStep(index: number, durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS, holdMs = 0): void {
     const element = this.byStep.get(index);
     if (!element) return;
-    this.flashElement(element, durationMs);
+    this.flashElement(element, durationMs, holdMs);
     this.keepStepInView(element);
   }
 
@@ -214,32 +258,33 @@ class ToneAnimationManager {
   flashTone(
     absSemitone: number,
     durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS,
-    forceMode?: AnimationMode
+    holdMs = 0
   ): void {
-    const mode = forceMode ?? this.mode;
     const pitchClass = mod12(absSemitone);
 
-    if (mode === 'pitch-class') {
+    if (this.mode === 'pitch-class') {
       // byPitchClass already contains the anyOctave elements
-      this.byPitchClass.get(pitchClass)?.forEach((el) => this.flashElement(el, durationMs));
+      this.byPitchClass.get(pitchClass)?.forEach((el) => this.flashElement(el, durationMs, holdMs));
       return;
     }
 
     const exact = this.byExactPitch.get(this.registryKey(pitchClass, this.getOctave(absSemitone)));
-    exact?.forEach((el) => this.flashElement(el, durationMs));
+    exact?.forEach((el) => this.flashElement(el, durationMs, holdMs));
     this.byPitchClassAlways.get(pitchClass)?.forEach((el) => {
-      if (!exact?.has(el)) this.flashElement(el, durationMs);
+      if (!exact?.has(el)) this.flashElement(el, durationMs, holdMs);
     });
   }
 
-  private flashElement(element: HTMLElement, durationMs: number): void {
+  private flashElement(element: HTMLElement, durationMs: number, holdMs: number): void {
     const overlay = this.overlays.get(element);
     if (!overlay) return;
     this.running.get(overlay)?.cancel();
+    // Frets are dots and can change size; the legend and phrase steps are
+    // covered edge to edge, so they only change brightness
+    const pop = !this.reducedMotion && element.dataset.toneFret !== undefined;
     try {
-      const animation = overlay.animate(FLASH_KEYFRAMES, {
+      const animation = overlay.animate(flashKeyframes(durationMs, holdMs, pop), {
         duration: durationMs,
-        easing: 'ease-out',
       });
       this.running.set(overlay, animation);
       animation.onfinish = () => {

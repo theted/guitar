@@ -67,7 +67,7 @@ src/
 │   ├── guitar/                 # The neck, its toolbar, and the phrase strip (shown in Transport)
 │   │   ├── geometry.ts         # Fret spacing and inlay positions
 │   │   └── hooks/              # Fretboard geometry + phrase event hooks
-│   └── ui/                     # Picker (Radix select), segmented, stepper, switch, slider
+│   └── ui/                     # Picker (Radix select), segmented, stepper, switch, slider, swatches
 ├── lib/tone-animation.ts       # Flash registry (frets, legend, phrase steps)
 ├── lib/notation.ts             # pretty(): "Bb" → "B♭" for display only
 ├── types/music.ts              # Branded number types
@@ -262,6 +262,15 @@ the registry modes: `pitch-class` flashes every octave of a note,
 that restriction — the legend shows degrees, not pitches, so it lights up
 whichever octave is playing. Every registered element needs a
 `<span className="tone-overlay" />` child; that's what animates.
+
+A flash has two parts (`flashKeyframes`). The note being played is at full
+strength for its step (`stepSec` on phrase events), and a fret pops in. It
+then drops to a dim, smaller trail that fades out over the Note glow length.
+At a fast tempo many notes glow at once, and only the current one is bright.
+Reduce motion keeps the brightness steps but drops the size changes. The
+colour is the `--glow` token, set from the Glow colour setting in `App`. The
+legend and phrase steps tint by blending (multiply on light, screen on dark),
+so the preset colours are saturated rather than pale.
 
 ### 7. State (`store.ts`)
 

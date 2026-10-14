@@ -45,9 +45,9 @@ describe("useKeyboardShortcuts", () => {
     press({ key: "ArrowDown" });
     expect(useFormStore.getState().bpm).toBe(30);
 
-    setFormState({ bpm: 700 });
+    setFormState({ bpm: 999 });
     press({ key: "ArrowUp" });
-    expect(useFormStore.getState().bpm).toBe(700);
+    expect(useFormStore.getState().bpm).toBe(999);
   });
 
   it("steps through the keys chromatically with ← and →, wrapping around", () => {

@@ -107,6 +107,7 @@ export const usePhraseEvents = ({
         abs: note.abs,
         startTimeSec: currentTime,
         durSec: Math.max(0.2, durationSeconds + 0.04),
+        stepSec: durationSeconds,
         index,
         ...(note.stringIndex !== undefined && { stringIndex: note.stringIndex, fret: note.fret }),
       });
