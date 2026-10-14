@@ -4,6 +4,7 @@ import { setFormState } from '@/store';
 import { scheduler } from '@/scheduler';
 import { stopAllAudio, stopVoicesStartingAfter } from '@/audio';
 import { AUDIO_LOOKAHEAD_SEC } from '@/constants';
+import { toneAnimationManager } from '@/lib/tone-animation';
 
 // No Web Audio in jsdom: the scheduler and audio layer are stand-ins
 let audioNow = 0;
@@ -161,5 +162,70 @@ describe('usePlayback at the end of a single pass', () => {
 
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(result.current.isPlaying).toBe(true);
+  });
+});
+
+describe('usePlayback next-note cue', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    setFormState({
+      scale: 'major', tone: 'e', phraseLoop: true, selectedPosition: null, bpm: 300, swing: false,
+      flashMode: 'fret', showNextNote: true,
+    });
+  });
+
+  const spies = () => ({
+    cueAt: vi.spyOn(toneAnimationManager, 'cueAt'),
+    cueTone: vi.spyOn(toneAnimationManager, 'cueTone'),
+    cueStep: vi.spyOn(toneAnimationManager, 'cueStep'),
+  });
+
+  it('marks the next fret and phrase step for the length of the current step', () => {
+    const { cueAt, cueStep } = spies();
+    const { result } = renderHook(() => usePlayback());
+    const [first, second] = result.current.events;
+    act(() => result.current.playNote(first.abs, 240, first));
+    expect(cueAt).toHaveBeenCalledWith(second.stringIndex, second.fret, 200);
+    expect(cueStep).toHaveBeenCalledWith(1, 200);
+  });
+
+  it('cues the first note after the last when looping, and nothing after a single pass', () => {
+    const { cueAt, cueStep } = spies();
+    const { result } = renderHook(() => usePlayback());
+    const looped = result.current.events;
+    act(() => result.current.playNote(looped[looped.length - 1].abs, 240, looped[looped.length - 1]));
+    expect(cueAt).toHaveBeenCalledWith(looped[0].stringIndex, looped[0].fret, 200);
+    expect(cueStep).toHaveBeenCalledWith(0, 200);
+
+    cueAt.mockClear();
+    cueStep.mockClear();
+    act(() => setFormState({ phraseLoop: false }));
+    const once = result.current.events;
+    act(() => result.current.playNote(once[once.length - 1].abs, 240, once[once.length - 1]));
+    expect(cueAt).not.toHaveBeenCalled();
+    expect(cueStep).not.toHaveBeenCalled();
+  });
+
+  it('cues by pitch when notes are not fingered', () => {
+    setFormState({ flashMode: 'all' });
+    const { cueAt, cueTone } = spies();
+    const { result } = renderHook(() => usePlayback());
+    const [first, second] = result.current.events;
+    act(() => result.current.playNote(first.abs, 240, first));
+    expect(cueTone).toHaveBeenCalledWith(second.abs, 200);
+    expect(cueAt).not.toHaveBeenCalled();
+  });
+
+  it('cues nothing when turned off, or for a fret click', () => {
+    const { cueAt, cueTone, cueStep } = spies();
+    const { result } = renderHook(() => usePlayback());
+    act(() => result.current.playNote(0, 300, undefined, { stringIndex: 5, fret: 0 }));
+    act(() => setFormState({ showNextNote: false }));
+    const [first] = result.current.events;
+    act(() => result.current.playNote(first.abs, 240, first));
+    expect(cueAt).not.toHaveBeenCalled();
+    expect(cueTone).not.toHaveBeenCalled();
+    expect(cueStep).not.toHaveBeenCalled();
   });
 });

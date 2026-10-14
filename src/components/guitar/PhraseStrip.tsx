@@ -41,6 +41,7 @@ const PhraseStep: React.FC<StepProps> = React.memo(({ index, label, isTonic, sta
     >
       {label}
       <span className="tone-overlay" />
+      <span className="tone-cue" />
     </div>
   );
 });

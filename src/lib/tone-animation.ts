@@ -16,6 +16,9 @@
  * A flash has two parts (see `flashKeyframes`): the note being played is lit
  * at full strength for its step, then drops to a dim trail that fades out. At
  * a fast tempo many notes glow at once, and only the current one is bright.
+ *
+ * A cue marks the note that comes next (see `cueKeyframes`), on its own
+ * `.tone-cue` child so it never interrupts a flash on the same element.
  */
 import { TONE_ANIMATION_DEFAULT_DURATION_MS } from '../constants';
 import { mod12 } from '../theory/pitch';
@@ -66,6 +69,27 @@ export const flashKeyframes = (durationMs: number, holdMs: number, pop: boolean)
   return frames;
 };
 
+/** The ring on the next note starts this much wider than the dot */
+const CUE_SCALE = 1.8;
+
+/**
+ * Keyframes for the cue on the next note, which lasts until that note plays.
+ * With `motion` it's a ring closing in at a steady rate, so it lands on the
+ * beat; without, it just fades in and waits.
+ */
+export const cueKeyframes = (motion: boolean): Keyframe[] =>
+  motion
+    ? [
+        { offset: 0, opacity: 0, transform: `translateZ(0) scale(${CUE_SCALE})` },
+        { offset: 0.25, opacity: 0.6, transform: `translateZ(0) scale(${1 + (CUE_SCALE - 1) * 0.75})` },
+        { offset: 1, opacity: 1, transform: 'translateZ(0) scale(1)' },
+      ]
+    : [
+        { offset: 0, opacity: 0, transform: 'translateZ(0)' },
+        { offset: 0.15, opacity: 0.8, transform: 'translateZ(0)' },
+        { offset: 1, opacity: 0.8, transform: 'translateZ(0)' },
+      ];
+
 class ToneAnimationManager {
   private mode: AnimationMode = 'pitch-class';
   private reducedMotion = false;
@@ -83,7 +107,9 @@ class ToneAnimationManager {
   private stepViewport: HTMLElement | null = null;
   // element → its overlay child, resolved once at registration
   private overlays = new WeakMap<HTMLElement, HTMLElement>();
-  // overlay → running animation, so retriggers replace instead of stacking
+  // element → its cue child, for elements that can mark the next note
+  private cues = new WeakMap<HTMLElement, HTMLElement>();
+  // overlay or cue → running animation, so retriggers replace instead of stacking
   private running = new Map<HTMLElement, Animation>();
 
   setMode(mode: AnimationMode): void {
@@ -153,6 +179,8 @@ class ToneAnimationManager {
   private cacheOverlay(element: HTMLElement): void {
     const overlay = element.querySelector<HTMLElement>('.tone-overlay');
     if (overlay) this.overlays.set(element, overlay);
+    const cue = element.querySelector<HTMLElement>('.tone-cue');
+    if (cue) this.cues.set(element, cue);
   }
 
   private registerFret(element: HTMLElement, fretId: { stringIndex: number; fret: number }): void {
@@ -260,35 +288,64 @@ class ToneAnimationManager {
     durationMs: number = TONE_ANIMATION_DEFAULT_DURATION_MS,
     holdMs = 0
   ): void {
+    this.elementsForTone(absSemitone).forEach((el) => this.flashElement(el, durationMs, holdMs));
+  }
+
+  /**
+   * Mark the fret the next note is played on, for `durationMs`: until it
+   * plays. Like `flashAt`, but the legend isn't cued — it shows what is
+   * playing, not where to play next.
+   */
+  cueAt(stringIndex: number, fret: number, durationMs: number): void {
+    const element = this.byFret.get(this.fretKey(stringIndex, fret));
+    if (element) this.cueElement(element, durationMs);
+  }
+
+  /** Mark the next note wherever the current mode would flash it */
+  cueTone(absSemitone: number, durationMs: number): void {
+    this.elementsForTone(absSemitone).forEach((el) => this.cueElement(el, durationMs));
+  }
+
+  /** Mark the phrase step that plays next */
+  cueStep(index: number, durationMs: number): void {
+    const element = this.byStep.get(index);
+    if (element) this.cueElement(element, durationMs);
+  }
+
+  // What a pitch lights up in the current mode: every octave of it, or the
+  // exact pitch plus the displays that stand for any octave
+  private elementsForTone(absSemitone: number): Set<HTMLElement> {
     const pitchClass = mod12(absSemitone);
-
-    if (this.mode === 'pitch-class') {
-      // byPitchClass already contains the anyOctave elements
-      this.byPitchClass.get(pitchClass)?.forEach((el) => this.flashElement(el, durationMs, holdMs));
-      return;
-    }
-
+    // byPitchClass already contains the anyOctave elements
+    if (this.mode === 'pitch-class') return this.byPitchClass.get(pitchClass) ?? new Set();
     const exact = this.byExactPitch.get(this.registryKey(pitchClass, this.getOctave(absSemitone)));
-    exact?.forEach((el) => this.flashElement(el, durationMs, holdMs));
-    this.byPitchClassAlways.get(pitchClass)?.forEach((el) => {
-      if (!exact?.has(el)) this.flashElement(el, durationMs, holdMs);
-    });
+    return new Set([...(exact ?? []), ...(this.byPitchClassAlways.get(pitchClass) ?? [])]);
+  }
+
+  // Frets are dots and can change size; the legend and phrase steps are
+  // covered edge to edge, so they only change brightness
+  private moves(element: HTMLElement): boolean {
+    return !this.reducedMotion && element.dataset.toneFret !== undefined;
   }
 
   private flashElement(element: HTMLElement, durationMs: number, holdMs: number): void {
     const overlay = this.overlays.get(element);
-    if (!overlay) return;
-    this.running.get(overlay)?.cancel();
-    // Frets are dots and can change size; the legend and phrase steps are
-    // covered edge to edge, so they only change brightness
-    const pop = !this.reducedMotion && element.dataset.toneFret !== undefined;
+    if (overlay) this.animate(overlay, flashKeyframes(durationMs, holdMs, this.moves(element)), durationMs);
+  }
+
+  // Elements without a cue child (the legend) are skipped
+  private cueElement(element: HTMLElement, durationMs: number): void {
+    const cue = this.cues.get(element);
+    if (cue) this.animate(cue, cueKeyframes(this.moves(element)), durationMs);
+  }
+
+  private animate(target: HTMLElement, keyframes: Keyframe[], durationMs: number): void {
+    this.running.get(target)?.cancel();
     try {
-      const animation = overlay.animate(flashKeyframes(durationMs, holdMs, pop), {
-        duration: durationMs,
-      });
-      this.running.set(overlay, animation);
+      const animation = target.animate(keyframes, { duration: durationMs });
+      this.running.set(target, animation);
       animation.onfinish = () => {
-        if (this.running.get(overlay) === animation) this.running.delete(overlay);
+        if (this.running.get(target) === animation) this.running.delete(target);
       };
     } catch { /* Web Animations API unavailable */ }
   }

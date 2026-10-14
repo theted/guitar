@@ -139,6 +139,7 @@ describe("sanitizeFormState", () => {
       selectedPosition: 0,
       swing: "yes" as never,
       glowColor: "orange",
+      showNextNote: "yes" as never,
     });
     expect(clean.phraseMode).toBe(base.phraseMode);
     expect(clean.soundType).toBe(base.soundType);
@@ -150,6 +151,7 @@ describe("sanitizeFormState", () => {
     expect(clean.selectedPosition).toBeNull();
     expect(clean.swing).toBe(false);
     expect(clean.glowColor).toBe(base.glowColor);
+    expect(clean.showNextNote).toBe(true);
   });
 
   it("keeps everything valid as it is", async () => {

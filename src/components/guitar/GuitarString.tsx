@@ -109,6 +109,8 @@ const StringFret: React.FC<StringFretProps> = React.memo(({ descriptor, stringIn
       <span className="fret-dot">{dotText(descriptor, state, labelMode)}</span>
       {/* Tone-based animation overlay — primary highlighting system */}
       <span className="tone-overlay" />
+      {/* The ring that marks this fret as the next note */}
+      <span className="tone-cue" />
     </div>
   );
 });

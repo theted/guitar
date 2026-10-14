@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
@@ -45,6 +45,9 @@ export const usePlayback = () => {
   })));
 
   const playingTimersRef = useRef<Record<number, number>>({});
+  // The phrase being played, so a note can cue the one after it. A ref, read
+  // at call time like the flash settings, so playNote keeps its identity.
+  const phraseRef = useRef<{ events: PhraseEvent[]; loop: boolean }>({ events: [], loop: false });
 
   // Everything that sounds or glows outside the phrase session itself
   const silenceOthers = useCallback(() => {
@@ -60,7 +63,7 @@ export const usePlayback = () => {
   // Flash settings are read at call time so this callback stays stable —
   // dragging the trail slider must not re-render the fretboard.
   const playNote: PlayNoteFn = useCallback((absSemitone, durationMs = 200, event, at) => {
-    const { trailLength, reduceAnimations, flashMode: mode } = useFormStore.getState();
+    const { trailLength, reduceAnimations, flashMode: mode, showNextNote } = useFormStore.getState();
     // Long visual trails are an animation; honor the opt-out
     const flashMs = reduceAnimations
       ? durationMs
@@ -80,6 +83,17 @@ export const usePlayback = () => {
     }
     // Phrase notes also advance the phrase strip
     if (event) toneAnimationManager.flashStep(event.index, flashMs, holdMs);
+    // …and mark the note after them for the length of this step, until it plays
+    if (event && showNextNote) {
+      const { events, loop } = phraseRef.current;
+      const next = events[event.index + 1] ?? (loop ? events[0] : undefined);
+      if (next?.stringIndex !== undefined && next.fret !== undefined) {
+        toneAnimationManager.cueAt(next.stringIndex, next.fret, holdMs);
+      } else if (next) {
+        toneAnimationManager.cueTone(next.abs, holdMs);
+      }
+      if (next) toneAnimationManager.cueStep(next.index, holdMs);
+    }
     const tid = window.setTimeout(() => {
       delete playingTimersRef.current[absSemitone];
     }, flashMs);
@@ -142,6 +156,11 @@ export const usePlayback = () => {
     neck,
     loop: phraseLoop,
   });
+
+  // A layout effect, so it's current before the player restarts on new events
+  useLayoutEffect(() => {
+    phraseRef.current = { events, loop: phraseLoop };
+  }, [events, phraseLoop]);
 
   const { isPlaying, onTogglePlay, stop } = usePhrasePlayer({
     events,
