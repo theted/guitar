@@ -12,9 +12,12 @@ import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 import { useSelectedChord } from "@/components/guitar/hooks/useSelectedChord";
 import { setFormState, useFormStore, type LabelMode } from "@/store";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
+import type { PhraseEvent } from "@/components/guitar/hooks/usePhraseEvents";
 
 type Props = {
   onPlayNote?: PlayNoteFn;
+  /** The phrase Play runs, for fading the notes it won't play */
+  events?: PhraseEvent[];
   /** Sound a chord when it's picked (see usePlayback) */
   onStrumChord?: (degree: number) => void;
 };
@@ -32,7 +35,7 @@ const CHORD_LABEL_OPTION = {
 };
 
 // How the scale is shown on the neck, and the neck itself.
-const Guitar: React.FC<Props> = ({ onPlayNote, onStrumChord }) => {
+const Guitar: React.FC<Props> = ({ onPlayNote, onStrumChord, events }) => {
   const { lowAtBottom, labelMode, leftHanded } = useFormStore(useShallow((state) => ({
     lowAtBottom: state.lowAtBottom,
     labelMode: state.labelMode,
@@ -85,7 +88,7 @@ const Guitar: React.FC<Props> = ({ onPlayNote, onStrumChord }) => {
       {/* Frets keep a minimum width; the neck scrolls sideways when they don't fit */}
       <div ref={scrollRef} dir={leftHanded ? "rtl" : undefined} className="neck-scroll -mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
         <div style={{ minWidth: neckMinWidth(frets) }}>
-          <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} />
+          <GuitarNeck descriptors={descriptors} frets={frets} onPlayNote={onPlayNote} events={events} />
           <FretMarkers frets={frets} />
         </div>
       </div>

@@ -301,3 +301,41 @@ describe('usePlayback chord practice', () => {
     expect(scheduler.strumNow).not.toHaveBeenCalled();
   });
 });
+
+// E major over two octaves from the low E, looping: up 14 notes to the top E,
+// then back down
+describe('usePlayback phrase direction', () => {
+  beforeEach(() => {
+    audioNow = 0;
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    setFormState({
+      scale: 'major', tone: 'e', tuningName: 'Standard', strings: 6, frets: 24, startOctave: 4,
+      phraseMode: 'full-scale', phraseOctaves: 2, phraseDescend: true, phraseLoop: true,
+      selectedPosition: null, selectedChordDegree: null, bpm: 300, swing: false, flashMode: 'fret',
+    });
+  });
+
+  it('says the way up until the top note, then the way down, and up again on the loop', () => {
+    const setDirection = vi.spyOn(toneAnimationManager, 'setDirection');
+    const { result } = renderHook(() => usePlayback());
+    const { events } = result.current;
+    expect(events[14].abs).toBe(0);
+    const play = (index: number) => {
+      act(() => result.current.playNote(events[index].abs, 240, events[index]));
+      return setDirection.mock.calls[setDirection.mock.calls.length - 1][0];
+    };
+    expect(play(13)).toBe('up');
+    expect(play(14)).toBe('down');
+    expect(play(events.length - 1)).toBe('down');
+    expect(play(0)).toBe('up');
+  });
+
+  it('shows both ways again once stopped', async () => {
+    const setDirection = vi.spyOn(toneAnimationManager, 'setDirection');
+    const { result } = renderHook(() => usePlayback());
+    await act(async () => { await result.current.togglePlay(); });
+    act(() => result.current.stopAllPlayback());
+    expect(setDirection).toHaveBeenLastCalledWith(null);
+  });
+});

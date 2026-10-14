@@ -38,6 +38,8 @@ export type FormState = {
   glowColor: string;
   /** Mark the next note of a phrase while the current one plays */
   showNextNote: boolean;
+  /** Fade the scale notes the phrase won't play: the way up, then the way down */
+  fadeUnplayed: boolean;
   labelMode: LabelMode;
   soundType: SoundType;
   /** How much of the shared room is heard around each note */
@@ -84,6 +86,7 @@ const initial: FormState = {
   trailLength: 1200,
   glowColor: DEFAULT_GLOW_COLOR,
   showNextNote: true,
+  fadeUnplayed: false,
   labelMode: 'note',
   soundType: 'acoustic-steel',
   reverb: 'normal',
@@ -220,7 +223,7 @@ export const sanitizeFormState = (state: FormState): FormState => {
   valid('positionSpan', [4, 5, 6].includes(clean.positionSpan));
   valid('selectedPosition', clean.selectedPosition === null || (Number.isInteger(clean.selectedPosition) && clean.selectedPosition! >= 1));
   valid('selectedChordDegree', clean.selectedChordDegree === null || (Number.isInteger(clean.selectedChordDegree) && clean.selectedChordDegree! >= 1 && clean.selectedChordDegree! <= 7));
-  for (const key of ['lowAtBottom', 'highlightEnabled', 'swing', 'muted', 'phraseDescend', 'phraseLoop', 'reduceAnimations', 'singleStringScale', 'leftHanded', 'showNextNote', 'chordSevenths'] as const) {
+  for (const key of ['lowAtBottom', 'highlightEnabled', 'swing', 'muted', 'phraseDescend', 'phraseLoop', 'reduceAnimations', 'singleStringScale', 'leftHanded', 'showNextNote', 'chordSevenths', 'fadeUnplayed'] as const) {
     valid(key, typeof clean[key] === 'boolean');
   }
   return clean;

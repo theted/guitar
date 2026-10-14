@@ -215,3 +215,13 @@ describe("chord practice settings", () => {
     expect(sanitizeFormState({ ...base, labelMode: "chord" }).labelMode).toBe("chord");
   });
 });
+
+describe("fading what the phrase won't play", () => {
+  it("starts off, and falls back to off", async () => {
+    const { sanitizeFormState } = await import("./store");
+    const base = migrateFormState({});
+    expect(base.fadeUnplayed).toBe(false);
+    expect(sanitizeFormState({ ...base, fadeUnplayed: true }).fadeUnplayed).toBe(true);
+    expect(sanitizeFormState({ ...base, fadeUnplayed: "yes" as never }).fadeUnplayed).toBe(false);
+  });
+});

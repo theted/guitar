@@ -63,6 +63,12 @@ describe('GuitarString highlighting', () => {
     expect(fret('B4')).toHaveAttribute('data-state', 'muted');
   });
 
+  it('says which way through the phrase a fret is played, when fading', () => {
+    render(<GuitarString {...baseProps} playedFrets={new Map([[1, 'down' as const]])} />);
+    expect(fret('E4')).toHaveAttribute('data-played', 'none');
+    expect(fret('F4')).toHaveAttribute('data-played', 'down');
+  });
+
   it('flags frets outside the practised position', () => {
     render(<GuitarString {...baseProps} positionFrets={new Set([1, 2])} />);
     expect(fret('E4')).toHaveAttribute('data-outside');

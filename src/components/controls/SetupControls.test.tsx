@@ -16,3 +16,15 @@ describe('SetupControls — Room', () => {
     expect(within(room).getByRole('radio', { name: 'High' })).toHaveAttribute('aria-checked', 'true');
   });
 });
+
+describe('SetupControls — fading what the phrase won\'t play', () => {
+  beforeEach(() => setFormState({ fadeUnplayed: false }));
+
+  it('is off at first, and switches on', () => {
+    render(<SetupControls />);
+    const toggle = screen.getByRole('switch', { name: /fade notes the phrase won't play/i });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(toggle);
+    expect(useFormStore.getState().fadeUnplayed).toBe(true);
+  });
+});

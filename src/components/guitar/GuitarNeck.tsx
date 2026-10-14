@@ -7,6 +7,10 @@ import GuitarString from "./GuitarString";
 import type { RenderedString } from "./hooks/useRenderedStrings";
 import { useScalePositions } from "./hooks/useScalePositions";
 import { useSelectedChord } from "./hooks/useSelectedChord";
+import { useFretboard } from "./hooks/useFretboard";
+import type { PhraseEvent } from "./hooks/usePhraseEvents";
+import { phraseCoverage, type PlayedOn } from "./phraseCoverage";
+import { toneAnimationManager } from "@/lib/tone-animation";
 import { neckColumns, inlayAt } from "./geometry";
 import { useFormStore } from "@/store";
 import type { PlayNoteFn } from "@/hooks/usePlayback";
@@ -15,10 +19,14 @@ type GuitarNeckProps = {
   descriptors: RenderedString[];
   frets: number;
   onPlayNote?: PlayNoteFn;
+  /** The phrase Play runs, for fading the notes it won't play */
+  events?: PhraseEvent[];
 };
 
 // Stable identity for strings with no notes in the active box
 const EMPTY_FRETS: Set<number> = new Set();
+// …and for strings the phrase never touches
+const NOTHING_PLAYED: ReadonlyMap<number, PlayedOn> = new Map();
 
 // Wood, nut, fret wires and inlays: everything behind the strings. Inlays sit
 // between strings (halfway, and at the thirds for the doubles) so notes don't cover them.
@@ -54,10 +62,10 @@ const Board: React.FC<BoardProps> = React.memo(({ frets, columns, box }) => (
   </div>
 ));
 
-const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote }) => {
+const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, onPlayNote, events }) => {
   const {
     scale, keyy, highlightEnabled, singleStringScale, reduceAnimations, labelMode,
-    soundType,
+    soundType, fadeUnplayed, flashMode,
   } = useFormStore(useShallow((state) => ({
     scale: state.scale,
     keyy: state.tone,
@@ -66,8 +74,24 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
     reduceAnimations: state.reduceAnimations,
     labelMode: state.labelMode,
     soundType: state.soundType,
+    fadeUnplayed: state.fadeUnplayed,
+    flashMode: state.flashMode,
   })));
   const chord = useSelectedChord();
+
+  // What the phrase lights, string by string, when the rest is to fade. This
+  // changes with the phrase, never per note: which way is playing is an
+  // attribute on the neck that playback sets (toneAnimationManager.setDirection).
+  const { baseNotes } = useFretboard();
+  const played = useMemo(
+    () => (fadeUnplayed && events ? phraseCoverage(events, flashMode, baseNotes, frets) : null),
+    [fadeUnplayed, events, flashMode, baseNotes, frets]
+  );
+  const neckRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    toneAnimationManager.setNeck(neckRef.current);
+    return () => { toneAnimationManager.setNeck(null); };
+  }, []);
 
   const { activePosition } = useScalePositions();
   const columns = useMemo(() => neckColumns(frets), [frets]);
@@ -132,6 +156,7 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
 
   return (
     <div
+      ref={neckRef}
       className={reduceAnimations ? "neck reduce-motion" : "neck"}
       data-labels={labelMode}
       role="grid"
@@ -154,6 +179,7 @@ const GuitarNeck: React.FC<GuitarNeckProps> = React.memo(({ descriptors, frets, 
               ? positionFretsByString.get(descriptor.lowIndex) ?? EMPTY_FRETS
               : null
           }
+          playedFrets={played ? played[descriptor.lowIndex] ?? NOTHING_PLAYED : null}
           frets={frets}
           columns={columns}
           note={descriptor.baseNote}

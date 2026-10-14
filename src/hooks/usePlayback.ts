@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useFormStore } from "@/store";
 import { keyToOffset, getScalePitchClasses } from "@/music";
@@ -15,6 +15,7 @@ import { usePhrasePlayer } from "@/components/guitar/hooks/usePhrasePlayer";
 import { useScalePositions } from "@/components/guitar/hooks/useScalePositions";
 import { useFretboard } from "@/components/guitar/hooks/useFretboard";
 import { useSelectedChord } from "@/components/guitar/hooks/useSelectedChord";
+import { phraseTurn } from "@/components/guitar/phraseCoverage";
 import { fingerSequence, type FretLocation } from "@/theory/fingering";
 
 export type PlayNoteFn = (
@@ -49,7 +50,7 @@ export const usePlayback = () => {
   const playingTimersRef = useRef<Record<number, number>>({});
   // The phrase being played, so a note can cue the one after it. A ref, read
   // at call time like the flash settings, so playNote keeps its identity.
-  const phraseRef = useRef<{ events: PhraseEvent[]; loop: boolean }>({ events: [], loop: false });
+  const phraseRef = useRef<{ events: PhraseEvent[]; loop: boolean; turn: number }>({ events: [], loop: false, turn: 0 });
 
   // Everything that sounds or glows outside the phrase session itself
   const silenceOthers = useCallback(() => {
@@ -85,6 +86,12 @@ export const usePlayback = () => {
     }
     // Phrase notes also advance the phrase strip
     if (event) toneAnimationManager.flashStep(event.index, flashMs, holdMs);
+    // …and say which way through the phrase it is: from the turning note on,
+    // the way down (unless the phrase never comes back)
+    if (event) {
+      const { events, turn } = phraseRef.current;
+      toneAnimationManager.setDirection(event.index >= turn && turn < events.length - 1 ? 'down' : 'up');
+    }
     // …and mark the note after them for the length of this step, until it plays
     if (event && showNextNote) {
       const { events, loop } = phraseRef.current;
@@ -166,7 +173,7 @@ export const usePlayback = () => {
 
   // A layout effect, so it's current before the player restarts on new events
   useLayoutEffect(() => {
-    phraseRef.current = { events, loop: phraseLoop };
+    phraseRef.current = { events, loop: phraseLoop, turn: phraseTurn(events) };
   }, [events, phraseLoop]);
 
   const { isPlaying, onTogglePlay, stop } = usePhrasePlayer({
@@ -177,6 +184,11 @@ export const usePlayback = () => {
     soundType,
     silenceOthers,
   });
+
+  // Stopped, the neck shows both ways through the phrase
+  useEffect(() => {
+    if (!isPlaying) toneAnimationManager.setDirection(null);
+  }, [isPlaying]);
 
   // The app-wide stop: ends the phrase (the button goes back to Play) and
   // silences everything else. Stable, and a no-op when nothing is playing.

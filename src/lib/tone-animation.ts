@@ -105,6 +105,8 @@ class ToneAnimationManager {
   private byStep = new Map<number, HTMLElement>();
   // scroll container of the phrase steps, so the playing step stays visible
   private stepViewport: HTMLElement | null = null;
+  // the neck, which shows which way through the phrase is playing
+  private neck: HTMLElement | null = null;
   // element → its overlay child, resolved once at registration
   private overlays = new WeakMap<HTMLElement, HTMLElement>();
   // element → its cue child, for elements that can mark the next note
@@ -262,6 +264,22 @@ class ToneAnimationManager {
    */
   setStepViewport(element: HTMLElement | null): void {
     this.stepViewport = element;
+  }
+
+  /** The neck element, so playback can say which way the phrase is going */
+  setNeck(element: HTMLElement | null): void {
+    this.neck = element;
+  }
+
+  /**
+   * Which way through the phrase is playing: the way up, the way down, or
+   * null when stopped. A `data-direction` attribute on the neck, so fading the
+   * other way's notes is CSS alone — nothing re-renders as the phrase turns.
+   */
+  setDirection(direction: 'up' | 'down' | null): void {
+    if (!this.neck) return;
+    if (direction) this.neck.dataset.direction = direction;
+    else delete this.neck.dataset.direction;
   }
 
   /** Flash the element showing step `index` of the current phrase. */

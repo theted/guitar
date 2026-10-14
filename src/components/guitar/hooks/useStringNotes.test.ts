@@ -116,11 +116,21 @@ describe("useStringNotes", () => {
     expect(notes.map((note) => note.inPosition)).toEqual([true, false, true, false]);
   });
 
+  it("says which way through the phrase each fret is played", () => {
+    const notes = renderStringNotes({
+      frets: 3,
+      playedFrets: new Map([[0, "up"], [3, "both"]]),
+    });
+
+    expect(notes.map((note) => note.played)).toEqual(["up", "none", "none", "both"]);
+  });
+
   it("leaves chord and position metadata null when those features are inactive", () => {
     const notes = renderStringNotes();
 
     expect(notes[0].chordTone).toBeNull();
     expect(notes[0].chordLabel).toBeNull();
     expect(notes[0].inPosition).toBeNull();
+    expect(notes[0].played).toBeNull();
   });
 });
